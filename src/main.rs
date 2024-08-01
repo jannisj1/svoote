@@ -1,0 +1,129 @@
+#[macro_use]
+extern crate log;
+
+mod app_error;
+mod auth_token;
+mod compliance;
+mod host;
+mod html_page;
+mod landing_page;
+mod live_item;
+mod live_poll;
+mod live_poll_store;
+mod play;
+mod polls;
+mod static_file;
+mod svg_icons;
+mod word_cloud;
+
+use axum::response::{IntoResponse, Response};
+use axum::routing::{delete, get, post, put};
+
+use app_error::AppError;
+use time::Duration;
+use tower_sessions::{Expiry, SessionManagerLayer};
+use tower_sessions_redis_store::{
+    fred::{prelude::*, types::RedisConfig},
+    RedisStore,
+};
+
+fn main() {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+
+    env_logger::init();
+    static_file::init();
+
+    runtime.block_on(async {
+        let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 8080));
+        let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+
+        info!("Listening on http://{}", addr);
+
+        let pool = match RedisPool::new(RedisConfig::default(), None, None, None, 6) {
+            Ok(pool) => pool,
+            Err(e) => {
+                error!("Could not connect to redis server: {e}");
+                return;
+            }
+        };
+
+        let _ = pool.connect();
+        pool.wait_for_connect().await.unwrap();
+
+        let session_store = RedisStore::new(pool);
+        let session_layer = SessionManagerLayer::new(session_store)
+            .with_secure(false)
+            .with_expiry(Expiry::OnInactivity(Duration::days(30)));
+
+        let routes = axum::Router::new()
+            .route("/", get(landing_page::get_landing_page))
+            .route("/demo_mc", get(landing_page::get_mc_start_page_demo))
+            .route("/demo_ft", get(landing_page::get_ft_start_page_demo))
+            .route(
+                "/poll",
+                get(polls::get_poll_page).post(polls::post_poll_page),
+            )
+            .route(
+                "/poll/json",
+                get(polls::get_poll_json).post(polls::post_poll_json),
+            )
+            .route("/poll/items", delete(polls::clear_poll))
+            .route("/poll/item", post(polls::post_item))
+            .route("/poll/item/:item_idx/text", put(polls::put_question_text))
+            .route(
+                "/poll/item/:item_idx/mc_answer/:answer_idx/text",
+                put(polls::put_mc_answer_text),
+            )
+            .route("/poll/item/:item_idx", delete(polls::delete_item))
+            .route(
+                "/poll/item/:item_idx/add_mc_answer",
+                post(polls::post_add_mc_answer),
+            )
+            .route(
+                "/poll/item/:item_idx/mc_answer/:answer_idx",
+                delete(polls::delete_mc_answer),
+            )
+            .route(
+                "/poll/item/:item_idx/mc_answer/:answer_idx/toggle_correct",
+                put(polls::put_mc_toggle_correct),
+            )
+            .route("/next_question/:poll_id", post(host::post_next_question))
+            .route(
+                "/previous_question/:poll_id",
+                post(host::post_previous_question),
+            )
+            .route(
+                "/sse/host_question/:poll_id",
+                get(host::get_sse_host_question),
+            )
+            .route("/sse/host_results/:poll_id", get(host::get_live_statistics))
+            .route("/sse/leaderboard/:poll_id", get(host::get_sse_leaderboard))
+            .route("/p", get(play::get_play_page))
+            .route("/submit_mc_answer/:poll_id", post(play::post_mc_answer))
+            .route(
+                "/submit_free_text_answer/:poll_id",
+                post(play::post_free_text_answer),
+            )
+            .route("/sse/play/:quiz_id", get(play::get_sse_play))
+            .route("/static/:file_name", get(static_file::get_handler))
+            .route("/data-privacy", get(compliance::get_privacy_policy_page))
+            .route(
+                "/terms-of-service",
+                get(compliance::get_terms_of_service_page),
+            )
+            .route("/cookie-policy", get(compliance::get_cookie_policy_page))
+            .route("/contact", get(compliance::get_contact_page))
+            .route("/robots.txt", get(compliance::get_robots_txt))
+            .layer(session_layer)
+            .fallback(get(get_fallback));
+
+        axum::serve(listener, routes).await.unwrap();
+    })
+}
+
+async fn get_fallback() -> Response {
+    AppError::NotFound.into_response()
+}

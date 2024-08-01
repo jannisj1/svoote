@@ -1,0 +1,282 @@
+use std::convert::Infallible;
+
+use axum::{
+    extract::Path,
+    response::{sse, IntoResponse, Response, Sse},
+};
+
+use futures::Stream;
+use maud::{html, Markup, PreEscaped};
+use qrcode::{render::svg, QrCode};
+use tokio_stream::wrappers::WatchStream;
+use tokio_stream::StreamExt as _;
+use tower_sessions::Session;
+
+use crate::{
+    app_error::AppError,
+    html_page,
+    live_poll::{QuestionAreaState, QuestionStatisticsState},
+    live_poll_store::{ShortID, LIVE_POLL_STORE},
+    svg_icons::SvgIcon,
+};
+
+pub async fn render_live_host(poll_id: ShortID) -> Result<Response, AppError> {
+    let join_url = format!("https://svoote.com/p?c={}", poll_id);
+    let join_qr_code_svg = QrCode::new(&join_url)
+        .map_err(|_| AppError::OtherInternalServerError("Error generating QR-code".to_string()))?
+        .render()
+        .min_dimensions(200, 200)
+        .dark_color(svg::Color("#000000"))
+        .light_color(svg::Color("#FFFFFF"))
+        .build();
+
+    Ok(html_page::render_html_page(
+
+        "Svoote",
+        html! {
+            ."mt-8 grid grid-cols-[3fr_1fr] gap-16 mb-16" {
+                ."flex flex-col gap-16" {
+                    div hx-ext="sse" sse-connect={"/sse/host_question/" (poll_id) } sse-close="close" {
+                        div sse-swap="update" { (render_sse_loading_spinner()) }
+                    }
+                    div hx-ext="sse" sse-connect={"/sse/host_results/" (poll_id) } sse-close="close"  {
+                        div sse-swap="update" { }
+                    }
+                }
+                ."text-center" {
+                    ."mb-2 text-sm text-slate-600" {
+                        "Enter this code on "
+                        a ."text-indigo-500 underline" href=(join_url) { "svoote.com" }
+                        ":"
+                    }
+                    ."text-5xl tracking-wider font-bold text-slate-900" { (poll_id) }
+                    ."my-2 text-slate-600" {
+                        "or scan"
+                    }
+                    ."w-full flex justify-center" {
+                        (PreEscaped(join_qr_code_svg))
+                    }
+                    /*@if params.leaderboard_enabled.unwrap_or(false) {
+                        div hx-ext="sse" sse-connect={"/sse/leaderboard/" (poll_id) } sse-close="close" {
+                            div sse-swap="update" { }
+                        }
+                    }*/
+                }
+            }
+        }, true
+    )
+    .into_response())
+}
+
+pub async fn get_sse_host_question(
+    Path(poll_id): Path<ShortID>,
+    session: Session,
+) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
+    let lq = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    let auth_token = lq.lock().unwrap().auth_token.clone();
+    auth_token.verify(&session).await?;
+
+    let updates = lq.lock().unwrap().ch_question_state.clone();
+
+    let stream = WatchStream::new(updates)
+        .map(move |state| match state {
+            QuestionAreaState::None => sse::Event::default()
+            .event("update")
+            .data(html! {}.into_string()),
+            QuestionAreaState::Item { item_idx: question_idx, is_last_question } => {
+                sse::Event::default()
+                .event("update")
+                .data(
+                    html! {
+                        ."mb-10 grid grid-cols-3 items-center" {
+                            @if question_idx == 0 {
+                                div {}
+                            } @else {
+                                button
+                                    hx-post={ "/previous_question/" (poll_id) }
+                                    hx-swap="none"
+                                    ."justify-self-start flex gap-2 items-center text-slate-500 text-sm"
+                                {
+                                    ."size-4" { (SvgIcon::ArrowLeft.render()) }
+                                    "Previous"
+                                }
+                            }
+
+                            ."text-center text-sm text-slate-500" {
+                                "Question " (question_idx + 1)
+                            }
+
+                            button
+                                hx-post={ "/next_question/" (poll_id) }
+                                hx-swap="none"
+                                ."justify-self-end relative group px-4 py-2 text-slate-100 tracking-wide font-semibold bg-slate-700 rounded-md hover:bg-slate-800 transition"
+                            {
+                                ."group-[.htmx-request]:opacity-0 flex items-center gap-2" {
+                                    @if !is_last_question {
+                                        "Next"
+                                        ."size-4" { (SvgIcon::ArrowRight.render()) }
+                                    } @else {
+                                        "End poll"
+                                    }
+                                }
+                                ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
+                                    ."size-4" { (SvgIcon::Spinner.render()) }
+                                }
+                            }
+                        }
+                        (lq.lock().unwrap().items[question_idx].render_host_view())
+                    }.into_string()
+                )
+            },
+            QuestionAreaState::PollFinished => {
+                sse::Event::default()
+                .event("update")
+                .data(
+                    html! {
+                        ."my-24 flex flex-col text-sm text-slate-500 text-center" {
+                            ."" { "This poll has no more items. Thank you for using svoote.com" }
+                            a
+                                href="/poll"
+                                ."mt-4 underline cursor-pointer hover:text-slate-700 transition"
+                            {
+                                "Back to editing this poll"
+                            }
+                        }
+                    }.into_string()
+                )
+            },
+            QuestionAreaState::CloseSSE => {
+                sse::Event::default()
+                .event("close")
+                .data("")
+            }
+        })
+        .map(Ok);
+
+    Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()))
+}
+
+pub async fn get_live_statistics(
+    Path(poll_id): Path<ShortID>,
+    session: Session,
+) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
+    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    let auth_token = live_poll.lock().unwrap().auth_token.clone();
+    auth_token.verify(&session).await?;
+
+    let ch_question_statistics = live_poll
+        .lock()
+        .unwrap()
+        .ch_question_statistics_recv
+        .clone();
+
+    let stream = WatchStream::new(ch_question_statistics)
+        .map(move |statistics| match statistics {
+            QuestionStatisticsState::None => sse::Event::default().event("update").data(""),
+            QuestionStatisticsState::Item(item_idx) => sse::Event::default().event("update").data(
+                live_poll.lock().unwrap().items[item_idx]
+                    .render_statistics()
+                    .into_string(),
+            ),
+            QuestionStatisticsState::CloseSSE => sse::Event::default().event("close").data(""),
+        })
+        .map(Ok);
+
+    Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()))
+}
+
+pub async fn get_sse_leaderboard(
+    Path(poll_id): Path<ShortID>,
+    session: Session,
+) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
+    let lq = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    let auth_token = lq.lock().unwrap().auth_token.clone();
+    auth_token.verify(&session).await?;
+
+    let updates = lq.lock().unwrap().ch_players_updated_recv.clone();
+
+    let stream = WatchStream::new(updates)
+        .map(move |_| {
+            let mut player_vec: Vec<(String, u32)> = lq
+                .lock()
+                .unwrap()
+                .players
+                .iter()
+                .map(|(_, player)| (player.name.clone(), player.score))
+                .collect();
+
+            player_vec.sort_by(|a, b| b.1.cmp(&a.1));
+
+            let player_count_before_truncate = player_vec.len();
+            player_vec.truncate(50);
+
+            html! {
+                ."mt-10 text-2xl" { "Leaderboard" }
+                ."mb-2 text-sm text-slate-600 tracking-tight" {
+                    (player_count_before_truncate)
+                    " player" (if player_vec.len() != 1 { "s" } else { "" })
+                }
+                ."max-h-96 overflow-scroll" {
+                    @for (i, (name, score)) in player_vec.iter().enumerate() {
+                        ."flex justify-between" {
+                            ."flex items-center text-slate-900 gap-1" {
+                                ."text-xs font-semibold text-slate-600" { (i + 1) "." }
+                                (name)
+                            }
+                            ."text-slate-600 font-medium tracking-tight" { (score) }
+                        }
+                    }
+                }
+            }
+        })
+        .map(|html| {
+            sse::Event::default()
+                .event("update")
+                .data(html.into_string())
+        })
+        .map(Ok);
+
+    Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()))
+}
+
+pub async fn post_next_question(
+    Path(poll_id): Path<ShortID>,
+    session: Session,
+) -> Result<Response, AppError> {
+    let lq = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    let auth_token = lq.lock().unwrap().auth_token.clone();
+    auth_token.verify(&session).await?;
+
+    let next_question_send = lq.lock().unwrap().ch_next_question.clone();
+    let _ = next_question_send.send(()).await;
+
+    Ok(html! {
+        p { "Success" }
+    }
+    .into_response())
+}
+
+pub async fn post_previous_question(
+    Path(poll_id): Path<ShortID>,
+    session: Session,
+) -> Result<Response, AppError> {
+    let lq = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    let auth_token = lq.lock().unwrap().auth_token.clone();
+    auth_token.verify(&session).await?;
+
+    let previous_question_send = lq.lock().unwrap().ch_previous_question.clone();
+    let _ = previous_question_send.send(()).await;
+
+    Ok(html! {
+        p { "Success" }
+    }
+    .into_response())
+}
+
+pub fn render_sse_loading_spinner() -> Markup {
+    html! {
+        ."h-64 flex items-center justify-center" {
+            ."size-4" { (SvgIcon::Spinner.render()) }
+        }
+    }
+}
