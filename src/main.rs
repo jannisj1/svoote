@@ -4,6 +4,7 @@ extern crate log;
 mod app_error;
 mod auth_token;
 mod compliance;
+mod config;
 mod host;
 mod html_page;
 mod landing_page;

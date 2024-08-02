@@ -11,16 +11,14 @@ use tower_sessions::Session;
 use crate::{
     app_error::AppError,
     auth_token::AuthToken,
+    config::{
+        COLOR_PALETTE, MAX_FREE_TEXT_ANSWERS, POLL_MAX_ITEMS, POLL_MAX_MC_ANSWERS, POLL_MAX_STR_LEN,
+    },
     host, html_page,
-    live_item::COLOR_PALETTE,
     live_poll::{Answers, Item, LivePoll},
     live_poll_store::LIVE_POLL_STORE,
     svg_icons::SvgIcon,
 };
-
-const POLL_MAX_MC_ANSWERS: usize = 6;
-const POLL_MAX_ITEMS: usize = 32;
-const POLL_MAX_STR_LEN: usize = 1024;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct PollV1 {
@@ -63,7 +61,7 @@ pub async fn post_poll_page(session: Session) -> Result<Response, AppError> {
         None => {
             let poll = PollV1::from_session(&session).await?;
 
-            let (poll_id, lq) = LivePoll::new(poll.clone(), false, auth_token)?;
+            let (poll_id, lq) = LivePoll::new(poll.clone(), true, auth_token)?;
 
             session
                 .insert("live_poll_id", poll_id)
@@ -195,7 +193,7 @@ async fn render_edit_page(poll: PollV1) -> Result<Response, AppError> {
                                         }
                                     }
                                 },
-                                Answers::FreeText(_) => {
+                                Answers::FreeText(_, _) => {
                                     ."pl-2 flex gap-2 items-center text-slate-500" {
                                         ."size-4 shrink-0" { (SvgIcon::Edit3.render()) }
                                         "Free text: Participants can submit their own answer."
@@ -497,7 +495,7 @@ pub async fn post_item(
         "free_text" => {
             poll.items.push(Item {
                 question: String::new(),
-                answers: Answers::FreeText(Vec::new()),
+                answers: Answers::FreeText(MAX_FREE_TEXT_ANSWERS, Vec::new()),
             });
         }
         _ => {

@@ -1,22 +1,20 @@
 use std::sync::OnceLock;
 
+use crate::{
+    app_error::AppError,
+    config::COLOR_PALETTE,
+    html_page,
+    live_item::{FreeTextLiveAnswers, LiveAnswers, LiveItem, MultipleChoiceLiveAnswers},
+    live_poll_store::{ShortID, LIVE_POLL_STORE},
+    svg_icons::SvgIcon,
+    word_cloud::WordCloud,
+};
 use axum::{
     extract::Query,
     response::{IntoResponse, Redirect, Response},
 };
 use maud::{html, Markup};
 use serde::Deserialize;
-
-use crate::{
-    app_error::AppError,
-    html_page,
-    live_item::{
-        FreeTextLiveAnswers, LiveAnswers, LiveItem, MultipleChoiceLiveAnswers, COLOR_PALETTE,
-    },
-    live_poll_store::{ShortID, LIVE_POLL_STORE},
-    svg_icons::SvgIcon,
-    word_cloud::WordCloud,
-};
 
 #[derive(Deserialize)]
 pub struct GetStartPageParams {
@@ -34,7 +32,7 @@ pub async fn get_landing_page(
         }
     }
 
-    return Ok(html_page::render_html_page( "Svoote", html! {
+    return Ok(html_page::render_html_page("Svoote", html! {
         ."container mx-auto px-4" {
             form ."mt-28 mb-48 block flex flex-col items-center" {
                 ."mb-4 text-slate-700 text-sm" {
@@ -314,6 +312,7 @@ pub fn render_mc_demo(index: usize) -> Markup {
             ],
             player_answers: Vec::new(),
         }),
+        player_scores: Vec::new(),
     };
 
     return html! {
@@ -334,6 +333,7 @@ pub fn render_ft_demo(index: usize) -> Markup {
                 word_cloud: WordCloud::new(),
                 player_answers: Vec::new(),
             }),
+            player_scores: Vec::new(),
         };
 
         let answers = [

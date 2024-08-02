@@ -1,22 +1,20 @@
 use arrayvec::ArrayVec;
 use maud::{html, Markup};
+use smartstring::{Compact, SmartString};
 
 use crate::{
-    live_poll::Item, play::MAX_FREE_TEXT_ANSWERS, svg_icons::SvgIcon, word_cloud::WordCloud,
+    app_error::AppError,
+    config::{COLOR_PALETTE, MAX_FREE_TEXT_ANSWERS},
+    live_poll::Item,
+    live_poll_store::ShortID,
+    svg_icons::SvgIcon,
+    word_cloud::WordCloud,
 };
-
-pub const COLOR_PALETTE: &[&'static str] = &[
-    "bg-rose-500",
-    "bg-cyan-600",
-    "bg-lime-500",
-    "bg-fuchsia-600",
-    "bg-slate-600",
-    "bg-teal-500",
-];
 
 pub struct LiveItem {
     pub question: String,
     pub answers: LiveAnswers,
+    pub player_scores: Vec<usize>,
 }
 
 pub enum LiveAnswers {
@@ -32,10 +30,47 @@ pub struct MultipleChoiceLiveAnswers {
 
 pub struct FreeTextLiveAnswers {
     pub word_cloud: WordCloud,
-    pub player_answers: Vec<ArrayVec<String, MAX_FREE_TEXT_ANSWERS>>,
+    pub player_answers: Vec<ArrayVec<SmartString<Compact>, MAX_FREE_TEXT_ANSWERS>>,
 }
 
 impl LiveItem {
+    pub fn new(item: Item) -> Self {
+        let answers = match item.answers {
+            crate::live_poll::Answers::SingleChoice(answers) => {
+                LiveAnswers::SingleChoice(MultipleChoiceLiveAnswers {
+                    answer_counts: std::iter::repeat(0usize).take(answers.len()).collect(),
+                    answers,
+                    player_answers: Vec::new(),
+                })
+            }
+            crate::live_poll::Answers::FreeText(_, _) => {
+                LiveAnswers::FreeText(FreeTextLiveAnswers {
+                    word_cloud: WordCloud::new(),
+                    player_answers: Vec::new(),
+                })
+            }
+        };
+
+        return LiveItem {
+            question: item.question,
+            answers,
+            player_scores: Vec::new(),
+        };
+    }
+
+    pub fn add_player(&mut self) {
+        self.player_scores.push(0usize);
+
+        match &mut self.answers {
+            LiveAnswers::SingleChoice(mc_answers) => {
+                mc_answers.player_answers.push(None);
+            }
+            LiveAnswers::FreeText(ft_answer) => {
+                ft_answer.player_answers.push(ArrayVec::new());
+            }
+        }
+    }
+
     pub fn render_host_view(&self) -> Markup {
         return html! {
             ."mb-6 text-left text-xl text-slate-900 font-medium" { (self.question )}
@@ -121,27 +156,97 @@ impl LiveItem {
             }
         }
     }
+
+    pub fn submit_score(&mut self, player_index: usize, score: usize) {
+        self.player_scores[player_index] = score;
+    }
 }
 
-impl From<Item> for LiveItem {
-    fn from(item: Item) -> Self {
-        let answers = match item.answers {
-            crate::live_poll::Answers::SingleChoice(answers) => {
-                LiveAnswers::SingleChoice(MultipleChoiceLiveAnswers {
-                    answer_counts: std::iter::repeat(0usize).take(answers.len()).collect(),
-                    answers,
-                    player_answers: Vec::new(),
-                })
-            }
-            crate::live_poll::Answers::FreeText(_) => LiveAnswers::FreeText(FreeTextLiveAnswers {
-                word_cloud: WordCloud::new(),
-                player_answers: Vec::new(),
-            }),
-        };
+impl MultipleChoiceLiveAnswers {
+    // Returns true if the player scored points (then the leaderboard has to be updated)
+    pub fn submit_answer(
+        &mut self,
+        player_index: usize,
+        answer_index: usize,
+        start_time: tokio::time::Instant,
+    ) -> Result<usize, AppError> {
+        if answer_index >= self.answers.len() {
+            return Err(AppError::BadRequest(
+                "Answer index out of bounds".to_string(),
+            ));
+        }
 
-        return LiveItem {
-            question: item.question,
-            answers,
+        if self.player_answers[player_index].is_some() {
+            return Err(AppError::BadRequest(
+                "Already submitted an answers".to_string(),
+            ));
+        }
+
+        self.player_answers[player_index] = Some(answer_index);
+        self.answer_counts[answer_index] += 1;
+
+        // if answer is correct
+        if self.answers[answer_index].1 {
+            let mut elapsed = tokio::time::Instant::now() - start_time;
+            if elapsed > tokio::time::Duration::from_secs(60) {
+                elapsed = tokio::time::Duration::from_secs(60);
+            }
+
+            let fraction_points = (60_000 - elapsed.as_millis()) as f32 / 60_000f32;
+            return Ok(50usize + (fraction_points * 50f32) as usize);
+        }
+
+        return Ok(0usize);
+    }
+}
+
+impl FreeTextLiveAnswers {
+    pub fn submit_answer(
+        &mut self,
+        player_index: usize,
+        answer: SmartString<Compact>,
+    ) -> Result<(), AppError> {
+        if self.player_answers[player_index].len() >= MAX_FREE_TEXT_ANSWERS {
+            return Err(AppError::BadRequest(
+                "Already submitted the maximum number of free text answers ({})".to_string(),
+            ));
+        }
+
+        self.word_cloud.insert(&answer);
+        self.player_answers[player_index].push(answer);
+
+        return Ok(());
+    }
+
+    pub fn render_form(&self, player_index: usize, poll_id: ShortID) -> Markup {
+        let answers = &self.player_answers[player_index];
+
+        return html! {
+            form #free-text-form ."flex flex-col items-center" {
+                ."w-full mb-2" {
+                    @for (i, answer) in answers.iter().enumerate() {
+                        ."mb-2 text-lg text-slate-700" {
+                            (i + 1) ". " (answer)
+                        }
+                    }
+                }
+                @if answers.len() < MAX_FREE_TEXT_ANSWERS {
+                    input type="text" name="free_text_answer" autofocus
+                        ."w-full mb-4 text-lg px-2 py-1 border-2 border-slate-500 rounded-lg outline-none hover:border-indigo-600 focus:border-indigo-600 transition"
+                        placeholder="Answer";
+                    button
+                        hx-post={ "/submit_free_text_answer/" (poll_id) }
+                        hx-target="#free-text-form"
+                        hx-swap="outerHTML"
+                        ."relative group px-4 py-2 text-slate-100 tracking-wide font-semibold bg-slate-700 rounded-md hover:bg-slate-800 transition"
+                    {
+                        ."group-[.htmx-request]:opacity-0" { "Submit answer" }
+                        ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
+                            ."size-4" { (SvgIcon::Spinner.render()) }
+                        }
+                    }
+                }
+            }
         };
     }
 }

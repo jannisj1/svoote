@@ -58,7 +58,7 @@ impl LivePollStore {
             .map_err(|e| AppError::DatabaseError(e))?
         {
             if let Some(lq) = self.get(poll_id) {
-                if lq.lock().unwrap().auth_token.token == auth_token.token {
+                if lq.lock().unwrap().host_auth_token.token == auth_token.token {
                     return Ok(Some((poll_id, lq)));
                 }
             }

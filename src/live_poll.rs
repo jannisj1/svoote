@@ -1,7 +1,5 @@
-use arrayvec::ArrayVec;
-use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tokio::select;
 use tokio::sync::{mpsc, oneshot, watch};
@@ -10,8 +8,10 @@ use uuid::Uuid;
 
 use crate::app_error::AppError;
 use crate::auth_token::AuthToken;
-use crate::live_item::{LiveAnswers, LiveItem};
+use crate::config::LIVE_POLL_PARTICIPANT_LIMIT;
+use crate::live_item::LiveItem;
 use crate::live_poll_store::{ShortID, LIVE_POLL_STORE};
+use crate::play::Player;
 use crate::polls::PollV1;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -23,22 +23,16 @@ pub struct Item {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Answers {
     SingleChoice(Vec<(String, bool)>),
-    FreeText(Vec<String>),
-}
-
-pub struct Player {
-    pub name: String,
-    pub score: u32,
-    pub player_index: usize,
+    FreeText(usize, Vec<String>), // Max answers per User, correct answers
 }
 
 pub struct LivePoll {
-    pub auth_token: AuthToken,
+    pub host_auth_token: AuthToken,
     pub items: Vec<LiveItem>,
-    pub players: BTreeMap<Uuid, Player>,
-    pub player_names: BTreeSet<String>,
+    pub player_indices: BTreeMap<Uuid, usize>,
+    pub players: Vec<Player>,
     pub current_item_idx: usize,
-    pub current_item_start_time: tokio::time::Instant,
+    current_item_start_time: tokio::time::Instant,
     pub ch_start_signal: Option<oneshot::Sender<()>>,
     pub ch_players_updated_send: watch::Sender<()>,
     pub ch_players_updated_recv: watch::Receiver<()>,
@@ -49,25 +43,6 @@ pub struct LivePoll {
     pub ch_previous_question: mpsc::Sender<()>,
     pub leaderboard_enabled: bool,
 }
-
-static NAMES: &'static [&'static str] = &[
-    "Anonymous pig 🐷",
-    "Anonymous poodle 🐩",
-    "Anonymous lion 🦁",
-    "Anonymous unicorn 🦄",
-    "Anonymous zebra 🦓",
-    "Anonymous cow 🐮",
-    "Anonymous orangutan 🦧",
-    "Anonmyous monkey 🐒",
-    "Anonymous rat 🐀",
-    "Anonymous chipmunk 🐿️",
-    "Anonymous beaver 🦫",
-    "Anonymous bear 🐻",
-    "Anonymous koala 🐨",
-    "Anonymous panda 🐼",
-];
-
-pub const LIVE_POLL_PARTICIPANT_LIMIT: usize = 200usize;
 
 impl LivePoll {
     pub fn new(
@@ -84,13 +59,17 @@ impl LivePoll {
         let (send_next_question, mut recv_next_question) = mpsc::channel(4);
         let (send_previous_question, mut recv_previous_question) = mpsc::channel(4);
 
-        let live_items: Vec<LiveItem> = poll.items.into_iter().map(|x| x.into()).collect();
+        let live_items: Vec<LiveItem> = poll
+            .items
+            .into_iter()
+            .map(|item| LiveItem::new(item))
+            .collect();
 
         let (poll_id, live_poll) = LIVE_POLL_STORE.insert(LivePoll {
-            auth_token,
+            host_auth_token: auth_token,
             items: live_items,
-            players: BTreeMap::new(),
-            player_names: BTreeSet::new(),
+            player_indices: BTreeMap::new(),
+            players: Vec::new(),
             current_item_idx: 0usize,
             current_item_start_time: Instant::now(),
             ch_start_signal: Some(send_start_signal),
@@ -167,78 +146,51 @@ impl LivePoll {
         return Ok((poll_id, return_live_poll));
     }
 
-    pub fn join(&mut self, auth_token: &AuthToken) -> Option<String> {
-        if let Some(player) = self.players.get(&auth_token.token) {
-            return Some(player.name.clone());
+    pub fn get_or_create_player(&mut self, auth_token: &AuthToken) -> Option<usize> {
+        if let Ok(player_index) = self.get_player_index(auth_token) {
+            return Some(player_index);
         }
 
         if self.players.len() >= LIVE_POLL_PARTICIPANT_LIMIT {
             return None;
         }
 
-        let mut new_name = Self::get_random_name();
-
-        if self.player_names.contains(&new_name) {
-            let mut name_number = 2usize;
-
-            while self
-                .player_names
-                .contains(&format!("{} ({})", new_name, name_number))
-            {
-                name_number += 1;
-            }
-
-            new_name = format!("{} ({})", new_name, name_number);
-        }
-
         let new_player_idx = self.players.len();
+        let new_player = Player::new(new_player_idx);
 
-        self.players.insert(
-            auth_token.token.clone(),
-            Player {
-                name: new_name.clone(),
-                score: 0u32,
-                player_index: new_player_idx,
-            },
-        );
-
-        self.player_names.insert(new_name.clone());
+        self.player_indices
+            .insert(auth_token.token.clone(), new_player_idx);
+        self.players.push(new_player);
 
         for item in &mut self.items {
-            match &mut item.answers {
-                LiveAnswers::SingleChoice(mc_answers) => {
-                    mc_answers.player_answers.push(None);
-                }
-                LiveAnswers::FreeText(ft_answer) => {
-                    ft_answer.player_answers.push(ArrayVec::new());
-                }
-            }
+            item.add_player();
         }
 
         let _ = self.ch_players_updated_send.send(());
 
-        return Some(new_name);
+        return Some(new_player_idx);
     }
 
-    pub fn get_player<'a>(
-        &'a mut self,
-        auth_token: &AuthToken,
-    ) -> Result<&'a mut Player, AppError> {
+    pub fn get_player_index(&self, auth_token: &AuthToken) -> Result<usize, AppError> {
         return self
-            .players
-            .get_mut(&auth_token.token)
+            .player_indices
+            .get(&auth_token.token)
+            .map(|index| *index)
             .ok_or(AppError::BadRequest(
                 "Player with this auth token did not join the poll yet".to_string(),
             ));
     }
 
-    fn get_random_name() -> String {
-        let random_index = thread_rng().gen_range(0usize..NAMES.len());
-        NAMES[random_index].to_string()
+    pub fn get_player<'a>(&'a self, player_index: usize) -> &'a Player {
+        return &self.players[player_index];
     }
 
     pub fn get_current_item<'a>(&'a mut self) -> &'a mut LiveItem {
         return &mut self.items[self.current_item_idx];
+    }
+
+    pub fn get_current_item_start_time(&self) -> tokio::time::Instant {
+        return self.current_item_start_time.clone();
     }
 }
 

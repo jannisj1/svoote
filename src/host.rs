@@ -31,7 +31,6 @@ pub async fn render_live_host(poll_id: ShortID) -> Result<Response, AppError> {
         .build();
 
     Ok(html_page::render_html_page(
-
         "Svoote",
         html! {
             ."mt-8 grid grid-cols-[3fr_1fr] gap-16 mb-16" {
@@ -56,11 +55,9 @@ pub async fn render_live_host(poll_id: ShortID) -> Result<Response, AppError> {
                     ."w-full flex justify-center" {
                         (PreEscaped(join_qr_code_svg))
                     }
-                    /*@if params.leaderboard_enabled.unwrap_or(false) {
-                        div hx-ext="sse" sse-connect={"/sse/leaderboard/" (poll_id) } sse-close="close" {
-                            div sse-swap="update" { }
-                        }
-                    }*/
+                    div hx-ext="sse" sse-connect={"/sse/leaderboard/" (poll_id) } sse-close="close" {
+                        div sse-swap="update" { }
+                    }
                 }
             }
         }, true
@@ -73,7 +70,7 @@ pub async fn get_sse_host_question(
     session: Session,
 ) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
     let lq = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let auth_token = lq.lock().unwrap().auth_token.clone();
+    let auth_token = lq.lock().unwrap().host_auth_token.clone();
     auth_token.verify(&session).await?;
 
     let updates = lq.lock().unwrap().ch_question_state.clone();
@@ -161,7 +158,7 @@ pub async fn get_live_statistics(
     session: Session,
 ) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
     let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let auth_token = live_poll.lock().unwrap().auth_token.clone();
+    let auth_token = live_poll.lock().unwrap().host_auth_token.clone();
     auth_token.verify(&session).await?;
 
     let ch_question_statistics = live_poll
@@ -189,41 +186,30 @@ pub async fn get_sse_leaderboard(
     Path(poll_id): Path<ShortID>,
     session: Session,
 ) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
-    let lq = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let auth_token = lq.lock().unwrap().auth_token.clone();
+    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    let auth_token = live_poll.lock().unwrap().host_auth_token.clone();
     auth_token.verify(&session).await?;
 
-    let updates = lq.lock().unwrap().ch_players_updated_recv.clone();
+    let update_channel = live_poll.lock().unwrap().ch_players_updated_recv.clone();
 
-    let stream = WatchStream::new(updates)
+    let stream = WatchStream::new(update_channel)
         .map(move |_| {
-            let mut player_vec: Vec<(String, u32)> = lq
-                .lock()
-                .unwrap()
-                .players
-                .iter()
-                .map(|(_, player)| (player.name.clone(), player.score))
-                .collect();
-
-            player_vec.sort_by(|a, b| b.1.cmp(&a.1));
-
-            let player_count_before_truncate = player_vec.len();
-            player_vec.truncate(50);
+            let live_poll = live_poll.lock().unwrap();
 
             html! {
                 ."mt-10 text-2xl" { "Leaderboard" }
                 ."mb-2 text-sm text-slate-600 tracking-tight" {
-                    (player_count_before_truncate)
-                    " player" (if player_vec.len() != 1 { "s" } else { "" })
+                    (live_poll.players.len())
+                    " player" (if live_poll.players.len() != 1 { "s" } else { "" })
                 }
                 ."max-h-96 overflow-scroll" {
-                    @for (i, (name, score)) in player_vec.iter().enumerate() {
+                    @for (_player_index, player) in live_poll.players.iter().enumerate() {
                         ."flex justify-between" {
                             ."flex items-center text-slate-900 gap-1" {
-                                ."text-xs font-semibold text-slate-600" { (i + 1) "." }
-                                (name)
+                                ."size-5" { (player.get_avatar_svg()) }
+                                (player.get_name())
                             }
-                            ."text-slate-600 font-medium tracking-tight" { (score) }
+                            ."text-slate-600 font-medium tracking-tight" { (0) }
                         }
                     }
                 }
@@ -244,7 +230,7 @@ pub async fn post_next_question(
     session: Session,
 ) -> Result<Response, AppError> {
     let lq = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let auth_token = lq.lock().unwrap().auth_token.clone();
+    let auth_token = lq.lock().unwrap().host_auth_token.clone();
     auth_token.verify(&session).await?;
 
     let next_question_send = lq.lock().unwrap().ch_next_question.clone();
@@ -261,7 +247,7 @@ pub async fn post_previous_question(
     session: Session,
 ) -> Result<Response, AppError> {
     let lq = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let auth_token = lq.lock().unwrap().auth_token.clone();
+    let auth_token = lq.lock().unwrap().host_auth_token.clone();
     auth_token.verify(&session).await?;
 
     let previous_question_send = lq.lock().unwrap().ch_previous_question.clone();

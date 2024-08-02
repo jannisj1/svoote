@@ -1,9 +1,10 @@
 use crate::{
     app_error::AppError,
     auth_token::AuthToken,
+    config::{LIVE_POLL_PARTICIPANT_LIMIT, MAX_FREE_TEXT_ANSWERS},
     html_page,
     live_item::LiveAnswers,
-    live_poll::{QuestionAreaState, LIVE_POLL_PARTICIPANT_LIMIT},
+    live_poll::QuestionAreaState,
     live_poll_store::{ShortID, LIVE_POLL_STORE},
     svg_icons::SvgIcon,
 };
@@ -15,13 +16,78 @@ use axum::{
 use futures::Stream;
 use maud::{html, Markup, PreEscaped};
 use serde::Deserialize;
+use smartstring::{Compact, SmartString};
 use std::convert::Infallible;
-use tokio::time::{Duration, Instant};
+use std::fmt::Write;
 use tokio_stream::wrappers::WatchStream;
 use tokio_stream::StreamExt as _;
 use tower_sessions::Session;
 
-pub const MAX_FREE_TEXT_ANSWERS: usize = 3;
+// These awesome SVG-avatars were obtained from dicebear.com (Adventurer by Lisa Wischofsky)
+// They are published under the CC BY 4.0 license (https://creativecommons.org/licenses/by/4.0/)
+const AVATARS: &[(&'static str, &'static str)] = &[
+    ("Zoey", include_str!("../avatars/zoey.svg")),
+    ("Tigger", include_str!("../avatars/tigger.svg")),
+    ("Bubba", include_str!("../avatars/bubba.svg")),
+    ("Spooky", include_str!("../avatars/spooky.svg")),
+    ("Sadie", include_str!("../avatars/sadie.svg")),
+    ("George", include_str!("../avatars/george.svg")),
+    ("Zoe", include_str!("../avatars/zoe.svg")),
+    ("Baby", include_str!("../avatars/baby.svg")),
+    ("Sammy", include_str!("../avatars/sammy.svg")),
+    ("Cookie", include_str!("../avatars/cookie.svg")),
+    ("Lola", include_str!("../avatars/lola.svg")),
+    ("Snickers", include_str!("../avatars/snickers.svg")),
+    ("Oliver", include_str!("../avatars/oliver.svg")),
+    ("Willow", include_str!("../avatars/willow.svg")),
+    ("Whiskers", include_str!("../avatars/whiskers.svg")),
+    ("Samantha", include_str!("../avatars/samantha.svg")),
+    ("Cuddles", include_str!("../avatars/cuddles.svg")),
+    ("Sassy", include_str!("../avatars/sassy.svg")),
+    ("Callie", include_str!("../avatars/callie.svg")),
+    ("Ginger", include_str!("../avatars/ginger.svg")),
+];
+
+pub struct Player {
+    generated_name: SmartString<Compact>,
+    custom_name: Option<SmartString<Compact>>,
+    avatar_index: usize,
+}
+
+impl Player {
+    pub fn new(player_index: usize) -> Self {
+        let avatar_index = player_index % AVATARS.len();
+        let duplicate_name_number = ((player_index - avatar_index) / AVATARS.len()) + 1;
+        let mut generated_name = SmartString::<Compact>::new();
+
+        if duplicate_name_number >= 2 {
+            let _ = write!(
+                generated_name,
+                "{} ({})",
+                AVATARS[avatar_index].0, duplicate_name_number
+            );
+        } else {
+            generated_name.push_str(AVATARS[avatar_index].0);
+        }
+
+        return Self {
+            generated_name,
+            custom_name: None,
+            avatar_index,
+        };
+    }
+
+    pub fn get_name<'a>(&'a self) -> &'a SmartString<Compact> {
+        return match &self.custom_name {
+            Some(name) => name,
+            None => &self.generated_name,
+        };
+    }
+
+    pub fn get_avatar_svg(&self) -> PreEscaped<&'static str> {
+        return PreEscaped(AVATARS[self.avatar_index].1);
+    }
+}
 
 #[derive(Deserialize)]
 pub struct PlayPageParams {
@@ -33,7 +99,7 @@ pub async fn get_play_page(
     session: Session,
 ) -> Result<Response, AppError> {
     let live_poll = match LIVE_POLL_STORE.get(params.c) {
-        Some(lq) => lq,
+        Some(live_poll) => live_poll,
         None => {
             return Ok(
                 html_page::render_html_page("Svoote", render_poll_finished(), true).into_response(),
@@ -42,30 +108,34 @@ pub async fn get_play_page(
     };
 
     let auth_token = AuthToken::get_or_create(&session).await?;
-    let player_name = live_poll.lock().unwrap().join(&auth_token);
+    let mut live_poll = live_poll.lock().unwrap();
 
-    Ok(html_page::render_html_page(
-
+    return Ok(html_page::render_html_page(
         "Svoote",
-        html! {
-            @if let Some(player_name) = player_name {
-                div hx-ext="sse" sse-connect={ "/sse/play/" (params.c) } sse-close="close" {
-                    div sse-swap="update" { (crate::host::render_sse_loading_spinner()) }
-                }
+        match live_poll.get_or_create_player(&auth_token) {
+            Some(player_index) => {
+                html! {
+                    div hx-ext="sse" sse-connect={ "/sse/play/" (params.c) } sse-close="close" {
+                        div sse-swap="update" { (crate::host::render_sse_loading_spinner()) }
+                    }
 
-                @if live_poll.lock().unwrap().leaderboard_enabled {
-                    ."mt-4 mb-16 text-slate-500 text-sm" {
-                        "Leaderboard is enabled. Playing as `" (player_name) "`."
+                    @if live_poll.leaderboard_enabled {
+                        ."mt-4 mb-16 text-slate-500 text-sm" {
+                            "Leaderboard is enabled. Playing as `" (live_poll.get_player(player_index).get_name()) "`."
+                        }
                     }
                 }
-            } @else {
-                ."my-36 text-center text-slate-500" {
-                    "The participant limit for this poll was reched (" (LIVE_POLL_PARTICIPANT_LIMIT) " participants)."
+            }
+            None => {
+                html! {
+                    ."my-36 text-center text-slate-500" {
+                        "The participant limit for this poll was reached (" (LIVE_POLL_PARTICIPANT_LIMIT) " participants)."
+                    }
                 }
             }
-        }, true
-    )
-    .into_response())
+        },
+        true
+    ).into_response());
 }
 
 pub async fn get_sse_play(
@@ -75,16 +145,7 @@ pub async fn get_sse_play(
     let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
     let updates = live_poll.lock().unwrap().ch_question_state.clone();
     let auth_token = AuthToken::get_or_create(&session).await?;
-    let player_index = {
-        let live_poll = live_poll.lock().unwrap();
-        live_poll
-            .players
-            .get(&auth_token.token)
-            .ok_or(AppError::BadRequest(
-                "This player did not join the poll yet".to_string(),
-            ))?
-            .player_index
-    };
+    let player_index = live_poll.lock().unwrap().get_player_index(&auth_token)?;
 
     let stream = WatchStream::new(updates)
         .map(move |state| match state {
@@ -92,7 +153,8 @@ pub async fn get_sse_play(
             .event("update")
             .data(""),
             QuestionAreaState::Item { item_idx, is_last_question: _ } => {
-                let live_poll = live_poll.lock().unwrap();
+                let mut live_poll = live_poll.lock().unwrap();
+                let current_item = live_poll.get_current_item();
 
                 sse::Event::default()
                 .event("update")
@@ -100,7 +162,7 @@ pub async fn get_sse_play(
                     html! {
                         ."mb-2 flex gap-6 text-sm text-slate-500" {
                             "Question " (item_idx + 1)
-                            @match &live_poll.items[item_idx].answers {
+                            @match &current_item.answers {
                                 LiveAnswers::SingleChoice(_mc_answers) => {
                                     ."flex gap-1 items-center" {
                                         ."size-4" { (SvgIcon::CheckSquare.render()) }
@@ -116,9 +178,9 @@ pub async fn get_sse_play(
                             }
                         }
                         ."mb-4 text-lg text-slate-700" {
-                            (live_poll.items[item_idx].question)
+                            (current_item.question)
                         }
-                        @match &live_poll.items[item_idx].answers {
+                        @match &current_item.answers {
                             LiveAnswers::SingleChoice(mc_answers) => {
                                 @let current_mc_answer = &mc_answers.player_answers[player_index];
                                 form ."block w-full" {
@@ -160,13 +222,10 @@ pub async fn get_sse_play(
                                 }
                             },
                             LiveAnswers::FreeText(ft_answers) => {
-                                (render_free_text_form(poll_id, &ft_answers.player_answers[player_index]))
+                                (ft_answers.render_form(player_index, poll_id))
                             }
                         }
                         ."my-36 text-sm text-slate-500 text-center" {
-                            p ."mb-2" {
-                                "This poll is powered by svoote.com"
-                            }
                             p ."" {
                                 "Svoote does not assume responsibility for the polls created on this website."
                             }
@@ -212,37 +271,24 @@ pub async fn post_mc_answer(
     let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
     let mut live_poll = live_poll.lock().unwrap();
 
-    let player_idx = live_poll.get_player(&auth_token)?.player_index;
+    let player_index = live_poll.get_player_index(&auth_token)?;
+    let start_time = live_poll.get_current_item_start_time();
 
-    if let LiveAnswers::SingleChoice(mc_answers) = &mut live_poll.get_current_item().answers {
-        if form.answer_idx >= mc_answers.answers.len() {
-            return Err(AppError::BadRequest("answer_idx out of bounds".to_string()));
-        }
-
-        if mc_answers.player_answers[player_idx].is_some() {
+    let score =
+        if let LiveAnswers::SingleChoice(mc_answers) = &mut live_poll.get_current_item().answers {
+            mc_answers.submit_answer(player_index, form.answer_idx, start_time)?
+        } else {
             return Err(AppError::BadRequest(
-                "Already submitted an answers".to_string(),
+                "This is not a multiple choice item".to_string(),
             ));
-        }
+        };
 
-        mc_answers.player_answers[player_idx] = Some(form.answer_idx);
-        mc_answers.answer_counts[form.answer_idx] += 1;
+    if score != 0 {
+        live_poll
+            .get_current_item()
+            .submit_score(player_index, score);
 
-        if mc_answers.answers[form.answer_idx].1 {
-            let mut elapsed = Instant::now() - live_poll.current_item_start_time;
-            if elapsed > Duration::from_secs(60) {
-                elapsed = Duration::from_secs(60);
-            }
-
-            let fraction_points = (60_000 - elapsed.as_millis()) as f32 / 60_000f32;
-            live_poll.get_player(&auth_token)?.score += 50 + (fraction_points * 50f32) as u32;
-
-            let _ = live_poll.ch_players_updated_send.send(());
-        }
-    } else {
-        return Err(AppError::BadRequest(
-            "This is not a MC-question".to_string(),
-        ));
+        let _ = live_poll.ch_players_updated_send.send(());
     }
 
     live_poll
@@ -258,7 +304,7 @@ pub async fn post_mc_answer(
 
 #[derive(Deserialize)]
 pub struct PostFreeTextAnswerForm {
-    pub free_text_answer: String,
+    pub free_text_answer: SmartString<Compact>,
 }
 
 pub async fn post_free_text_answer(
@@ -269,27 +315,18 @@ pub async fn post_free_text_answer(
     let auth_token = AuthToken::get_or_create(&session).await?;
     let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
     let mut live_poll = live_poll.lock().unwrap();
-    let player_idx = live_poll.get_player(&auth_token)?.player_index;
 
-    let response = if let LiveAnswers::FreeText(ft_answers) =
-        &mut live_poll.get_current_item().answers
-    {
-        if ft_answers.player_answers[player_idx].len() >= MAX_FREE_TEXT_ANSWERS {
-            return Err(AppError::BadRequest(format!(
-                "Already submitted the maximum number of free text answers ({})",
-                MAX_FREE_TEXT_ANSWERS
-            )));
-        }
+    let player_index = live_poll.get_player_index(&auth_token)?;
 
-        ft_answers.player_answers[player_idx].push(form_data.free_text_answer.clone());
-        ft_answers.word_cloud.insert(&form_data.free_text_answer);
-
-        Ok(render_free_text_form(poll_id, &ft_answers.player_answers[player_idx]).into_response())
-    } else {
-        return Err(AppError::BadRequest(
-            "This is not a free text answer".to_string(),
-        ));
-    };
+    let response =
+        if let LiveAnswers::FreeText(ft_answers) = &mut live_poll.get_current_item().answers {
+            ft_answers.submit_answer(player_index, form_data.free_text_answer)?;
+            ft_answers.render_form(player_index, poll_id)
+        } else {
+            return Err(AppError::BadRequest(
+                "This is not a free text item".to_string(),
+            ));
+        };
 
     live_poll
         .ch_question_statistics_send
@@ -297,7 +334,7 @@ pub async fn post_free_text_answer(
             return true;
         });
 
-    return response;
+    return Ok(response.into_response());
 }
 
 fn render_poll_finished() -> Markup {
@@ -307,35 +344,4 @@ fn render_poll_finished() -> Markup {
             "Thank you for participating on svoote.com."
         }
     }
-}
-
-fn render_free_text_form(poll_id: ShortID, answers: &[String]) -> Markup {
-    return html! {
-        form #free-text-form ."flex flex-col items-center" {
-            ."w-full mb-2" {
-                @for (i, answer) in answers.iter().enumerate() {
-                    ."mb-2 text-lg text-slate-700" {
-                        (i + 1) ". " (answer)
-                    }
-                }
-            }
-            @if answers.len() < MAX_FREE_TEXT_ANSWERS {
-                input type="text" name="free_text_answer" autofocus
-                    ."w-full mb-4 text-lg px-2 py-1 border-2 border-slate-500 rounded-lg outline-none hover:border-indigo-600 focus:border-indigo-600 transition"
-                    placeholder="Answer";
-                button
-                    hx-post={ "/submit_free_text_answer/" (poll_id) }
-                    hx-target="#free-text-form"
-                    hx-swap="outerHTML"
-                    ."relative group px-4 py-2 text-slate-100 tracking-wide font-semibold bg-slate-700 rounded-md hover:bg-slate-800 transition"
-                {
-                    ."group-[.htmx-request]:opacity-0" { "Submit answer" }
-                    ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
-                        ."size-4" { (SvgIcon::Spinner.render()) }
-                    }
-                }
-            }
-        }
-
-    };
 }
