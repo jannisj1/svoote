@@ -23,10 +23,10 @@ use tokio_stream::wrappers::WatchStream;
 use tokio_stream::StreamExt as _;
 use tower_sessions::Session;
 
-// These awesome SVG-avatars were obtained from dicebear.com (Adventurer by Lisa Wischofsky)
+// These awesome SVG-avatars were obtained from dicebear.com (Adventurer Neutral by Lisa Wischofsky)
 // They are published under the CC BY 4.0 license (https://creativecommons.org/licenses/by/4.0/)
 const AVATARS: &[(&'static str, &'static str)] = &[
-    ("Zoey", include_str!("../avatars/zoey.svg")),
+    /* ("Zoey", include_str!("../avatars/zoey.svg")),
     ("Tigger", include_str!("../avatars/tigger.svg")),
     ("Bubba", include_str!("../avatars/bubba.svg")),
     ("Spooky", include_str!("../avatars/spooky.svg")),
@@ -45,7 +45,27 @@ const AVATARS: &[(&'static str, &'static str)] = &[
     ("Cuddles", include_str!("../avatars/cuddles.svg")),
     ("Sassy", include_str!("../avatars/sassy.svg")),
     ("Callie", include_str!("../avatars/callie.svg")),
-    ("Ginger", include_str!("../avatars/ginger.svg")),
+    ("Ginger", include_str!("../avatars/ginger.svg")),*/
+    ("Rascal", include_str!("../avatars/rascal_square.svg")),
+    ("Chester", include_str!("../avatars/chester_square.svg")),
+    ("Coco", include_str!("../avatars/coco_square.svg")),
+    ("Bella", include_str!("../avatars/bella_square.svg")),
+    ("Gizmo", include_str!("../avatars/gizmo_square.svg")),
+    ("Kitty", include_str!("../avatars/kitty_square.svg")),
+    ("Daisy", include_str!("../avatars/daisy_square.svg")),
+    ("Angel", include_str!("../avatars/angel_square.svg")),
+    ("Bubba", include_str!("../avatars/bubba_square.svg")),
+    ("Boots", include_str!("../avatars/boots_square.svg")),
+    ("Patches", include_str!("../avatars/patches_square.svg")),
+    ("Simon", include_str!("../avatars/simon_square.svg")),
+    ("Sugar", include_str!("../avatars/sugar_square.svg")),
+    ("Gracie", include_str!("../avatars/gracie_square.svg")),
+    ("Princess", include_str!("../avatars/princess_square.svg")),
+    ("Dusty", include_str!("../avatars/dusty_square.svg")),
+    ("Luna", include_str!("../avatars/luna_square.svg")),
+    ("Baby", include_str!("../avatars/baby_square.svg")),
+    ("Milo", include_str!("../avatars/milo_square.svg")),
+    ("Jasmine", include_str!("../avatars/jasmine_square.svg")),
 ];
 
 pub struct Player {
