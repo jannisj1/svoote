@@ -209,49 +209,50 @@ async fn render_edit_page(poll: PollV1) -> Result<Response, AppError> {
                         }
                     }
                 }
-                button
-                    popovertarget="additempopover"
-                    disabled[poll.items.len() == POLL_MAX_ITEMS]
-                    ."group mb-6 flex justify-start items-center gap-3 transition"
-                {
-                    ."relative size-7 rounded-full bg-slate-600 group-hover:bg-slate-800" {
-                        ."absolute inset-0 size-full flex justify-center items-center text-slate-50" { ."size-4" { (SvgIcon::Plus.render()) } }
-                    }
-                    ."text-sm text-slate-500 group-hover:text-slate-700" {
+                ."" {
+                    ."mb-1 text-slate-600 group-hover:text-slate-700 group-focus-within:hidden" {
                         "Add item"
                     }
-                }
-                div id="additempopover" popover {
-                    ."flex justify-between gap-4" {
-                        input #itemtype-single-choice type="hidden" name="item_type" value="single_choice";
-                        button
-                            hx-post="/poll/item"
-                            hx-include="#itemtype-single-choice"
-                            hx-select="#pollEditingArea"
-                            hx-target="#pollEditingArea"
-                            hx-swap="outerHTML"
-                            ."group flex justify-center items-center flex-1 px-4 py-3 flex justify-center text-slate-700 font-medium border shadow rounded hover:shadow-none hover:bg-slate-100 transition"
+                    @if poll.items.len() < POLL_MAX_ITEMS {
+                        ."flex justify-start items-center gap-3"
                         {
-                            ."flex group-[.htmx-request]:hidden items-center justify-center gap-2" {
-                                ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) }
-                                "Add multiple choice"
+                            ."relative size-7 rounded-full bg-slate-600 group-hover:bg-slate-800 group-focus-within:bg-slate-800" {
+                                ."absolute inset-0 size-full flex justify-center items-center text-slate-50" { ."size-4" { (SvgIcon::Plus.render()) } }
                             }
-                            ."hidden size-4 group-[.htmx-request]:block" { (SvgIcon::Spinner.render()) }
+                            input #itemtype-single-choice type="hidden" name="item_type" value="single_choice";
+                            button
+                                hx-post="/poll/item"
+                                hx-include="#itemtype-single-choice"
+                                hx-select="#pollEditingArea"
+                                hx-target="#pollEditingArea"
+                                hx-swap="outerHTML"
+                                ."group flex justify-center items-center px-3.5 py-2 text-slate-600 border rounded hover:bg-slate-100 transition"
+                            {
+                                ."flex group-[.htmx-request]:hidden items-center justify-center gap-2" {
+                                    ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) }
+                                    "Multiple choice"
+                                }
+                                ."hidden size-4 group-[.htmx-request]:block" { (SvgIcon::Spinner.render()) }
+                            }
+                            input #itemtype-free-text type="hidden" name="item_type" value="free_text";
+                            button
+                                hx-post="/poll/item"
+                                hx-include="#itemtype-free-text"
+                                hx-select="#pollEditingArea"
+                                hx-target="#pollEditingArea"
+                                hx-swap="outerHTML"
+                                ."group flex justify-center items-center px-3.5 py-2 text-slate-600 border rounded hover:bg-slate-100 transition"
+                            {
+                                ."flex group-[.htmx-request]:hidden items-center justify-center gap-2" {
+                                    ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
+                                    "Free text"
+                                }
+                                ."hidden size-4 group-[.htmx-request]:block" { (SvgIcon::Spinner.render()) }
+                            }
                         }
-                        input #itemtype-free-text type="hidden" name="item_type" value="free_text";
-                        button
-                            hx-post="/poll/item"
-                            hx-include="#itemtype-free-text"
-                            hx-select="#pollEditingArea"
-                            hx-target="#pollEditingArea"
-                            hx-swap="outerHTML"
-                            ."group flex justify-center items-center flex-1 px-4 py-3 flex justify-center text-slate-700 font-medium border shadow rounded hover:shadow-none hover:bg-slate-100 transition"
-                        {
-                            ."flex group-[.htmx-request]:hidden items-center justify-center gap-2" {
-                                ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
-                                "Add free text"
-                            }
-                            ."hidden size-4 group-[.htmx-request]:block" { (SvgIcon::Spinner.render()) }
+                    } @else {
+                        ."text-sm text-slate-500" {
+                            "Maximum number of items reached"
                         }
                     }
                 }
