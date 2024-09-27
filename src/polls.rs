@@ -3,9 +3,9 @@ use axum::{
     response::{IntoResponse, Response},
     Form, Json,
 };
-use maud::{html, Markup, PreEscaped};
-use qrcode::{render::svg, QrCode};
+use maud::{html, Markup};
 use serde::{Deserialize, Serialize};
+use smartstring::{Compact, SmartString};
 use tower_sessions::Session;
 
 use crate::{
@@ -24,6 +24,9 @@ use crate::{
 pub struct PollV1 {
     pub items: Vec<Item>,
     pub version: usize,
+    pub leaderboard_enabled: bool,
+    pub question_time_limit_seconds: Option<usize>,
+    pub allow_custom_names: bool,
 }
 
 impl PollV1 {
@@ -31,6 +34,9 @@ impl PollV1 {
         return PollV1 {
             items: Vec::new(),
             version: 1,
+            leaderboard_enabled: false,
+            question_time_limit_seconds: None,
+            allow_custom_names: true,
         };
     }
 
@@ -95,58 +101,58 @@ pub async fn get_poll_page(session: Session) -> Result<Response, AppError> {
 }
 
 async fn render_edit_page(poll: PollV1) -> Result<Response, AppError> {
-    let join_url = format!("https://svoote.com");
-    let join_qr_code_svg = QrCode::new(&join_url)
-        .map_err(|_| AppError::OtherInternalServerError("Error generating QR-code".to_string()))?
-        .render()
-        .min_dimensions(200, 200)
-        .dark_color(svg::Color("#94a3b8")) // slate-400
-        .light_color(svg::Color("#FFFFFF"))
-        .build();
-
-    return Ok(html_page::render_html_page("Svoote - Create poll", html! {
-        #pollEditingArea."mt-8 grid grid-cols-[3fr_1fr] gap-16 mb-16" {
-            ."" {
-                @if poll.items.len() == 0 {
-                    form #poll_upload_form
-                        ."my-8 flex justify-center"
-                        hx-post="/poll/json"
-                        hx-trigger="change"
-                        hx-encoding="multipart/form-data"
-                        hx-select="#pollEditingArea"
-                        hx-target="#pollEditingArea"
-                        hx-swap="outerHTML"
-                    {
-                        label
-                            ."flex items-center gap-2 text-sm text-slate-500 underline cursor-pointer"
-                        {
-                            ."size-5 shrink-0" { (SvgIcon::UploadCloud.render()) }
-                            "Upload existing poll (.json)"
-                            input
-                                ."hidden"
-                                type="file"
-                                name="poll_file"
-                                accept="application/json"
-                            ;
-                        }
-                    }
-                } @else {
-                    /*."mb-4 flex justify-end" {
-                        button
-                            hx-delete="/poll/items"
-                            hx-select="#pollEditingArea"
-                            hx-target="#pollEditingArea"
-                            hx-swap="outerHTML"
-                            ."flex items-center gap-2 text-sm text-red-500 "
-                        {
-                            ."underline" { "Delete all items" }
-                            ."size-4 shrink-0" { (svg_icons::get("trash-2")) }
-                        }
-                    }*/
+    return Ok(html_page::render_html_page("Svoote", html! {
+        #pollEditingArea."mt-8 mb-16" {
+            ."mb-6 flex justify-end items-center gap-3" {
+                ."text-sm text-slate-500" {
+                    "Start poll"
                 }
-                ."flex flex-col gap-8" {
-                    @for (item_idx, item) in poll.items.iter().enumerate() {
-                        ."px-5 py-4 border shadow rounded" {
+                button
+                    #start-poll-btn
+                    hx-post="/"
+                    hx-select="main"
+                    hx-target="main"
+                    hx-swap="outerHTML"
+                    disabled[poll.items.len() == 0]
+                    ."relative group px-6 py-2 text-slate-100 bg-slate-700 rounded-full hover:bg-slate-800 disabled:bg-slate-400 transition"
+                {
+                    ."group-[.htmx-request]:opacity-0" { ."size-6" { (SvgIcon::Play.render()) } }
+                    ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
+                        ."size-4" { (SvgIcon::Spinner.render()) }
+                    }
+                }
+            }
+            @if poll.items.len() == 0 {
+                form #poll_upload_form
+                    ."my-8 flex justify-center"
+                    hx-post="/poll/json"
+                    hx-trigger="change"
+                    hx-encoding="multipart/form-data"
+                    hx-select="#pollEditingArea"
+                    hx-target="#pollEditingArea"
+                    hx-swap="outerHTML"
+                {
+                    label
+                        ."flex items-center gap-2 text-sm text-slate-500 underline cursor-pointer"
+                    {
+                        ."size-5 shrink-0" { (SvgIcon::UploadCloud.render()) }
+                        "Upload existing poll (.json)"
+                        input
+                            ."hidden"
+                            type="file"
+                            name="poll_file"
+                            accept="application/json"
+                        ;
+                    }
+                }
+            }
+            ."flex flex-col gap-8" {
+                @for (item_idx, item) in poll.items.iter().enumerate() {
+                    ."flex items-center gap-3" {
+                        ."relative size-7 rounded-full bg-slate-600" {
+                            ."absolute inset-0 size-full flex justify-center items-center text-slate-50 text-sm font-bold" { (item_idx + 1) }
+                        }
+                        ."flex-1 px-5 py-4 border shadow rounded" {
                             ."mb-4 flex items-center gap-4" {
                                 input type="text"
                                     name="question"
@@ -202,6 +208,20 @@ async fn render_edit_page(poll: PollV1) -> Result<Response, AppError> {
                             }
                         }
                     }
+                }
+                button
+                    popovertarget="additempopover"
+                    disabled[poll.items.len() == POLL_MAX_ITEMS]
+                    ."group mb-6 flex justify-start items-center gap-3 transition"
+                {
+                    ."relative size-7 rounded-full bg-slate-600 group-hover:bg-slate-800" {
+                        ."absolute inset-0 size-full flex justify-center items-center text-slate-50" { ."size-4" { (SvgIcon::Plus.render()) } }
+                    }
+                    ."text-sm text-slate-500 group-hover:text-slate-700" {
+                        "Add item"
+                    }
+                }
+                div id="additempopover" popover {
                     ."flex justify-between gap-4" {
                         input #itemtype-single-choice type="hidden" name="item_type" value="single_choice";
                         button
@@ -235,64 +255,66 @@ async fn render_edit_page(poll: PollV1) -> Result<Response, AppError> {
                         }
                     }
                 }
+            }
 
-                ."mt-48 mb-16 px-5 py-3.5 bg-slate-700 rounded" {
-                    ."mb-2 text-slate-100 font-medium tracking-wide" {
-                        "Reuse your poll in the future"
-                    }
+            ."mt-10 mb-4 flex gap-2 items-center" {
+                ."size-6 p-1 shrink-0 text-slate-50 rounded" ."bg-amber-200"[!poll.leaderboard_enabled] ."bg-amber-500"[poll.leaderboard_enabled] { (SvgIcon::Crown.render()) }
+                ."text-xl font-medium" ."text-slate-300"[!poll.leaderboard_enabled] ."text-slate-600"[poll.leaderboard_enabled] { "Leaderboard" }
 
-                    ."text-slate-300 text-xs" {
-                        "Your poll will be available from this browser for up to 30 days. "
-                        "If you wish to reuse it in the future, you can download a copy below. "
-                        "Later on, you can re-upload the file (delete all poll items first)."
-                    }
-
-                    ."mt-6 flex justify-end" {
-                        a
-                            href="/poll/json"
-                            download="poll.json"
-                            ."px-4 py-2 flex items-center gap-2 text-sm text-slate-900 bg-slate-100 rounded-md hover:bg-slate-300 transition"
-                        {
-                            ."size-5 shrink-0" { (SvgIcon::Download.render()) }
-                            "Download poll (.json)"
-                        }
+                button
+                    hx-post="/poll/toggle_leaderboard"
+                    hx-select="main"
+                    hx-target="main"
+                    hx-swap="outerHTML"
+                    ."ml-1 text-slate-400 text-sm underline hover:text-slate-600"
+                {
+                    @if poll.leaderboard_enabled {
+                        "Disable"
+                    } @else {
+                        "Enable"
                     }
                 }
             }
-            ."text-center" {
-                ."mb-2 text-sm text-slate-600" {
-                    "Enter this code on "
-                    a ."text-indigo-500 underline" href=(join_url) { "svoote.com" }
-                    ":"
+            /*."flex items-center gap-2 mb-4" {
+                input
+                    #"check-allow-custom-names"
+                    type="checkbox"
+                    name="allow_custom_names"
+                    value="true"
+                    checked[poll.allow_custom_names]
+                    hx-post="/poll/allow_custom_player_names"
+                    hx-swap="none"
+                    hx-trigger="change"
+                    ."w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2";
+                label
+                    for="check-allow-custom-names"
+                    ."text-slate-600 text-sm"
+                {
+                    "Allow custom player names"
                 }
-                ."text-5xl text-slate-900 tracking-wider font-bold" { "0000" }
-                ."my-2 text-slate-600" {
-                    "or scan"
+            }*/
+
+            ."mt-48 mb-16 px-5 py-3.5 bg-slate-700 rounded" {
+                ."mb-2 text-slate-100 font-medium tracking-wide" {
+                    "Reuse your poll in the future"
                 }
-                ."relative w-full flex justify-center" {
-                    (PreEscaped(join_qr_code_svg))
-                    ."absolute size-full flex items-center justify-center backdrop-blur-sm" {
-                        button
-                            #start-poll-btn
-                            hx-post="/poll"
-                            hx-select="main"
-                            hx-target="main"
-                            hx-swap="outerHTML"
-                            disabled[poll.items.len() == 0]
-                            ."relative group px-6 py-2 text-slate-100 tracking-wide font-semibold bg-slate-700 rounded-md hover:bg-slate-800 disabled:bg-slate-400 transition"
-                        {
-                            ."group-[.htmx-request]:opacity-0" { "Start poll" }
-                            ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
-                                ."size-4" { (SvgIcon::Spinner.render()) }
-                            }
-                        }
+
+                ."text-slate-300 text-sm" {
+                    "Your poll will be available from this browser for up to 30 days. "
+                    "If you wish to reuse it in the future, you can download a copy below. "
+                    "Later on, you can re-upload the file (delete all poll items first)."
+                }
+
+                ."mt-6 flex justify-end" {
+                    a
+                        href="/poll/json"
+                        download="poll.json"
+                        ."px-4 py-2 flex items-center gap-2 text-sm text-slate-900 bg-slate-100 rounded-md hover:bg-slate-300 transition"
+                    {
+                        ."size-5 shrink-0" { (SvgIcon::Download.render()) }
+                        "Download poll (.json)"
                     }
                 }
-                /*@if params.leaderboard_enabled.unwrap_or(false) {
-                    div hx-ext="sse" sse-connect={"/sse/leaderboard/" (poll_id) } {
-                        div sse-swap="update" { }
-                    }
-                }*/
             }
         }
     }, true).into_response());
@@ -308,9 +330,9 @@ fn render_mc_answer(
     html! {
         ."pl-2 flex items-center gap-2 text-sm" {
             div ."transition"
-                ."text-slate-700"[!is_correct]
+                ."text-slate-500"[!is_correct]
                 ."text-green-600"[is_correct] {
-                    (answer_idx + 1) ". "
+                    ((b'A' + answer_idx as u8) as char)
             }
             input type="text"
                 name="answer_text"
@@ -658,4 +680,28 @@ pub async fn post_poll_json(
     poll.save_to_session(&session).await?;
 
     return get_poll_page(session).await;
+}
+
+pub async fn post_toggle_leaderboard(session: Session) -> Result<Response, AppError> {
+    let mut poll = PollV1::from_session(&session).await?;
+    poll.leaderboard_enabled = !poll.leaderboard_enabled;
+    poll.save_to_session(&session).await?;
+
+    return get_poll_page(session).await;
+}
+
+#[derive(Deserialize)]
+pub struct AllowCustomPlayerNamesParams {
+    pub allow_custom_names: Option<SmartString<Compact>>,
+}
+
+pub async fn post_allow_custom_player_names(
+    session: Session,
+    Form(params): Form<AllowCustomPlayerNamesParams>,
+) -> Result<Response, AppError> {
+    let mut poll = PollV1::from_session(&session).await?;
+    poll.allow_custom_names = params.allow_custom_names.is_some();
+    poll.save_to_session(&session).await?;
+
+    return Ok("Updated custom player names setting".into_response());
 }

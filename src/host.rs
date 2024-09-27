@@ -133,7 +133,7 @@ pub async fn get_sse_host_question(
                         ."my-24 flex flex-col text-sm text-slate-500 text-center" {
                             ."" { "This poll has no more items. Thank you for using svoote.com" }
                             a
-                                href="/poll"
+                                href="/"
                                 ."mt-4 underline cursor-pointer hover:text-slate-700 transition"
                             {
                                 "Back to editing this poll"
@@ -197,7 +197,10 @@ pub async fn get_sse_leaderboard(
             let live_poll = live_poll.lock().unwrap();
 
             html! {
-                ."mt-10 text-2xl" { "Leaderboard" }
+                ."mt-10 mb-4 flex gap-2 items-center" {
+                    ."size-5 text-amber-500" { (SvgIcon::Crown.render()) }
+                    ."text-xl font-medium text-slate-600" { "Leaderboard" }
+                }
                 ."mb-2 text-sm text-slate-600 tracking-tight" {
                     (live_poll.players.len())
                     " player" (if live_poll.players.len() != 1 { "s" } else { "" })

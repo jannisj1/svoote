@@ -1,13 +1,13 @@
 #[macro_use]
 extern crate log;
 
+mod about_page;
 mod app_error;
 mod auth_token;
 mod compliance;
 mod config;
 mod host;
 mod html_page;
-mod landing_page;
 mod live_item;
 mod live_poll;
 mod live_poll_store;
@@ -60,16 +60,21 @@ fn main() {
             .with_expiry(Expiry::OnInactivity(Duration::days(30)));
 
         let routes = axum::Router::new()
-            .route("/", get(landing_page::get_landing_page))
-            .route("/demo_mc", get(landing_page::get_mc_start_page_demo))
-            .route("/demo_ft", get(landing_page::get_ft_start_page_demo))
-            .route(
-                "/poll",
-                get(polls::get_poll_page).post(polls::post_poll_page),
-            )
+            .route("/about", get(about_page::get_about_page))
+            .route("/about/demo_mc", get(about_page::get_mc_start_page_demo))
+            .route("/about/demo_ft", get(about_page::get_ft_start_page_demo))
+            .route("/", get(polls::get_poll_page).post(polls::post_poll_page))
             .route(
                 "/poll/json",
                 get(polls::get_poll_json).post(polls::post_poll_json),
+            )
+            .route(
+                "/poll/toggle_leaderboard",
+                post(polls::post_toggle_leaderboard),
+            )
+            .route(
+                "/poll/allow_custom_player_names",
+                post(polls::post_allow_custom_player_names),
             )
             .route("/poll/items", delete(polls::clear_poll))
             .route("/poll/item", post(polls::post_item))

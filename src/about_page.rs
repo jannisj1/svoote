@@ -21,7 +21,7 @@ pub struct GetStartPageParams {
     pub poll_id: Option<String>,
 }
 
-pub async fn get_landing_page(
+pub async fn get_about_page(
     Query(params): Query<GetStartPageParams>,
 ) -> Result<Response, AppError> {
     let poll_id_str = params.poll_id.unwrap_or(String::new());
@@ -32,7 +32,7 @@ pub async fn get_landing_page(
         }
     }
 
-    return Ok(html_page::render_html_page("Svoote", html! {
+    return Ok(html_page::render_html_page("Svoote - About", html! {
         ."container mx-auto px-4" {
             form ."mt-28 mb-48 block flex flex-col items-center" {
                 ."mb-4 text-slate-700 text-sm" {
@@ -95,7 +95,7 @@ pub async fn get_landing_page(
                             ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) }
                             "Multiple choice"
                         }
-                        div #"demo-mc-container" hx-get="/demo_mc" hx-trigger="demoTick" hx-include="find input" {
+                        div #"demo-mc-container" hx-get="/about/demo_mc" hx-trigger="demoTick" hx-include="find input" {
                             (render_mc_demo(0))
                         }
                     }
@@ -104,7 +104,7 @@ pub async fn get_landing_page(
                             ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
                             "Free text"
                         }
-                        div #"demo-ft-container" hx-get="/demo_ft" hx-trigger="demoTick" hx-include="find input" {
+                        div #"demo-ft-container" hx-get="/about/demo_ft" hx-trigger="demoTick" hx-include="find input" {
                             (render_ft_demo(0))
                         }
                     }

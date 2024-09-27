@@ -32,10 +32,10 @@ pub fn render_html_page(
                         span ."ml-2 text-3xl text-slate-900 tracking-tighter font-medium" { "svoote" }
                     }
                     ."mt-1 absolute inset-0 h-full w-fit mx-auto hidden md:flex justify-center items-center gap-8" {
-                        a href="/poll" ."text-slate-700 text-sm font-medium" { "Create poll" }
-                        a href="/#features" ."text-slate-700 text-sm font-medium" { "Features" }
-                        a href="/#pricing" ."text-slate-700 text-sm font-medium" { "Pricing" }
-                        a href="/#mission" ."text-slate-700 text-sm font-medium" { "Why Svoote?" }
+                        a href="/" ."text-slate-700 text-sm font-medium" { "Create poll" }
+                        a href="/about#features" ."text-slate-700 text-sm font-medium" { "Features" }
+                        a href="/about#pricing" ."text-slate-700 text-sm font-medium" { "Pricing" }
+                        a href="/about#mission" ."text-slate-700 text-sm font-medium" { "Why Svoote?" }
                     }
                 }
 
@@ -52,18 +52,21 @@ pub fn render_html_page(
                         a href="/" ."hover:underline" {
                             "Join poll"
                         }
-                        a href="/#features" ."hover:underline" {
+                        a href="/about#features" ."hover:underline" {
                             "Features"
                         }
-                        a href="/#pricing" ."hover:underline" {
+                        a href="/about#pricing" ."hover:underline" {
                             "Pricing"
                         }
-                        a href="/poll" ."hover:underline" {
+                        a href="/" ."hover:underline" {
                             "Create a poll"
                         }
                     }
                     ."flex flex-col gap-2 text-xs" {
                         ."mb-2 font-medium text-sm" { "Svoote" }
+                        a href="/about" ."hover:underline" {
+                            "About"
+                        }
                         a href="/data-privacy" ."hover:underline" {
                             "Data privacy"
                         }
