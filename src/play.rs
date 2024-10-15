@@ -172,6 +172,16 @@ pub async fn get_sse_play(
             QuestionAreaState::None => sse::Event::default()
             .event("update")
             .data(""),
+            QuestionAreaState::JoinCode(_) => sse::Event::default()
+            .event("update")
+            .data(html! {
+                ."text-slate-700" {
+                    "Other participants are joining. Waiting for the host to start the poll."
+                }
+                ."flex justify-center" {
+                    ."size-4" { (SvgIcon::Spinner.render()) }
+                }
+            }.into_string()),
             QuestionAreaState::Item { item_idx, is_last_question: _ } => {
                 let mut live_poll = live_poll.lock().unwrap();
                 let current_item = live_poll.get_current_item();
@@ -245,7 +255,7 @@ pub async fn get_sse_play(
                                 (ft_answers.render_form(player_index, poll_id))
                             }
                         }
-                        ."my-36 text-sm text-slate-500 text-center" {
+                        ."mt-36 text-sm text-slate-500 text-center" {
                             p ."" {
                                 "Svoote does not assume responsibility for the polls created on this website."
                             }

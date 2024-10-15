@@ -14,53 +14,44 @@ use tower_sessions::Session;
 
 use crate::{
     app_error::AppError,
-    html_page,
+    html_page::{self, render_header},
     live_poll::{QuestionAreaState, QuestionStatisticsState},
     live_poll_store::{ShortID, LIVE_POLL_STORE},
     svg_icons::SvgIcon,
 };
 
 pub async fn render_live_host(poll_id: ShortID) -> Result<Response, AppError> {
-    let join_url = format!("https://svoote.com/p?c={}", poll_id);
-    let join_qr_code_svg = QrCode::new(&join_url)
-        .map_err(|_| AppError::OtherInternalServerError("Error generating QR-code".to_string()))?
-        .render()
-        .min_dimensions(200, 200)
-        .dark_color(svg::Color("#000000"))
-        .light_color(svg::Color("#FFFFFF"))
-        .build();
-
     Ok(html_page::render_html_page(
         "Svoote",
         html! {
-            ."mt-8 grid grid-cols-[3fr_1fr] gap-16 mb-16" {
-                ."flex flex-col gap-16" {
-                    div hx-ext="sse" sse-connect={"/sse/host_question/" (poll_id) } sse-close="close" {
-                        div sse-swap="update" { (render_sse_loading_spinner()) }
+            (render_header(html! {
+                ."flex items-center gap-3" {
+                    ."text-sm text-slate-500" {
+                        "Exit poll"
                     }
-                    div hx-ext="sse" sse-connect={"/sse/host_results/" (poll_id) } sse-close="close"  {
-                        div sse-swap="update" { }
+                    button
+                        #start-poll-btn
+                        hx-post={ "/exit_poll/" (poll_id) }
+                        hx-swap="none"
+                        ."relative group size-12 text-slate-100 bg-red-500 rounded-full hover:bg-red-700 transition"
+                    {
+                        ."group-[.htmx-request]:opacity-0 flex justify-center" { ."size-6" { (SvgIcon::X.render()) } }
+                        ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
+                            ."size-4" { (SvgIcon::Spinner.render()) }
+                        }
                     }
                 }
-                ."text-center" {
-                    ."mb-2 text-sm text-slate-600" {
-                        "Enter this code on "
-                        a ."text-indigo-500 underline" href=(join_url) { "svoote.com" }
-                        ":"
-                    }
-                    ."text-5xl tracking-wider font-bold text-slate-900" { (poll_id) }
-                    ."my-2 text-slate-600" {
-                        "or scan"
-                    }
-                    ."w-full flex justify-center" {
-                        (PreEscaped(join_qr_code_svg))
-                    }
-                    div hx-ext="sse" sse-connect={"/sse/leaderboard/" (poll_id) } sse-close="close" {
-                        div sse-swap="update" { }
-                    }
+            }))
+            ."flex flex-col gap-16" {
+                div hx-ext="sse" sse-connect={"/sse/host_question/" (poll_id) } sse-close="close" {
+                    div sse-swap="update" { (render_sse_loading_spinner()) }
+                }
+                div hx-ext="sse" sse-connect={"/sse/host_results/" (poll_id) } sse-close="close"  {
+                    div sse-swap="update" { }
                 }
             }
-        }, true
+        },
+        true,
     )
     .into_response())
 }
@@ -80,6 +71,53 @@ pub async fn get_sse_host_question(
             QuestionAreaState::None => sse::Event::default()
             .event("update")
             .data(html! {}.into_string()),
+            QuestionAreaState::JoinCode(poll_id) => sse::Event::default()
+            .event("update")
+            .data(html! {
+                @let join_url = format!("https://svoote.com/p?c={}", poll_id);
+                @let join_qr_code_svg = QrCode::new(&join_url)
+                    .map(|qr|
+                        qr.render()
+                        .min_dimensions(200, 200)
+                        .quiet_zone(false)
+                        .dark_color(svg::Color("#000000"))
+                        .light_color(svg::Color("#FFFFFF"))
+                        .build()
+                    );
+
+                ."mt-8 flex justify-center items-center gap-20" {
+                    ."w-lg flex justify-center" {
+                        (PreEscaped(join_qr_code_svg.unwrap_or("Error generating QR-Code.".to_string())))
+                    }
+                    ."flex flex-col items-center gap-2" {
+                        ."text-lg font-bold text-indigo-600 tracking-tight" {
+                            "Join now"
+                        }
+                        ."size-5"{ (SvgIcon::Spinner.render()) }
+                    }
+                    ."text-center" {
+                        ."mb-2 text-5xl tracking-wider font-bold text-slate-700" {
+                            (poll_id)
+                        }
+                        ."text-sm text-slate-700" {
+                            "Enter on " a ."text-indigo-500 underline" href=(join_url) { "svoote.com" }
+                        }
+                    }
+                }
+                button
+                    hx-post={ "/next_question/" (poll_id) }
+                    hx-swap="none"
+                    ."relative group px-4 py-2 text-slate-100 tracking-wide font-semibold bg-slate-700 rounded-md hover:bg-slate-800 transition"
+                {
+                    ."group-[.htmx-request]:opacity-0 flex items-center gap-2" {
+                        "Start first item"
+                        ."size-4" { (SvgIcon::ArrowRight.render()) }
+                    }
+                    ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
+                        ."size-4" { (SvgIcon::Spinner.render()) }
+                    }
+                }
+            }.into_string()),
             QuestionAreaState::Item { item_idx: question_idx, is_last_question } => {
                 sse::Event::default()
                 .event("update")
@@ -255,6 +293,23 @@ pub async fn post_previous_question(
 
     let previous_question_send = lq.lock().unwrap().ch_previous_question.clone();
     let _ = previous_question_send.send(()).await;
+
+    Ok(html! {
+        p { "Success" }
+    }
+    .into_response())
+}
+
+pub async fn post_exit_poll(
+    Path(poll_id): Path<ShortID>,
+    session: Session,
+) -> Result<Response, AppError> {
+    let lq = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    let auth_token = lq.lock().unwrap().host_auth_token.clone();
+    auth_token.verify(&session).await?;
+
+    let exit_poll_send = lq.lock().unwrap().ch_exit_poll.clone();
+    let _ = exit_poll_send.send(()).await;
 
     Ok(html! {
         p { "Success" }

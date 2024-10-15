@@ -33,7 +33,7 @@ pub fn render_html_page(
                     (main_content)
                 }
 
-                footer ."px-4 py-16 bg-slate-100 text-slate-900 flex justify-center items-start gap-8 md:gap-16" {
+                footer ."mt-12 px-4 py-8 bg-slate-100 text-slate-900 flex justify-center items-start gap-8 md:gap-16" {
                     ."flex flex-col gap-2 text-xs" {
                         ."mb-2 font-medium text-sm" { "Polls" }
                         a href="/" ."hover:underline" {
@@ -78,7 +78,7 @@ pub fn render_html_page(
 
 pub fn render_header(top_right_content: Markup) -> Markup {
     return html! {
-        header . "py-8 flex justify-between" {
+        header . "mt-8 mb-12 flex justify-between" {
             a href="/" ."flex items-baseline gap-2 text-indigo-500" {
                 span ."text-3xl tracking-tighter font-medium" { "Svoote" }
                 ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }

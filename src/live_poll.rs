@@ -42,13 +42,14 @@ pub struct LivePoll {
     pub ch_question_statistics_recv: watch::Receiver<QuestionStatisticsState>,
     pub ch_next_question: mpsc::Sender<()>,
     pub ch_previous_question: mpsc::Sender<()>,
+    pub ch_exit_poll: mpsc::Sender<()>,
     pub leaderboard_enabled: bool,
+    pub allow_custom_player_names: bool,
 }
 
 impl LivePoll {
-    pub fn new(
+    pub fn orchestrate(
         poll: PollV1,
-        leaderboard_enabled: bool,
         auth_token: AuthToken,
     ) -> Result<(ShortID, Arc<Mutex<Self>>), AppError> {
         let (send_start_signal, recv_start_signal) = oneshot::channel::<()>();
@@ -59,6 +60,7 @@ impl LivePoll {
         let (send_players_updated, recv_players_updated) = watch::channel(());
         let (send_next_question, mut recv_next_question) = mpsc::channel(4);
         let (send_previous_question, mut recv_previous_question) = mpsc::channel(4);
+        let (send_exit_poll, mut recv_exit_poll) = mpsc::channel(4);
 
         let live_items: Vec<LiveItem> = poll
             .items
@@ -80,49 +82,60 @@ impl LivePoll {
             ch_question_statistics_recv: recv_question_statistics,
             ch_next_question: send_next_question,
             ch_previous_question: send_previous_question,
+            ch_exit_poll: send_exit_poll,
             ch_question_state: sse_host_question_recv,
-            leaderboard_enabled,
+            leaderboard_enabled: poll.leaderboard_enabled,
+            allow_custom_player_names: poll.allow_custom_names,
         })?;
 
-        let return_live_poll = live_poll.clone();
+        let return_live_poll_handle = live_poll.clone();
 
         tokio::spawn(async move {
             let _lq_drop = RmLqOnDrop(poll_id);
             let _ = recv_start_signal.await;
 
-            let mut question_idx = 0usize;
-            let mut is_last_question;
+            let _ = sse_host_question_send.send(QuestionAreaState::JoinCode(poll_id));
+
+            let mut active_item_index = select! {
+                _ = recv_next_question.recv() => { 0usize }
+                _ = recv_exit_poll.recv() => { live_poll.lock().unwrap().items.len() }
+            };
 
             loop {
+                let is_last_item;
+
                 {
                     let mut live_poll = live_poll.lock().unwrap();
-                    if question_idx >= live_poll.items.len() {
+                    if active_item_index >= live_poll.items.len() {
                         break;
                     }
 
-                    is_last_question = question_idx + 1 == live_poll.items.len();
+                    is_last_item = active_item_index + 1 == live_poll.items.len();
 
-                    live_poll.current_item_idx = question_idx;
+                    live_poll.current_item_idx = active_item_index;
                     live_poll.current_item_start_time = Instant::now();
 
                     let _ = live_poll
                         .ch_question_statistics_send
-                        .send(QuestionStatisticsState::Item(question_idx));
+                        .send(QuestionStatisticsState::Item(active_item_index));
                 }
 
                 let _ = sse_host_question_send.send(QuestionAreaState::Item {
-                    item_idx: question_idx,
-                    is_last_question,
+                    item_idx: active_item_index,
+                    is_last_question: is_last_item,
                 });
 
                 select! {
                     _ = recv_next_question.recv() => {
-                        question_idx += 1;
+                        active_item_index += 1;
                     }
                     _ = recv_previous_question.recv() => {
-                        if question_idx > 0 {
-                            question_idx -= 1;
+                        if active_item_index > 0 {
+                            active_item_index -= 1;
                         }
+                    }
+                    _ = recv_exit_poll.recv() => {
+                        break;
                     }
                 };
             }
@@ -144,7 +157,7 @@ impl LivePoll {
                 .send(QuestionStatisticsState::CloseSSE);
         });
 
-        return Ok((poll_id, return_live_poll));
+        return Ok((poll_id, return_live_poll_handle));
     }
 
     pub fn get_or_create_player(&mut self, auth_token: &AuthToken) -> Option<usize> {
@@ -198,6 +211,7 @@ impl LivePoll {
 #[derive(Clone)]
 pub enum QuestionAreaState {
     None,
+    JoinCode(ShortID),
     Item {
         item_idx: usize,
         is_last_question: bool,
@@ -209,7 +223,7 @@ pub enum QuestionAreaState {
 #[derive(Clone)]
 pub enum QuestionStatisticsState {
     None,
-    Item(usize),
+    Item(usize), // index of the current active item
     CloseSSE,
 }
 

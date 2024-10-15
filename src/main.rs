@@ -69,8 +69,8 @@ fn main() {
                 get(polls::get_poll_json).post(polls::post_poll_json),
             )
             .route(
-                "/poll/toggle_leaderboard",
-                post(polls::post_toggle_leaderboard),
+                "/poll/enable_leaderboard",
+                post(polls::post_enable_leaderboard),
             )
             .route(
                 "/poll/allow_custom_player_names",
@@ -104,6 +104,7 @@ fn main() {
                 "/previous_question/:poll_id",
                 post(host::post_previous_question),
             )
+            .route("/exit_poll/:poll_id", post(host::post_exit_poll))
             .route(
                 "/sse/host_question/:poll_id",
                 get(host::get_sse_host_question),

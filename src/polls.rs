@@ -68,7 +68,7 @@ pub async fn post_poll_page(session: Session) -> Result<Response, AppError> {
         None => {
             let poll = PollV1::from_session(&session).await?;
 
-            let (poll_id, lq) = LivePoll::new(poll.clone(), true, auth_token)?;
+            let (poll_id, lq) = LivePoll::orchestrate(poll.clone(), auth_token)?;
 
             session
                 .insert("live_poll_id", poll_id)
@@ -96,17 +96,19 @@ pub async fn get_poll_page(session: Session) -> Result<Response, AppError> {
         Some((poll_id, _lq)) => return host::render_live_host(poll_id).await,
         None => {
             let poll = PollV1::from_session(&session).await?;
-            return render_edit_page(poll).await;
+            return render_edit_page(session, poll).await;
         }
     };
 }
 
-async fn render_edit_page(mut poll: PollV1) -> Result<Response, AppError> {
+async fn render_edit_page(session: Session, mut poll: PollV1) -> Result<Response, AppError> {
     if poll.items.len() == 0 {
         poll.items.push(Item {
             question: String::new(),
             answers: Answers::Untyped,
         });
+
+        poll.save_to_session(&session).await?;
     }
 
     return Ok(html_page::render_html_page("Svoote", html! {
@@ -122,8 +124,8 @@ async fn render_edit_page(mut poll: PollV1) -> Result<Response, AppError> {
                         hx-select="main"
                         hx-target="main"
                         hx-swap="outerHTML"
-                        disabled[poll.items.len() == 0]
-                        ."relative group size-10 text-slate-100 bg-indigo-500 rounded-full hover:bg-indigo-700 disabled:bg-indigo-300 transition"
+                        disabled[poll.items.len() == 1 && matches!(poll.items[0].answers, Answers::Untyped)]
+                        ."relative group size-12 text-slate-100 bg-indigo-500 rounded-full hover:bg-indigo-700 disabled:bg-indigo-300 transition"
                     {
                         ."group-[.htmx-request]:opacity-0 flex justify-center" { ."translate-x-[0.1rem] size-6" { (SvgIcon::Play.render()) } }
                         ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
@@ -142,91 +144,90 @@ async fn render_edit_page(mut poll: PollV1) -> Result<Response, AppError> {
                             ."absolute inset-0 size-full flex justify-center items-center text-slate-50 text-sm font-bold" { (item_idx + 1) }
                         }
                         ."flex-1 px-5 py-4 border shadow rounded" {
-                            @if matches!(item.answers, Answers::Untyped) {
-                                ."mb-2 text-slate-500 tracking-tight text-center" {
-                                    "Choose item type:"
+                            ."mb-4 flex items-center gap-4" {
+                                input type="text"
+                                    name="question"
+                                    ."px-4 py-1.5 flex-1 text-slate-900 font-medium bg-slate-100 rounded-lg"
+                                    hx-put={ "/poll/item/" (item_idx) "/text" }
+                                    hx-trigger="input changed delay:300ms"
+                                    "hx-on::before-request"="bindSavingIndicator();"
+                                    "hx-on::after-request"="freeSavingIndicator();"
+                                    maxlength="2048"
+                                    placeholder="Enter question text"
+                                    value=(item.question);
+                                button
+                                    title="Delete item"
+                                    ."group size-5 text-red-500 tracking-tight hover:text-red-700 disabled:text-red-300 transition"
+                                    hx-delete={ "/poll/item/" (item_idx) }
+                                    hx-select="#pollEditingArea"
+                                    hx-target="#pollEditingArea"
+                                    hx-swap="outerHTML"
+                                    disabled[poll.items.len() == 1 && matches!(poll.items[0].answers, Answers::Untyped)]
+                                {
+                                    ."block group-[.htmx-request]:hidden" { (SvgIcon::X.render()) }
+                                    ."hidden size-4 group-[.htmx-request]:block" { (SvgIcon::Spinner.render()) }
                                 }
-                                ."flex gap-4 justify-center" {
-                                    button
-                                        hx-post={ "/poll/item/type/" (item_idx) "/single_choice" }
-                                        hx-select="#pollEditingArea"
-                                        hx-target="#pollEditingArea"
-                                        hx-swap="outerHTML"
-                                        ."group flex justify-center items-center px-3.5 py-2 text-slate-600 border rounded hover:bg-slate-100 transition"
-                                    {
-                                        ."flex group-[.htmx-request]:hidden items-center justify-center gap-2" {
-                                            ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) }
-                                            "Multiple choice"
-                                        }
-                                        ."hidden size-4 group-[.htmx-request]:block" { (SvgIcon::Spinner.render()) }
+                            }
+                            @match &item.answers {
+                                Answers::Untyped => {
+                                    ."mb-2 text-slate-500 tracking-tight text-center" {
+                                        "Choose item type:"
                                     }
-                                    button
-                                        hx-post={ "/poll/item/type/" (item_idx) "/free_text" }
-                                        hx-select="#pollEditingArea"
-                                        hx-target="#pollEditingArea"
-                                        hx-swap="outerHTML"
-                                        ."group flex justify-center items-center px-3.5 py-2 text-slate-600 border rounded hover:bg-slate-100 transition"
-                                    {
-                                        ."flex group-[.htmx-request]:hidden items-center justify-center gap-2" {
-                                            ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
-                                            "Free text"
-                                        }
-                                        ."hidden size-4 group-[.htmx-request]:block" { (SvgIcon::Spinner.render()) }
-                                    }
-                                }
-                            } @else {
-                                ."mb-4 flex items-center gap-4" {
-                                    input type="text"
-                                        name="question"
-                                        ."px-4 py-1.5 flex-1 text-slate-900 font-medium bg-slate-100 rounded-lg"
-                                        hx-put={ "/poll/item/" (item_idx) "/text" }
-                                        hx-trigger="input changed delay:300ms"
-                                        "hx-on::before-request"="bindSavingIndicator();"
-                                        "hx-on::after-request"="freeSavingIndicator();"
-                                        maxlength="2048"
-                                        placeholder="Enter question text"
-                                        value=(item.question);
-                                    button
-                                        title="Delete item"
-                                        ."group size-5 text-red-500 tracking-tight hover:text-red-700 transition"
-                                        hx-delete={ "/poll/item/" (item_idx) }
-                                        hx-select="#pollEditingArea"
-                                        hx-target="#pollEditingArea"
-                                        hx-swap="outerHTML"
-                                    {
-                                        ."block group-[.htmx-request]:hidden" { (SvgIcon::X.render()) }
-                                        ."hidden size-4 group-[.htmx-request]:block" { (SvgIcon::Spinner.render()) }
-                                    }
-                                }
-                                @match &item.answers {
-                                    Answers::Untyped => {}
-                                    Answers::SingleChoice(answers) => {
-                                        @let mc_answers_div_name = format!("mc-answers-div-{}", item_idx);
-                                        #(mc_answers_div_name) ."flex flex-col gap-2" {
-                                            @for (answer_idx, (answer_txt, is_correct)) in answers.iter().enumerate() {
-                                                (render_mc_answer(item_idx, answer_idx, answer_txt, *is_correct, false))
+                                    ."flex gap-4 justify-center" {
+                                        button
+                                            hx-post={ "/poll/item/type/" (item_idx) "/single_choice" }
+                                            hx-select="#pollEditingArea"
+                                            hx-target="#pollEditingArea"
+                                            hx-swap="outerHTML"
+                                            ."group flex justify-center items-center px-3.5 py-2 text-slate-600 border rounded hover:bg-slate-100 transition"
+                                        {
+                                            ."flex group-[.htmx-request]:hidden items-center justify-center gap-2" {
+                                                ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) }
+                                                "Multiple choice"
                                             }
+                                            ."hidden size-4 group-[.htmx-request]:block" { (SvgIcon::Spinner.render()) }
+                                        }
+                                        button
+                                            hx-post={ "/poll/item/type/" (item_idx) "/free_text" }
+                                            hx-select="#pollEditingArea"
+                                            hx-target="#pollEditingArea"
+                                            hx-swap="outerHTML"
+                                            ."group flex justify-center items-center px-3.5 py-2 text-slate-600 border rounded hover:bg-slate-100 transition"
+                                        {
+                                            ."flex group-[.htmx-request]:hidden items-center justify-center gap-2" {
+                                                ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
+                                                "Free text"
+                                            }
+                                            ."hidden size-4 group-[.htmx-request]:block" { (SvgIcon::Spinner.render()) }
+                                        }
+                                    }
+                                    }
+                                Answers::SingleChoice(answers) => {
+                                    @let mc_answers_div_name = format!("mc-answers-div-{}", item_idx);
+                                    #(mc_answers_div_name) ."flex flex-col gap-2" {
+                                        @for (answer_idx, (answer_txt, is_correct)) in answers.iter().enumerate() {
+                                            (render_mc_answer(item_idx, answer_idx, answer_txt, *is_correct, false))
+                                        }
 
-                                            @if answers.len() < POLL_MAX_MC_ANSWERS {
-                                                button #{ "btn-add-answer-" (item_idx) }
-                                                    ."relative group w-fit ml-2 mb-4 text-sm text-slate-500 underline hover:text-slate-800"
-                                                    hx-post={ "/poll/item/" (item_idx) "/add_mc_answer" }
-                                                    hx-swap="beforebegin"
-                                                    "hx-on::after-request"={ "maybeHideAddAnswerBtn('" (mc_answers_div_name) "');" }
-                                                {
-                                                    ."group-[.htmx-request]:opacity-0" { "Add answer" }
-                                                    ."absolute inset-0 size-full hidden group-[.htmx-request]:flex justify-center items-center" {
-                                                        ."size-4" { (SvgIcon::Spinner.render()) }
-                                                    }
+                                        @if answers.len() < POLL_MAX_MC_ANSWERS {
+                                            button #{ "btn-add-answer-" (item_idx) }
+                                                ."relative group w-fit ml-2 mb-4 text-sm text-slate-500 underline hover:text-slate-800"
+                                                hx-post={ "/poll/item/" (item_idx) "/add_mc_answer" }
+                                                hx-swap="beforebegin"
+                                                "hx-on::after-request"={ "maybeHideAddAnswerBtn('" (mc_answers_div_name) "');" }
+                                            {
+                                                ."group-[.htmx-request]:opacity-0" { "Add answer" }
+                                                ."absolute inset-0 size-full hidden group-[.htmx-request]:flex justify-center items-center" {
+                                                    ."size-4" { (SvgIcon::Spinner.render()) }
                                                 }
                                             }
                                         }
-                                    },
-                                    Answers::FreeText(_, _) => {
-                                        ."pl-2 flex gap-2 items-center text-slate-500" {
-                                            ."size-4 shrink-0" { (SvgIcon::Edit3.render()) }
-                                            "Free text: Participants can submit their own answer."
-                                        }
+                                    }
+                                },
+                                Answers::FreeText(_, _) => {
+                                    ."pl-2 flex gap-2 items-center text-slate-500" {
+                                        ."size-4 shrink-0" { (SvgIcon::Edit3.render()) }
+                                        "Free text: Participants can submit their own answer."
                                     }
                                 }
                             }
@@ -244,7 +245,7 @@ async fn render_edit_page(mut poll: PollV1) -> Result<Response, AppError> {
                         ."size-4" { (SvgIcon::Plus.render()) }
                     }
                 }
-                ."text-slate-600 group-hover:text-slate-700 group-focus-within:hidden" {
+                ."text-slate-600 group-hover:text-slate-700" {
                     "Add item"
                 }
             }
@@ -289,32 +290,35 @@ async fn render_edit_page(mut poll: PollV1) -> Result<Response, AppError> {
                     "Save poll"
                 }
             }
-            ."mb-8 text-slate-400 text-sm max-w-xl" {
+            ."mb-12 text-slate-400 text-sm max-w-xl" {
                 "Your poll will be available from this device for up to 30 days. "
                 "If you wish to reuse it in the future or transfer it to another device, download a copy via 'Save poll'."
             }
-            ."my-4 text-xl font-semibold text-slate-700" {
+            ."mb-3 text-xl font-semibold text-slate-700" {
                 "Options"
             }
-            ."mt-10 mb-4 flex gap-2 items-center" {
-                ."size-6 p-1 shrink-0 text-slate-50 rounded" ."bg-amber-200"[!poll.leaderboard_enabled] ."bg-amber-500"[poll.leaderboard_enabled] { (SvgIcon::Crown.render()) }
-                ."text-xl font-medium" ."text-slate-300"[!poll.leaderboard_enabled] ."text-slate-600"[poll.leaderboard_enabled] { "Leaderboard" }
-
-                button
-                    hx-post="/poll/toggle_leaderboard"
-                    hx-select="main"
-                    hx-target="main"
-                    hx-swap="outerHTML"
-                    ."ml-1 text-slate-400 text-sm underline hover:text-slate-600"
+            ."flex items-center gap-2" {
+                input
+                    #"check-enable-leaderboard"
+                    type="checkbox"
+                    name="enable_leaderboard"
+                    value="true"
+                    checked[poll.leaderboard_enabled]
+                    hx-post="/poll/enable_leaderboard"
+                    hx-swap="none"
+                    hx-trigger="change"
+                    ."size-4 accent-indigo-500";
+                label
+                    for="check-enable-leaderboard"
+                    ."text-slate-600 font-semibold"
                 {
-                    @if poll.leaderboard_enabled {
-                        "Disable"
-                    } @else {
-                        "Enable"
-                    }
+                    "Leaderboard"
                 }
             }
-            /*."flex items-center gap-2 mb-4" {
+            ."ml-6 mb-3 text-slate-400 text-sm" {
+                "Participants will receive points for submitting the correct answer. Longer response times will yield less points."
+            }
+            ."flex items-center gap-2" {
                 input
                     #"check-allow-custom-names"
                     type="checkbox"
@@ -324,14 +328,17 @@ async fn render_edit_page(mut poll: PollV1) -> Result<Response, AppError> {
                     hx-post="/poll/allow_custom_player_names"
                     hx-swap="none"
                     hx-trigger="change"
-                    ."w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2";
+                    ."size-4 accent-indigo-500";
                 label
                     for="check-allow-custom-names"
-                    ."text-slate-600 text-sm"
+                    ."text-slate-600 font-semibold"
                 {
-                    "Allow custom player names"
+                    "Custom names"
                 }
-            }*/
+            }
+            ."ml-6 mb-3 text-slate-400 text-sm" {
+                "Allow participants to set a custom name."
+            }
         }
     }, true).into_response());
 }
@@ -693,9 +700,17 @@ pub async fn post_poll_json(
     return get_poll_page(session).await;
 }
 
-pub async fn post_toggle_leaderboard(session: Session) -> Result<Response, AppError> {
+#[derive(Deserialize)]
+pub struct EnableLeaderboardParams {
+    pub enable_leaderboard: Option<SmartString<Compact>>,
+}
+
+pub async fn post_enable_leaderboard(
+    session: Session,
+    Form(params): Form<EnableLeaderboardParams>,
+) -> Result<Response, AppError> {
     let mut poll = PollV1::from_session(&session).await?;
-    poll.leaderboard_enabled = !poll.leaderboard_enabled;
+    poll.leaderboard_enabled = params.enable_leaderboard.is_some();
     poll.save_to_session(&session).await?;
 
     return get_poll_page(session).await;
