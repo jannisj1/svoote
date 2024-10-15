@@ -76,8 +76,11 @@ fn main() {
                 "/poll/allow_custom_player_names",
                 post(polls::post_allow_custom_player_names),
             )
-            .route("/poll/items", delete(polls::clear_poll))
-            .route("/poll/item", post(polls::post_item))
+            .route("/poll/item", post(polls::post_add_item))
+            .route(
+                "/poll/item/type/:item_idx/:item_type_descriptor",
+                post(polls::post_item_type),
+            )
             .route("/poll/item/:item_idx/text", put(polls::put_question_text))
             .route(
                 "/poll/item/:item_idx/mc_answer/:answer_idx/text",

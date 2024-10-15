@@ -34,7 +34,7 @@ pub struct FreeTextLiveAnswers {
 }
 
 impl LiveItem {
-    pub fn new(item: Item) -> Self {
+    pub fn new(item: Item) -> Option<Self> {
         let answers = match item.answers {
             crate::live_poll::Answers::SingleChoice(answers) => {
                 LiveAnswers::SingleChoice(MultipleChoiceLiveAnswers {
@@ -49,13 +49,16 @@ impl LiveItem {
                     player_answers: Vec::new(),
                 })
             }
+            crate::live_poll::Answers::Untyped => {
+                return None;
+            }
         };
 
-        return LiveItem {
+        return Some(LiveItem {
             question: item.question,
             answers,
             player_scores: Vec::new(),
-        };
+        });
     }
 
     pub fn add_player(&mut self) {

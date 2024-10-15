@@ -1,4 +1,4 @@
-use maud::{html, DOCTYPE};
+use maud::{html, Markup, DOCTYPE};
 
 use crate::{static_file, svg_icons::SvgIcon};
 
@@ -26,19 +26,6 @@ pub fn render_html_page(
                 script defer data-domain="svoote.com" src="https://plausible.io/js/script.js" {}
             }
             body ."min-h-screen flex flex-col bg-white" {
-                header . "px-6 lg:px-10 py-8 relative container mx-auto" {
-                    a href="/" ."flex items-baseline" {
-                        ."size-5 text-slate-900" { (SvgIcon::Rss.render()) }
-                        span ."ml-2 text-3xl text-slate-900 tracking-tighter font-medium" { "svoote" }
-                    }
-                    ."mt-1 absolute inset-0 h-full w-fit mx-auto hidden md:flex justify-center items-center gap-8" {
-                        a href="/" ."text-slate-700 text-sm font-medium" { "Create poll" }
-                        a href="/about#features" ."text-slate-700 text-sm font-medium" { "Features" }
-                        a href="/about#pricing" ."text-slate-700 text-sm font-medium" { "Pricing" }
-                        a href="/about#mission" ."text-slate-700 text-sm font-medium" { "Why Svoote?" }
-                    }
-                }
-
                 main
                     ."flex-1"
                     ."px-6 lg:px-10 container mx-auto"[container_main]
@@ -87,4 +74,22 @@ pub fn render_html_page(
             }
         }
     }
+}
+
+pub fn render_header(top_right_content: Markup) -> Markup {
+    return html! {
+        header . "py-8 flex justify-between" {
+            a href="/" ."flex items-baseline gap-2 text-indigo-500" {
+                span ."text-3xl tracking-tighter font-medium" { "Svoote" }
+                ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
+            }
+            /*."mt-1 absolute inset-0 h-full w-fit mx-auto hidden md:flex justify-center items-center gap-8" {
+                a href="/" ."text-slate-700 text-sm font-medium" { "Create poll" }
+                a href="/about#features" ."text-slate-700 text-sm font-medium" { "Features" }
+                a href="/about#pricing" ."text-slate-700 text-sm font-medium" { "Pricing" }
+                a href="/about#mission" ."text-slate-700 text-sm font-medium" { "Why Svoote?" }
+            }*/
+            (top_right_content)
+        }
+    };
 }

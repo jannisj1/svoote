@@ -22,8 +22,9 @@ pub struct Item {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Answers {
-    SingleChoice(Vec<(String, bool)>),
-    FreeText(usize, Vec<String>), // Max answers per User, correct answers
+    Untyped,                           // When users first add a new item
+    SingleChoice(Vec<(String, bool)>), // Answer text, is correct
+    FreeText(usize, Vec<String>),      // Max answers per User, correct answers
 }
 
 pub struct LivePoll {
@@ -32,7 +33,7 @@ pub struct LivePoll {
     pub player_indices: BTreeMap<Uuid, usize>,
     pub players: Vec<Player>,
     pub current_item_idx: usize,
-    current_item_start_time: tokio::time::Instant,
+    pub current_item_start_time: tokio::time::Instant,
     pub ch_start_signal: Option<oneshot::Sender<()>>,
     pub ch_players_updated_send: watch::Sender<()>,
     pub ch_players_updated_recv: watch::Receiver<()>,
@@ -62,7 +63,7 @@ impl LivePoll {
         let live_items: Vec<LiveItem> = poll
             .items
             .into_iter()
-            .map(|item| LiveItem::new(item))
+            .filter_map(|item| LiveItem::new(item))
             .collect();
 
         let (poll_id, live_poll) = LIVE_POLL_STORE.insert(LivePoll {
