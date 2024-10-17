@@ -78,19 +78,24 @@ pub async fn get_sse_host_question(
                 @let join_qr_code_svg = QrCode::new(&join_url)
                     .map(|qr|
                         qr.render()
-                        .min_dimensions(200, 200)
+                        .min_dimensions(160, 160)
                         .quiet_zone(false)
-                        .dark_color(svg::Color("#000000"))
+                        .dark_color(svg::Color("#1e293b"))
                         .light_color(svg::Color("#FFFFFF"))
                         .build()
                     );
 
-                ."mt-8 flex justify-center items-center gap-20" {
+                ."mb-6 grid grid-cols-3 items-center" {
+                    div {}
+                    ."" {}
+                    ."justify-self-end" { (render_live_participant_counter(poll_id)) }
+                }
+                ."mb-8 mx-auto p-8 w-fit flex justify-center items-center gap-16 border rounded-xl shadow-lg" {
                     ."w-lg flex justify-center" {
                         (PreEscaped(join_qr_code_svg.unwrap_or("Error generating QR-Code.".to_string())))
                     }
                     ."flex flex-col items-center gap-2" {
-                        ."text-lg font-bold text-indigo-600 tracking-tight" {
+                        ."text-lg font-bold text-slate-400 tracking-tighter" {
                             "Join now"
                         }
                         ."size-5"{ (SvgIcon::Spinner.render()) }
@@ -104,62 +109,66 @@ pub async fn get_sse_host_question(
                         }
                     }
                 }
-                button
-                    hx-post={ "/next_question/" (poll_id) }
-                    hx-swap="none"
-                    ."relative group px-4 py-2 text-slate-100 tracking-wide font-semibold bg-slate-700 rounded-md hover:bg-slate-800 transition"
-                {
-                    ."group-[.htmx-request]:opacity-0 flex items-center gap-2" {
-                        "Start first item"
-                        ."size-4" { (SvgIcon::ArrowRight.render()) }
-                    }
-                    ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
-                        ."size-4" { (SvgIcon::Spinner.render()) }
+                ."flex justify-center" {
+                    button
+                        hx-post={ "/next_question/" (poll_id) }
+                        hx-swap="none"
+                        ."relative group px-4 py-2 text-slate-50 tracking-wide font-semibold bg-indigo-500 rounded-md hover:bg-indigo-700 transition"
+                    {
+                        ."group-[.htmx-request]:opacity-0 flex items-center gap-2" {
+                            "Start "
+                            ."size-4" { (SvgIcon::ArrowRight.render()) }
+                        }
+                        ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
+                            ."size-4" { (SvgIcon::Spinner.render()) }
+                        }
                     }
                 }
             }.into_string()),
-            QuestionAreaState::Item { item_idx: question_idx, is_last_question } => {
+            QuestionAreaState::Item { item_idx: question_idx, is_last_question: _ } => {
                 sse::Event::default()
                 .event("update")
                 .data(
                     html! {
-                        ."mb-10 grid grid-cols-3 items-center" {
-                            @if question_idx == 0 {
-                                div {}
-                            } @else {
+                        ."mb-6 grid grid-cols-3 items-center" {
+                            div {}
+                            ."text-center text-sm text-slate-500" { "Question " (question_idx + 1) }
+                            ."justify-self-end" { (render_live_participant_counter(poll_id)) }
+                        }
+                        ."flex gap-6" {
+                            ."mt-20" {
                                 button
                                     hx-post={ "/previous_question/" (poll_id) }
                                     hx-swap="none"
-                                    ."justify-self-start flex gap-2 items-center text-slate-500 text-sm"
+                                    ."relative group size-8 p-2 text-slate-50 rounded-full hover:bg-slate-700 transition"
+                                    ."bg-slate-500"[question_idx >= 1]
+                                    ."bg-slate-300"[question_idx == 0]
+                                    disabled[question_idx == 0]
                                 {
-                                    ."size-4" { (SvgIcon::ArrowLeft.render()) }
-                                    "Previous"
-                                }
-                            }
-
-                            ."text-center text-sm text-slate-500" {
-                                "Question " (question_idx + 1)
-                            }
-
-                            button
-                                hx-post={ "/next_question/" (poll_id) }
-                                hx-swap="none"
-                                ."justify-self-end relative group px-4 py-2 text-slate-100 tracking-wide font-semibold bg-slate-700 rounded-md hover:bg-slate-800 transition"
-                            {
-                                ."group-[.htmx-request]:opacity-0 flex items-center gap-2" {
-                                    @if !is_last_question {
-                                        "Next"
-                                        ."size-4" { (SvgIcon::ArrowRight.render()) }
-                                    } @else {
-                                        "End poll"
+                                    ."absolute inset-0 size-full flex group-[.htmx-request]:hidden items-center justify-center" {
+                                        ."size-4" { (SvgIcon::ChevronLeft.render()) }
+                                    }
+                                    ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
+                                        ."size-4" { (SvgIcon::Spinner.render()) }
                                     }
                                 }
-                                ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
-                                    ."size-4" { (SvgIcon::Spinner.render()) }
+                            }
+                            ."flex-1 " { (lq.lock().unwrap().items[question_idx].render_host_view()) }
+                            ."mt-20" {
+                                button
+                                    hx-post={ "/next_question/" (poll_id) }
+                                    hx-swap="none"
+                                    ."relative group size-8 p-2 text-slate-50 bg-slate-500 rounded-full hover:bg-slate-700 transition"
+                                {
+                                    ."absolute inset-0 size-full flex group-[.htmx-request]:hidden items-center justify-center" {
+                                        ."size-4" { (SvgIcon::ChevronRight.render()) }
+                                    }
+                                    ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
+                                        ."size-4" { (SvgIcon::Spinner.render()) }
+                                    }
                                 }
                             }
                         }
-                        (lq.lock().unwrap().items[question_idx].render_host_view())
                     }.into_string()
                 )
             },
@@ -323,4 +332,50 @@ pub fn render_sse_loading_spinner() -> Markup {
             ."size-4" { (SvgIcon::Spinner.render()) }
         }
     }
+}
+
+pub fn render_live_participant_counter(poll_id: ShortID) -> Markup {
+    html! {
+        ."px-4 flex items-center gap-2 border rounded-full w-fit" {
+            ."text-slate-600 size-5 translate-y-[0.05rem]" { (SvgIcon::Users.render()) }
+            div hx-ext="sse" sse-connect={"/sse/participant_counter/" (poll_id) } sse-close="close"  {
+                div sse-swap="update" {
+                    ."text-slate-600 text-lg" { "0" }
+                }
+            }
+        }
+    }
+}
+
+pub async fn get_sse_user_counter(
+    Path(poll_id): Path<ShortID>,
+    session: Session,
+) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
+    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    let auth_token = live_poll.lock().unwrap().host_auth_token.clone();
+    auth_token.verify(&session).await?;
+
+    let update_channel = live_poll.lock().unwrap().ch_players_updated_recv.clone();
+
+    let mut last_send_player_count = None;
+
+    let stream = WatchStream::new(update_channel)
+        .filter_map(move |_| {
+            let live_poll = live_poll.lock().unwrap();
+
+            if last_send_player_count.is_some_and(|count| count == live_poll.players.len()) {
+                None
+            } else {
+                last_send_player_count = Some(live_poll.players.len());
+                Some(html! { ."text-slate-600 text-lg" { (live_poll.players.len()) } })
+            }
+        })
+        .map(|html| {
+            sse::Event::default()
+                .event("update")
+                .data(html.into_string())
+        })
+        .map(Ok);
+
+    Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()))
 }

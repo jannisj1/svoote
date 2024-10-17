@@ -111,6 +111,10 @@ fn main() {
             )
             .route("/sse/host_results/:poll_id", get(host::get_live_statistics))
             .route("/sse/leaderboard/:poll_id", get(host::get_sse_leaderboard))
+            .route(
+                "/sse/participant_counter/:poll_id",
+                get(host::get_sse_user_counter),
+            )
             .route("/p", get(play::get_play_page))
             .route("/submit_mc_answer/:poll_id", post(play::post_mc_answer))
             .route(
