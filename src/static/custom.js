@@ -30,6 +30,7 @@ function maybeHideAddAnswerBtn(div_name) {
 }
 
 function onkeydownMCAnswer(input_element, event, item_idx) {
+  /* Enter */
   if (event.keyCode == 13) {
     document.getElementById(`btn-add-answer-${item_idx}`)?.click();
     input_element.blur();

@@ -74,8 +74,11 @@ pub async fn get_sse_host_question(
             QuestionAreaState::JoinCode(poll_id) => sse::Event::default()
             .event("update")
             .data(html! {
-                @let join_url = format!("https://svoote.com/p?c={}", poll_id);
-                @let join_qr_code_svg = QrCode::new(&join_url)
+                @let domain = "https://svoote.com";
+                @let path = format!("/p?c={}", poll_id);
+                @let complete_url = format!("{}{}", domain, path);
+
+                @let join_qr_code_svg = QrCode::new(&complete_url)
                     .map(|qr|
                         qr.render()
                         .min_dimensions(160, 160)
@@ -105,7 +108,7 @@ pub async fn get_sse_host_question(
                             (poll_id)
                         }
                         ."text-sm text-slate-700" {
-                            "Enter on " a ."text-indigo-500 underline" href=(join_url) { "svoote.com" }
+                            "Enter on " a ."text-indigo-500 underline" href=(path) { "svoote.com" }
                         }
                     }
                 }

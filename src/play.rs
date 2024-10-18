@@ -2,7 +2,7 @@ use crate::{
     app_error::AppError,
     auth_token::AuthToken,
     config::{LIVE_POLL_PARTICIPANT_LIMIT, MAX_FREE_TEXT_ANSWERS},
-    html_page,
+    html_page::{self, render_header},
     live_item::LiveAnswers,
     live_poll::QuestionAreaState,
     live_poll_store::{ShortID, LIVE_POLL_STORE},
@@ -135,10 +135,10 @@ pub async fn get_play_page(
         match live_poll.get_or_create_player(&auth_token) {
             Some(player_index) => {
                 html! {
+                    (render_header(html!{ }))
                     div hx-ext="sse" sse-connect={ "/sse/play/" (params.c) } sse-close="close" {
                         div sse-swap="update" { (crate::host::render_sse_loading_spinner()) }
                     }
-
                     @if live_poll.leaderboard_enabled {
                         ."mt-4 mb-16 text-slate-500 text-sm" {
                             "Leaderboard is enabled. Playing as `" (live_poll.get_player(player_index).get_name()) "`."
@@ -175,8 +175,8 @@ pub async fn get_sse_play(
             QuestionAreaState::JoinCode(_) => sse::Event::default()
             .event("update")
             .data(html! {
-                ."text-slate-700" {
-                    "Other participants are joining. Waiting for the host to start the poll."
+                ."mb-4 text-center text-slate-500" {
+                    "Waiting for the host to start the poll."
                 }
                 ."flex justify-center" {
                     ."size-4" { (SvgIcon::Spinner.render()) }

@@ -140,7 +140,7 @@ async fn render_edit_page(session: Session, mut poll: PollV1) -> Result<Response
             ."mb-8 flex flex-col gap-8" #poll-items {
                 @for (item_idx, item) in poll.items.iter().enumerate() {
                     ."flex items-center gap-3" {
-                        ."relative size-7 rounded-full bg-slate-600" {
+                        div ."relative size-7 rounded-full bg-slate-600" {
                             ."absolute inset-0 size-full flex justify-center items-center text-slate-50 text-sm font-bold" { (item_idx + 1) }
                         }
                         ."flex-1 px-5 py-4 border shadow rounded" {
@@ -154,6 +154,7 @@ async fn render_edit_page(session: Session, mut poll: PollV1) -> Result<Response
                                     "hx-on::after-request"="freeSavingIndicator();"
                                     maxlength="2048"
                                     placeholder="Enter question text"
+                                    onkeydown={ "onkeydownMCAnswer(this, event, " (item_idx) ");"}
                                     value=(item.question);
                                 button
                                     title="Delete item"
@@ -201,7 +202,7 @@ async fn render_edit_page(session: Session, mut poll: PollV1) -> Result<Response
                                             ."hidden size-4 group-[.htmx-request]:block" { (SvgIcon::Spinner.render()) }
                                         }
                                     }
-                                    }
+                                }
                                 Answers::SingleChoice(answers) => {
                                     @let mc_answers_div_name = format!("mc-answers-div-{}", item_idx);
                                     #(mc_answers_div_name) ."flex flex-col gap-2" {
