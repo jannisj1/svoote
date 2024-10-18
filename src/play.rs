@@ -104,6 +104,10 @@ impl Player {
         };
     }
 
+    pub fn get_generated_name<'a>(&'a self) -> &'a SmartString<Compact> {
+        return &self.generated_name;
+    }
+
     pub fn get_avatar_svg(&self) -> PreEscaped<&'static str> {
         return PreEscaped(AVATARS[self.avatar_index].1);
     }
@@ -134,15 +138,54 @@ pub async fn get_play_page(
         "Svoote",
         match live_poll.get_or_create_player(&auth_token) {
             Some(player_index) => {
+                let player = live_poll.get_player(player_index);
                 html! {
-                    (render_header(html!{ }))
+                    (render_header(html! {
+                        button
+                            ."px-5 py-2 flex items-center gap-2.5 bg-slate-700 hover:bg-slate-800 rounded-full transition"
+                            onclick="document.getElementById('participant-dialog').showModal()"
+                        {
+                            ."text-slate-300" {
+                                @if live_poll.leaderboard_enabled {
+                                    (player.get_name())
+                                } @else {
+                                    "Anonymous"
+                                }
+                            }
+                            ."size-8 text-slate-300" {
+                                @if live_poll.leaderboard_enabled {
+                                    (player.get_avatar_svg())
+                                } @else {
+                                    (SvgIcon::User.render())
+                                }
+                            }
+                        }
+                        dialog
+                            #participant-dialog
+                            ."w-2xl"
+                        {
+                            ."mb-2 flex justify-end" {
+                                button
+                                    onclick="document.getElementById('participant-dialog').close()"
+                                    ."size-5 text-red-500"
+                                { (SvgIcon::X.render()) }
+                            }
+                            ."" { "Name" }
+                            /*input type="text"
+                                name="player_name"
+                                ."px-4 py-1.5 flex-1 text-slate-900 font-medium bg-slate-100 rounded-lg"
+                                hx-put={ "/poll/item/" (item_idx) "/text" }
+                                hx-trigger="input changed delay:300ms"
+                                "hx-on::before-request"="bindSavingIndicator();"
+                                "hx-on::after-request"="freeSavingIndicator();"
+                                maxlength="32"
+                                placeholder="Enter question text"
+                                onkeydown={ "onkeydownMCAnswer(this, event, " (item_idx) ");"}
+                                value=(item.question);*/
+                        }
+                    }))
                     div hx-ext="sse" sse-connect={ "/sse/play/" (params.c) } sse-close="close" {
                         div sse-swap="update" { (crate::host::render_sse_loading_spinner()) }
-                    }
-                    @if live_poll.leaderboard_enabled {
-                        ."mt-4 mb-16 text-slate-500 text-sm" {
-                            "Leaderboard is enabled. Playing as `" (live_poll.get_player(player_index).get_name()) "`."
-                        }
                     }
                 }
             }
@@ -175,7 +218,7 @@ pub async fn get_sse_play(
             QuestionAreaState::JoinCode(_) => sse::Event::default()
             .event("update")
             .data(html! {
-                ."mb-4 text-center text-slate-500" {
+                ."mt-20 mb-4 text-center text-slate-500" {
                     "Waiting for the host to start the poll."
                 }
                 ."flex justify-center" {
@@ -369,9 +412,9 @@ pub async fn post_free_text_answer(
 
 fn render_poll_finished() -> Markup {
     html! {
+        (render_header(html! {}))
         ."my-36 text-center text-slate-500" {
-            "This poll is finished." br;
-            "Thank you for participating on svoote.com."
+            "This poll has finished. Thank you for participating on svoote.com"
         }
     }
 }
