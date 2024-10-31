@@ -6,8 +6,7 @@ use axum::{
 };
 
 use futures::Stream;
-use maud::{html, Markup, PreEscaped};
-use qrcode::{render::svg, QrCode};
+use maud::{html, Markup};
 use tokio_stream::wrappers::WatchStream;
 use tokio_stream::StreamExt as _;
 use tower_sessions::Session;
@@ -33,7 +32,7 @@ pub async fn render_live_host(poll_id: ShortID) -> Result<Response, AppError> {
                         #start-poll-btn
                         hx-post={ "/exit_poll/" (poll_id) }
                         hx-swap="none"
-                        ."relative group size-12 text-slate-100 bg-red-500 rounded-full hover:bg-red-700 transition"
+                        ."relative group size-12 text-slate-100 bg-red-500 rounded-full hover:bg-red-700"
                     {
                         ."group-[.htmx-request]:opacity-0 flex justify-center" { ."size-6" { (SvgIcon::X.render()) } }
                         ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
@@ -69,134 +68,31 @@ pub async fn get_sse_host_question(
     let stream = WatchStream::new(updates)
         .map(move |state| match state {
             QuestionAreaState::None => sse::Event::default()
-            .event("update")
-            .data(html! {}.into_string()),
-            QuestionAreaState::JoinCode(poll_id) => sse::Event::default()
-            .event("update")
-            .data(html! {
-                @let domain = "https://svoote.com";
-                @let path = format!("/p?c={}", poll_id);
-                @let complete_url = format!("{}{}", domain, path);
-
-                @let join_qr_code_svg = QrCode::new(&complete_url)
-                    .map(|qr|
-                        qr.render()
-                        .min_dimensions(160, 160)
-                        .quiet_zone(false)
-                        .dark_color(svg::Color("#1e293b"))
-                        .light_color(svg::Color("#FFFFFF"))
-                        .build()
-                    );
-
-                ."mb-6 grid grid-cols-3 items-center" {
-                    div {}
-                    ."" {}
-                    ."justify-self-end" { (render_live_participant_counter(poll_id)) }
-                }
-                ."mb-8 mx-auto p-8 w-fit flex justify-center items-center gap-16 border rounded-xl shadow-lg" {
-                    ."w-lg flex justify-center" {
-                        (PreEscaped(join_qr_code_svg.unwrap_or("Error generating QR-Code.".to_string())))
-                    }
-                    ."flex flex-col items-center gap-2" {
-                        ."text-lg font-bold text-slate-400 tracking-tighter" {
-                            "Join now"
-                        }
-                        ."size-5"{ (SvgIcon::Spinner.render()) }
-                    }
-                    ."text-center" {
-                        ."mb-2 text-5xl tracking-wider font-bold text-slate-700" {
-                            (poll_id)
-                        }
-                        ."text-sm text-slate-700" {
-                            "Enter on " a ."text-indigo-500 underline" href=(path) { "svoote.com" }
-                        }
-                    }
-                }
-                ."flex justify-center" {
-                    button
-                        hx-post={ "/next_question/" (poll_id) }
-                        hx-swap="none"
-                        ."relative group px-4 py-2 text-slate-50 tracking-wide font-semibold bg-indigo-500 rounded-md hover:bg-indigo-700 transition"
-                    {
-                        ."group-[.htmx-request]:opacity-0 flex items-center gap-2" {
-                            "Start "
-                            ."size-4" { (SvgIcon::ArrowRight.render()) }
-                        }
-                        ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
-                            ."size-4" { (SvgIcon::Spinner.render()) }
-                        }
-                    }
-                }
-            }.into_string()),
-            QuestionAreaState::Item { item_idx: question_idx, is_last_question: _ } => {
-                sse::Event::default()
                 .event("update")
-                .data(
-                    html! {
-                        ."mb-6 grid grid-cols-3 items-center" {
-                            div {}
-                            ."text-center text-sm text-slate-500" { "Question " (question_idx + 1) }
-                            ."justify-self-end" { (render_live_participant_counter(poll_id)) }
+                .data(html! {}.into_string()),
+            QuestionAreaState::Item {
+                item_idx,
+                is_last_question: _,
+            } => sse::Event::default().event("update").data(
+                lq.lock().unwrap().items[item_idx]
+                    .render_host_view(poll_id, item_idx)
+                    .into_string(),
+            ),
+            QuestionAreaState::PollFinished => sse::Event::default().event("update").data(
+                html! {
+                    ."my-24 flex flex-col text-sm text-slate-500 text-center" {
+                        ."" { "This poll has no more items. Thank you for using svoote.com" }
+                        a
+                            href="/"
+                            ."mt-4 underline cursor-pointer hover:text-slate-700 transition"
+                        {
+                            "Back to editing this poll"
                         }
-                        ."flex gap-6" {
-                            ."mt-20" {
-                                button
-                                    hx-post={ "/previous_question/" (poll_id) }
-                                    hx-swap="none"
-                                    ."relative group size-8 p-2 text-slate-50 rounded-full hover:bg-slate-700 transition"
-                                    ."bg-slate-500"[question_idx >= 1]
-                                    ."bg-slate-300"[question_idx == 0]
-                                    disabled[question_idx == 0]
-                                {
-                                    ."absolute inset-0 size-full flex group-[.htmx-request]:hidden items-center justify-center" {
-                                        ."size-4" { (SvgIcon::ChevronLeft.render()) }
-                                    }
-                                    ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
-                                        ."size-4" { (SvgIcon::Spinner.render()) }
-                                    }
-                                }
-                            }
-                            ."flex-1 " { (lq.lock().unwrap().items[question_idx].render_host_view()) }
-                            ."mt-20" {
-                                button
-                                    hx-post={ "/next_question/" (poll_id) }
-                                    hx-swap="none"
-                                    ."relative group size-8 p-2 text-slate-50 bg-slate-500 rounded-full hover:bg-slate-700 transition"
-                                {
-                                    ."absolute inset-0 size-full flex group-[.htmx-request]:hidden items-center justify-center" {
-                                        ."size-4" { (SvgIcon::ChevronRight.render()) }
-                                    }
-                                    ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
-                                        ."size-4" { (SvgIcon::Spinner.render()) }
-                                    }
-                                }
-                            }
-                        }
-                    }.into_string()
-                )
-            },
-            QuestionAreaState::PollFinished => {
-                sse::Event::default()
-                .event("update")
-                .data(
-                    html! {
-                        ."my-24 flex flex-col text-sm text-slate-500 text-center" {
-                            ."" { "This poll has no more items. Thank you for using svoote.com" }
-                            a
-                                href="/"
-                                ."mt-4 underline cursor-pointer hover:text-slate-700 transition"
-                            {
-                                "Back to editing this poll"
-                            }
-                        }
-                    }.into_string()
-                )
-            },
-            QuestionAreaState::CloseSSE => {
-                sse::Event::default()
-                .event("close")
-                .data("")
-            }
+                    }
+                }
+                .into_string(),
+            ),
+            QuestionAreaState::CloseSSE => sse::Event::default().event("close").data(""),
         })
         .map(Ok);
 
@@ -278,7 +174,7 @@ pub async fn get_sse_leaderboard(
     Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()))
 }
 
-pub async fn post_next_question(
+pub async fn post_next_item(
     Path(poll_id): Path<ShortID>,
     session: Session,
 ) -> Result<Response, AppError> {
@@ -295,7 +191,7 @@ pub async fn post_next_question(
     .into_response())
 }
 
-pub async fn post_previous_question(
+pub async fn post_previous_item(
     Path(poll_id): Path<ShortID>,
     session: Session,
 ) -> Result<Response, AppError> {
@@ -333,19 +229,6 @@ pub fn render_sse_loading_spinner() -> Markup {
     html! {
         ."h-64 flex items-center justify-center" {
             ."size-4" { (SvgIcon::Spinner.render()) }
-        }
-    }
-}
-
-pub fn render_live_participant_counter(poll_id: ShortID) -> Markup {
-    html! {
-        ."px-4 flex items-center gap-2 border rounded-full w-fit" {
-            ."text-slate-600 size-5 translate-y-[0.05rem]" { (SvgIcon::Users.render()) }
-            div hx-ext="sse" sse-connect={"/sse/participant_counter/" (poll_id) } sse-close="close"  {
-                div sse-swap="update" {
-                    ."text-slate-600 text-lg" { "0" }
-                }
-            }
         }
     }
 }

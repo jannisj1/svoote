@@ -99,11 +99,8 @@ fn main() {
                 "/poll/item/:item_idx/mc_answer/:answer_idx/toggle_correct",
                 put(polls::put_mc_toggle_correct),
             )
-            .route("/next_question/:poll_id", post(host::post_next_question))
-            .route(
-                "/previous_question/:poll_id",
-                post(host::post_previous_question),
-            )
+            .route("/next_item/:poll_id", post(host::post_next_item))
+            .route("/previous_item/:poll_id", post(host::post_previous_item))
             .route("/exit_poll/:poll_id", post(host::post_exit_poll))
             .route(
                 "/sse/host_question/:poll_id",

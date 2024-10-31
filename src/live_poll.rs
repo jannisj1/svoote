@@ -62,11 +62,13 @@ impl LivePoll {
         let (send_previous_question, mut recv_previous_question) = mpsc::channel(4);
         let (send_exit_poll, mut recv_exit_poll) = mpsc::channel(4);
 
-        let live_items: Vec<LiveItem> = poll
-            .items
-            .into_iter()
-            .filter_map(|item| LiveItem::new(item))
-            .collect();
+        let mut live_items = Vec::with_capacity(poll.items.len() + 1);
+        live_items.push(LiveItem::new_join_item());
+        for item in poll.items {
+            if let Some(live_item) = LiveItem::from_item(item) {
+                live_items.push(live_item);
+            }
+        }
 
         let (poll_id, live_poll) = LIVE_POLL_STORE.insert(LivePoll {
             host_auth_token: auth_token,
@@ -94,12 +96,7 @@ impl LivePoll {
             let _lq_drop = RmLqOnDrop(poll_id);
             let _ = recv_start_signal.await;
 
-            let _ = sse_host_question_send.send(QuestionAreaState::JoinCode(poll_id));
-
-            let mut active_item_index = select! {
-                _ = recv_next_question.recv() => { 0usize }
-                _ = recv_exit_poll.recv() => { live_poll.lock().unwrap().items.len() }
-            };
+            let mut active_item_index = 0usize;
 
             loop {
                 let is_last_item;
@@ -211,7 +208,6 @@ impl LivePoll {
 #[derive(Clone)]
 pub enum QuestionAreaState {
     None,
-    JoinCode(ShortID),
     Item {
         item_idx: usize,
         is_last_question: bool,

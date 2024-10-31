@@ -1,7 +1,7 @@
 use crate::{
     app_error::AppError,
     auth_token::AuthToken,
-    config::{LIVE_POLL_PARTICIPANT_LIMIT, MAX_FREE_TEXT_ANSWERS},
+    config::LIVE_POLL_PARTICIPANT_LIMIT,
     html_page::{self, render_header},
     live_item::LiveAnswers,
     live_poll::QuestionAreaState,
@@ -108,6 +108,10 @@ impl Player {
         return &self.generated_name;
     }
 
+    pub fn get_custom_name<'a>(&'a self) -> &'a Option<SmartString<Compact>> {
+        return &self.custom_name;
+    }
+
     pub fn get_avatar_svg(&self) -> PreEscaped<&'static str> {
         return PreEscaped(AVATARS[self.avatar_index].1);
     }
@@ -162,26 +166,40 @@ pub async fn get_play_page(
                         }
                         dialog
                             #participant-dialog
-                            ."w-2xl"
                         {
-                            ."mb-2 flex justify-end" {
-                                button
-                                    onclick="document.getElementById('participant-dialog').close()"
-                                    ."size-5 text-red-500"
-                                { (SvgIcon::X.render()) }
+                            ."max-w-64 p-4" {
+                                ."mb-2 flex justify-end" {
+                                    button
+                                        onclick="document.getElementById('participant-dialog').close()"
+                                        ."size-5 text-red-500"
+                                    { (SvgIcon::X.render()) }
+                                }
+                                form
+                                    onsubmit="submitParticipantNameDialog(event)"
+                                    ."flex flex-col"
+                                {
+                                    label
+                                        for="input-txt-participant-modal-name"
+                                        ."text-slate-500"
+                                    { "Name" }
+                                    input type="text"
+                                        ."mb-4 px-4 py-1.5 flex-1 text-slate-700 bg-slate-100 rounded-lg"
+                                        #input-txt-participant-modal-name
+                                        name="player_name"
+                                        maxlength="32"
+                                        placeholder=(player.get_generated_name())
+                                        value=(player.get_custom_name().as_ref().unwrap_or(&SmartString::new()));
+                                    ."mb-1 text-slate-500" { "Avatar" }
+                                    ."flex flex-wrap gap-4" {
+                                        @for avatar in AVATARS {
+                                            ."size-8" { (PreEscaped(avatar.1)) }
+                                        }
+                                    }
+                                    ."flex justify-end" {
+                                        button ."bg-slate-600 p-4 rounded" { "Submit" }
+                                    }
+                                }
                             }
-                            ."" { "Name" }
-                            /*input type="text"
-                                name="player_name"
-                                ."px-4 py-1.5 flex-1 text-slate-900 font-medium bg-slate-100 rounded-lg"
-                                hx-put={ "/poll/item/" (item_idx) "/text" }
-                                hx-trigger="input changed delay:300ms"
-                                "hx-on::before-request"="bindSavingIndicator();"
-                                "hx-on::after-request"="freeSavingIndicator();"
-                                maxlength="32"
-                                placeholder="Enter question text"
-                                onkeydown={ "onkeydownMCAnswer(this, event, " (item_idx) ");"}
-                                value=(item.question);*/
                         }
                     }))
                     div hx-ext="sse" sse-connect={ "/sse/play/" (params.c) } sse-close="close" {
@@ -212,122 +230,26 @@ pub async fn get_sse_play(
 
     let stream = WatchStream::new(updates)
         .map(move |state| match state {
-            QuestionAreaState::None => sse::Event::default()
-            .event("update")
-            .data(""),
-            QuestionAreaState::JoinCode(_) => sse::Event::default()
-            .event("update")
-            .data(html! {
-                ."mt-20 mb-4 text-center text-slate-500" {
-                    "Waiting for the host to start the poll."
-                }
-                ."flex justify-center" {
-                    ."size-4" { (SvgIcon::Spinner.render()) }
-                }
-            }.into_string()),
-            QuestionAreaState::Item { item_idx, is_last_question: _ } => {
-                let mut live_poll = live_poll.lock().unwrap();
-                let current_item = live_poll.get_current_item();
-
-                sse::Event::default()
+            QuestionAreaState::None => sse::Event::default().event("update").data(""),
+            QuestionAreaState::Item {
+                item_idx,
+                is_last_question: _,
+            } => sse::Event::default().event("update").data(
+                live_poll
+                    .lock()
+                    .unwrap()
+                    .get_current_item()
+                    .render_participant_view(poll_id, item_idx, player_index)
+                    .into_string(),
+            ),
+            QuestionAreaState::PollFinished => sse::Event::default()
                 .event("update")
-                .data(
-                    html! {
-                        ."mb-2 flex gap-6 text-sm text-slate-500" {
-                            "Question " (item_idx + 1)
-                            @match &current_item.answers {
-                                LiveAnswers::SingleChoice(_mc_answers) => {
-                                    ."flex gap-1 items-center" {
-                                        ."size-4" { (SvgIcon::CheckSquare.render()) }
-                                        "Multiple choice"
-                                    }
-                                }
-                                LiveAnswers::FreeText(_ft_answers) => {
-                                    ."flex gap-1 items-center" {
-                                        ."size-4" { (SvgIcon::Edit3.render()) }
-                                        "Free text - up to " (MAX_FREE_TEXT_ANSWERS) " answers"
-                                    }
-                                }
-                            }
-                        }
-                        ."mb-4 text-lg text-slate-700" {
-                            (current_item.question)
-                        }
-                        @match &current_item.answers {
-                            LiveAnswers::SingleChoice(mc_answers) => {
-                                @let current_mc_answer = &mc_answers.player_answers[player_index];
-                                form ."block w-full" {
-                                    @for (answer_idx, (answer_txt, _is_correct)) in mc_answers.answers.iter().enumerate() {
-                                        label
-                                            onclick="let e = document.getElementById('submit-btn'); if (e !== null) e.disabled = false;"
-                                            .{
-                                                "block p-2 mb-4 text-center text-base text-slate-700 "
-                                                "rounded-lg ring-2 ring-slate-500 "
-                                                "hover:ring-indigo-500 "
-                                                "has-[:checked]:ring-4 has-[:checked]:ring-indigo-500 "
-                                                "cursor-pointer transition duration-100 "
-                                            } {
-                                            (answer_txt)
-                                            input ."hidden" type="radio" name="answer_idx" value=(answer_idx)
-                                                required
-                                                disabled[current_mc_answer.is_some()]
-                                                checked[current_mc_answer.is_some_and(|ans| ans == answer_idx)];
-                                        }
-                                    }
-                                    ."flex justify-center mt-6" {
-                                        @if current_mc_answer.is_none() {
-                                            button #"submit-btn"
-                                                hx-post={ "/submit_mc_answer/" (poll_id) }
-                                                hx-target="this"
-                                                hx-swap="outerHTML"
-                                                disabled
-                                                ."relative group px-4 py-2 text-slate-100 tracking-wide font-semibold bg-slate-700 rounded-md hover:bg-slate-800 transition"
-                                            {
-                                                ."group-[.htmx-request]:opacity-0" { "Submit answer" }
-                                                ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
-                                                    ."size-4" { (SvgIcon::Spinner.render()) }
-                                                }
-                                            }
-                                        } @else {
-                                            (render_answer_submitted_text())
-                                        }
-                                    }
-                                }
-                            },
-                            LiveAnswers::FreeText(ft_answers) => {
-                                (ft_answers.render_form(player_index, poll_id))
-                            }
-                        }
-                        ."mt-36 text-sm text-slate-500 text-center" {
-                            p ."" {
-                                "Svoote does not assume responsibility for the polls created on this website."
-                            }
-                        }
-                    }.into_string()
-                )
-            },
-            QuestionAreaState::PollFinished => {
-                sse::Event::default()
-                .event("update")
-                .data(
-                    render_poll_finished().into_string()
-                )
-            }
-            QuestionAreaState::CloseSSE => {
-                sse::Event::default()
-                .event("close")
-                .data("")
-            }
+                .data(render_poll_finished().into_string()),
+            QuestionAreaState::CloseSSE => sse::Event::default().event("close").data(""),
         })
         .map(Ok);
 
     Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()))
-}
-
-fn render_answer_submitted_text() -> Markup {
-    html! {
-        ."text-slate-700" { "Your answer has been submitted." }
-    }
 }
 
 #[derive(Deserialize)]
@@ -369,7 +291,7 @@ pub async fn post_mc_answer(
         .send_if_modified(|_stats| true);
 
     return Ok(html! {
-        (render_answer_submitted_text())
+        ."text-slate-700" { "Your answer has been submitted." }
         script { (PreEscaped(r#"document.querySelectorAll('input[type="radio"]').forEach((e) => { e.disabled = true });"#)) }
     }
     .into_response());

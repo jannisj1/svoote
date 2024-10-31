@@ -63,3 +63,10 @@ function tickDemoElement(count, limit, elementId) {
     );
   }
 }
+
+function submitParticipantNameDialog(event) {
+  alert(event);
+
+  event.preventDefault();
+  return false;
+}
