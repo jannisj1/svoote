@@ -6,22 +6,24 @@ use smartstring::{Compact, SmartString};
 use crate::{
     app_error::AppError,
     config::{COLOR_PALETTE, MAX_FREE_TEXT_ANSWERS},
+    illustrations::Illustrations,
     live_poll::Item,
     live_poll_store::ShortID,
     svg_icons::SvgIcon,
     word_cloud::WordCloud,
 };
 
-pub struct LiveItem {
+pub struct Slide {
     pub question: String,
-    pub answers: LiveAnswers,
+    pub slide_type: SlideType,
     pub player_scores: Vec<usize>,
 }
 
-pub enum LiveAnswers {
-    JoinCode, // This item just shows the QR-Code for participants to join the poll, no "real" answers can be given
+pub enum SlideType {
+    EntrySlide,
     SingleChoice(MultipleChoiceLiveAnswers),
     FreeText(FreeTextLiveAnswers),
+    FinalSlide,
 }
 
 pub struct MultipleChoiceLiveAnswers {
@@ -35,64 +37,77 @@ pub struct FreeTextLiveAnswers {
     pub player_answers: Vec<ArrayVec<SmartString<Compact>, MAX_FREE_TEXT_ANSWERS>>,
 }
 
-impl LiveItem {
-    pub fn from_item(item: Item) -> Option<LiveItem> {
+impl Slide {
+    pub fn from_item(item: Item) -> Option<Slide> {
         let answers = match item.answers {
             crate::live_poll::Answers::SingleChoice(answers) => {
-                LiveAnswers::SingleChoice(MultipleChoiceLiveAnswers {
+                SlideType::SingleChoice(MultipleChoiceLiveAnswers {
                     answer_counts: std::iter::repeat(0usize).take(answers.len()).collect(),
                     answers,
                     player_answers: Vec::new(),
                 })
             }
-            crate::live_poll::Answers::FreeText(_, _) => {
-                LiveAnswers::FreeText(FreeTextLiveAnswers {
-                    word_cloud: WordCloud::new(),
-                    player_answers: Vec::new(),
-                })
-            }
+            crate::live_poll::Answers::FreeText(_, _) => SlideType::FreeText(FreeTextLiveAnswers {
+                word_cloud: WordCloud::new(),
+                player_answers: Vec::new(),
+            }),
             crate::live_poll::Answers::Untyped => {
                 return None;
             }
         };
 
-        return Some(LiveItem {
+        return Some(Slide {
             question: item.question,
-            answers,
+            slide_type: answers,
             player_scores: Vec::new(),
         });
     }
 
-    pub fn new_join_item() -> LiveItem {
-        return LiveItem {
+    pub fn create_join_slide() -> Slide {
+        return Slide {
             question: String::new(),
-            answers: LiveAnswers::JoinCode,
+            slide_type: SlideType::EntrySlide,
             player_scores: Vec::new(),
         };
+    }
+
+    pub fn create_final_slide() -> Slide {
+        return Slide {
+            question: String::new(),
+            slide_type: SlideType::FinalSlide,
+            player_scores: Vec::new(),
+        };
+    }
+
+    pub fn is_entry_slide(&self) -> bool {
+        return matches!(self.slide_type, SlideType::EntrySlide);
+    }
+
+    pub fn is_final_slide(&self) -> bool {
+        return matches!(self.slide_type, SlideType::FinalSlide);
     }
 
     pub fn add_player(&mut self) {
         self.player_scores.push(0usize);
 
-        match &mut self.answers {
-            LiveAnswers::JoinCode => {}
-            LiveAnswers::SingleChoice(mc_answers) => {
+        match &mut self.slide_type {
+            SlideType::EntrySlide => {}
+            SlideType::FinalSlide => {}
+            SlideType::SingleChoice(mc_answers) => {
                 mc_answers.player_answers.push(None);
             }
-            LiveAnswers::FreeText(ft_answer) => {
+            SlideType::FreeText(ft_answer) => {
                 ft_answer.player_answers.push(ArrayVec::new());
             }
         }
     }
 
     pub fn render_host_view(&self, poll_id: ShortID, item_idx: usize) -> Markup {
-        let item_is_join_code = matches!(self.answers, LiveAnswers::JoinCode);
-
         return html! {
             ."mb-6 grid grid-cols-3 items-center" {
                 div {}
                 ."text-center text-sm text-slate-500" {
-                    @if !item_is_join_code {
+                    @if !(self.is_entry_slide() || self.is_final_slide()) {
                         "Item " (item_idx)
                     }
                 }
@@ -110,23 +125,18 @@ impl LiveItem {
             ."flex justify-between gap-8" {
                 ."mt-20" {
                     button
-                        hx-post={ "/previous_item/" (poll_id) }
+                        hx-post={ "/previous_slide/" (poll_id) }
                         hx-swap="none"
-                        ."relative group size-8 p-2 text-slate-50 rounded-full"
-                        ."bg-slate-500 hover:bg-slate-700"[!item_is_join_code]
-                        ."bg-slate-200"[item_is_join_code]
-                        disabled[item_is_join_code]
+                        ."relative group size-8 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700 disabled:bg-slate-200"
+                        disabled[self.is_entry_slide()]
                     {
-                        ."absolute inset-0 size-full flex group-[.htmx-request]:hidden items-center justify-center" {
+                        ."absolute inset-0 size-full flex items-center justify-center" {
                             ."size-4 translate-x-[-0.05rem]" { (SvgIcon::ChevronLeft.render()) }
-                        }
-                        ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
-                            ."size-4" { (SvgIcon::Spinner.render()) }
                         }
                     }
                 }
-                ."flex-1"[!item_is_join_code] {
-                    @if item_is_join_code {
+                ."flex-1" {
+                    @if self.is_entry_slide() {
                         @let domain = "https://svoote.com";
                         @let path = format!("/p?c={}", poll_id);
                         @let complete_url = format!("{}{}", domain, path);
@@ -141,35 +151,38 @@ impl LiveItem {
                                 .build()
                             );
 
-                        ."p-8 w-fit flex justify-center items-center gap-16 border rounded-xl shadow-lg" {
-                            ."w-lg flex justify-center" {
-                                (PreEscaped(join_qr_code_svg.unwrap_or("Error generating QR-Code.".to_string())))
+                        ."flex justify-center gap-32" {
+                            ."w-48" {
+                               (Illustrations::Quiz.render())
                             }
-                            ."flex flex-col items-center gap-2" {
-                                ."text-lg font-bold text-slate-400" { "Join now" }
-                                ."size-5"{ (SvgIcon::Spinner.render()) }
-                            }
-                            ."text-center" {
-                                ."mb-2 text-5xl tracking-wider font-bold text-slate-700" {
+                            ."mt-16" {
+                                ."mb-1 text-sm text-slate-500 text-center" {
+                                    "Enter on " a ."text-indigo-500 underline" href=(path) { "svoote.com" }
+                                }
+                                ."mb-10 text-3xl tracking-wider font-bold text-slate-700 text-center" {
                                     (poll_id)
                                 }
-                                ."text-sm text-slate-700" {
-                                    "Enter on " a ."text-indigo-500 underline" href=(path) { "svoote.com" }
+                                ."w-lg flex justify-center" {
+                                    (PreEscaped(join_qr_code_svg.unwrap_or("Error generating QR-Code.".to_string())))
                                 }
                             }
                         }
+                    } @else if self.is_final_slide() {
+                        ."mx-auto w-32" { (Illustrations::InLove.render()) }
+                        ."mt-8 text-slate-500 text-center text-sm" { "This poll has no more items. Thank you for using svoote.com" }
                     } @else {
                         ."mb-6 text-left text-xl text-slate-900 font-medium" { (self.question )}
-                        @match &self.answers {
-                            LiveAnswers::JoinCode => {} // This can never happen actually
-                            LiveAnswers::SingleChoice(mc_answers) => {
+                        @match &self.slide_type {
+                            SlideType::EntrySlide => {} // This can never happen actually
+                            SlideType::FinalSlide => {} // This can never happen actually
+                            SlideType::SingleChoice(mc_answers) => {
                                 @for (answer_txt, _is_correct) in &mc_answers.answers {
                                     ."p-2 mb-4 text-center text-slate-700 font-medium rounded-lg ring-2 ring-slate-500" {
                                         (answer_txt)
                                     }
                                 }
                             },
-                            LiveAnswers::FreeText(_answers) => {
+                            SlideType::FreeText(_answers) => {
                                 ."pl-2 flex gap-2 items-center text-slate-500" {
                                     ."size-4" { (SvgIcon::Edit3.render()) }
                                     "Submit your answer now."
@@ -180,15 +193,13 @@ impl LiveItem {
                 }
                 ."mt-20" {
                     button
-                        hx-post={ "/next_item/" (poll_id) }
+                        hx-post={ "/next_slide/" (poll_id) }
                         hx-swap="none"
-                        ."relative group size-8 p-2 text-slate-50 bg-cyan-600 rounded-full hover:bg-cyan-800"
+                        ."relative group size-8 p-2 text-slate-50 rounded-full bg-cyan-600 hover:bg-cyan-800 disabled:bg-slate-200"
+                        disabled[self.is_final_slide()]
                     {
-                        ."absolute inset-0 size-full flex group-[.htmx-request]:hidden items-center justify-center" {
+                        ."absolute inset-0 size-full flex items-center justify-center" {
                             ."size-4" { (SvgIcon::ChevronRight.render()) }
-                        }
-                        ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
-                            ."size-4" { (SvgIcon::Spinner.render()) }
                         }
                     }
                 }
@@ -197,9 +208,10 @@ impl LiveItem {
     }
 
     pub fn render_statistics(&mut self) -> Markup {
-        match &mut self.answers {
-            LiveAnswers::JoinCode => return html! {},
-            LiveAnswers::SingleChoice(mc_answers) => {
+        match &mut self.slide_type {
+            SlideType::EntrySlide => return html! {},
+            SlideType::FinalSlide => return html! {},
+            SlideType::SingleChoice(mc_answers) => {
                 let mut max: usize = *mc_answers.answer_counts.iter().max().unwrap_or(&1usize);
 
                 if max == 0 {
@@ -225,7 +237,7 @@ impl LiveItem {
                     }
                 };
             }
-            LiveAnswers::FreeText(ft_answers) => {
+            SlideType::FreeText(ft_answers) => {
                 let (words, container_height) = ft_answers.word_cloud.render();
 
                 let html = html! {
@@ -268,10 +280,8 @@ impl LiveItem {
         item_idx: usize,
         player_index: usize,
     ) -> Markup {
-        let item_is_join_code = matches!(self.answers, LiveAnswers::JoinCode);
-
         return html! {
-            @if item_is_join_code {
+            @if self.is_entry_slide() {
                 ."mt-20 mb-4 text-center text-slate-500" {
                     "Waiting for the host to start the poll."
                 }
@@ -281,15 +291,16 @@ impl LiveItem {
             } @else {
                 ."mb-2 flex gap-6 text-sm text-slate-500" {
                     "Question " (item_idx + 1)
-                    @match &self.answers {
-                        LiveAnswers::JoinCode => {}, // This can't actually happen
-                        LiveAnswers::SingleChoice(_mc_answers) => {
+                    @match &self.slide_type {
+                        SlideType::EntrySlide => {}, // This can't actually happen
+                        SlideType::FinalSlide => {}, // This can't actually happen
+                        SlideType::SingleChoice(_mc_answers) => {
                             ."flex gap-1 items-center" {
                                 ."size-4" { (SvgIcon::CheckSquare.render()) }
                                 "Multiple choice"
                             }
                         }
-                        LiveAnswers::FreeText(_ft_answers) => {
+                        SlideType::FreeText(_ft_answers) => {
                             ."flex gap-1 items-center" {
                                 ."size-4" { (SvgIcon::Edit3.render()) }
                                 "Free text - up to " (MAX_FREE_TEXT_ANSWERS) " answers"
@@ -300,9 +311,10 @@ impl LiveItem {
                 ."mb-4 text-lg text-slate-700" {
                     (self.question)
                 }
-                @match &self.answers {
-                    LiveAnswers::JoinCode => {}, // This can't actually happen
-                    LiveAnswers::SingleChoice(mc_answers) => {
+                @match &self.slide_type {
+                    SlideType::EntrySlide => {}, // This can't actually happen
+                    SlideType::FinalSlide => {}, // This can't actually happen
+                    SlideType::SingleChoice(mc_answers) => {
                         @let current_mc_answer = &mc_answers.player_answers[player_index];
                         form ."block w-full" {
                             @for (answer_idx, (answer_txt, _is_correct)) in mc_answers.answers.iter().enumerate() {
@@ -342,7 +354,7 @@ impl LiveItem {
                             }
                         }
                     },
-                    LiveAnswers::FreeText(ft_answers) => {
+                    SlideType::FreeText(ft_answers) => {
                         (ft_answers.render_form(player_index, poll_id))
                     }
                 }

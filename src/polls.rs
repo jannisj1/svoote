@@ -125,7 +125,7 @@ async fn render_edit_page(session: Session, mut poll: PollV1) -> Result<Response
                         hx-target="main"
                         hx-swap="outerHTML"
                         disabled[poll.items.len() == 1 && matches!(poll.items[0].answers, Answers::Untyped)]
-                        ."relative group size-12 text-slate-100 bg-indigo-500 rounded-full hover:bg-indigo-700 disabled:bg-indigo-300 transition"
+                        ."relative group size-12 text-slate-100 bg-cyan-600 rounded-full hover:bg-cyan-800 disabled:bg-slate-300"
                     {
                         ."group-[.htmx-request]:opacity-0 flex justify-center" { ."translate-x-[0.1rem] size-6" { (SvgIcon::Play.render()) } }
                         ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {

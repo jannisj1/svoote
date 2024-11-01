@@ -9,10 +9,10 @@ use uuid::Uuid;
 use crate::app_error::AppError;
 use crate::auth_token::AuthToken;
 use crate::config::LIVE_POLL_PARTICIPANT_LIMIT;
-use crate::live_item::LiveItem;
 use crate::live_poll_store::{ShortID, LIVE_POLL_STORE};
 use crate::play::Player;
 use crate::polls::PollV1;
+use crate::slide::Slide;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Item {
@@ -29,7 +29,7 @@ pub enum Answers {
 
 pub struct LivePoll {
     pub host_auth_token: AuthToken,
-    pub items: Vec<LiveItem>,
+    pub items: Vec<Slide>,
     pub player_indices: BTreeMap<Uuid, usize>,
     pub players: Vec<Player>,
     pub current_item_idx: usize,
@@ -63,12 +63,14 @@ impl LivePoll {
         let (send_exit_poll, mut recv_exit_poll) = mpsc::channel(4);
 
         let mut live_items = Vec::with_capacity(poll.items.len() + 1);
-        live_items.push(LiveItem::new_join_item());
+
+        live_items.push(Slide::create_join_slide());
         for item in poll.items {
-            if let Some(live_item) = LiveItem::from_item(item) {
+            if let Some(live_item) = Slide::from_item(item) {
                 live_items.push(live_item);
             }
         }
+        live_items.push(Slide::create_final_slide());
 
         let (poll_id, live_poll) = LIVE_POLL_STORE.insert(LivePoll {
             host_auth_token: auth_token,
@@ -99,15 +101,11 @@ impl LivePoll {
             let mut active_item_index = 0usize;
 
             loop {
-                let is_last_item;
-
                 {
                     let mut live_poll = live_poll.lock().unwrap();
                     if active_item_index >= live_poll.items.len() {
                         break;
                     }
-
-                    is_last_item = active_item_index + 1 == live_poll.items.len();
 
                     live_poll.current_item_idx = active_item_index;
                     live_poll.current_item_start_time = Instant::now();
@@ -117,10 +115,7 @@ impl LivePoll {
                         .send(QuestionStatisticsState::Item(active_item_index));
                 }
 
-                let _ = sse_host_question_send.send(QuestionAreaState::Item {
-                    item_idx: active_item_index,
-                    is_last_question: is_last_item,
-                });
+                let _ = sse_host_question_send.send(QuestionAreaState::Item(active_item_index));
 
                 select! {
                     _ = recv_next_question.recv() => {
@@ -196,7 +191,7 @@ impl LivePoll {
         return &self.players[player_index];
     }
 
-    pub fn get_current_item<'a>(&'a mut self) -> &'a mut LiveItem {
+    pub fn get_current_item<'a>(&'a mut self) -> &'a mut Slide {
         return &mut self.items[self.current_item_idx];
     }
 
@@ -208,10 +203,7 @@ impl LivePoll {
 #[derive(Clone)]
 pub enum QuestionAreaState {
     None,
-    Item {
-        item_idx: usize,
-        is_last_question: bool,
-    },
+    Item(usize), // Index of current slide
     PollFinished,
     CloseSSE,
 }

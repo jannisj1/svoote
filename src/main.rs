@@ -8,11 +8,12 @@ mod compliance;
 mod config;
 mod host;
 mod html_page;
-mod live_item;
+mod illustrations;
 mod live_poll;
 mod live_poll_store;
 mod play;
 mod polls;
+mod slide;
 mod static_file;
 mod svg_icons;
 mod word_cloud;
@@ -99,8 +100,8 @@ fn main() {
                 "/poll/item/:item_idx/mc_answer/:answer_idx/toggle_correct",
                 put(polls::put_mc_toggle_correct),
             )
-            .route("/next_item/:poll_id", post(host::post_next_item))
-            .route("/previous_item/:poll_id", post(host::post_previous_item))
+            .route("/next_slide/:poll_id", post(host::post_next_slide))
+            .route("/previous_slide/:poll_id", post(host::post_previous_slide))
             .route("/exit_poll/:poll_id", post(host::post_exit_poll))
             .route(
                 "/sse/host_question/:poll_id",

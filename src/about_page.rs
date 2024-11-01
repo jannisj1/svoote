@@ -4,8 +4,8 @@ use crate::{
     app_error::AppError,
     config::COLOR_PALETTE,
     html_page,
-    live_item::{FreeTextLiveAnswers, LiveAnswers, LiveItem, MultipleChoiceLiveAnswers},
     live_poll_store::{ShortID, LIVE_POLL_STORE},
+    slide::{FreeTextLiveAnswers, MultipleChoiceLiveAnswers, Slide, SlideType},
     svg_icons::SvgIcon,
     word_cloud::WordCloud,
 };
@@ -297,9 +297,9 @@ pub fn render_mc_demo(index: usize) -> Markup {
         (10, 4, 5),
     ];
 
-    let mut example_mc_item = LiveItem {
+    let mut example_mc_item = Slide {
         question: "Is Severus Snape a good person?".to_string(),
-        answers: LiveAnswers::SingleChoice(MultipleChoiceLiveAnswers {
+        slide_type: SlideType::SingleChoice(MultipleChoiceLiveAnswers {
             answers: vec![
                 ("Yes".to_string(), false),
                 ("No".to_string(), false),
@@ -327,9 +327,9 @@ static FT_DEMO_MARKUP: OnceLock<Vec<Markup>> = OnceLock::new();
 
 pub fn render_ft_demo(index: usize) -> Markup {
     let markup_array = FT_DEMO_MARKUP.get_or_init(|| {
-        let mut example_ft_item = LiveItem {
+        let mut example_ft_item = Slide {
             question: "How do you feel about the upcoming exam?".to_string(),
-            answers: LiveAnswers::FreeText(FreeTextLiveAnswers {
+            slide_type: SlideType::FreeText(FreeTextLiveAnswers {
                 word_cloud: WordCloud::new(),
                 player_answers: Vec::new(),
             }),
@@ -354,7 +354,7 @@ pub fn render_ft_demo(index: usize) -> Markup {
         let mut res = Vec::new();
 
         for ans in answers {
-            if let LiveAnswers::FreeText(ft_answers) = &mut example_ft_item.answers {
+            if let SlideType::FreeText(ft_answers) = &mut example_ft_item.slide_type {
                 ft_answers.word_cloud.insert(ans);
             }
 

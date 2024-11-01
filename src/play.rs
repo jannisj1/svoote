@@ -3,9 +3,9 @@ use crate::{
     auth_token::AuthToken,
     config::LIVE_POLL_PARTICIPANT_LIMIT,
     html_page::{self, render_header},
-    live_item::LiveAnswers,
     live_poll::QuestionAreaState,
     live_poll_store::{ShortID, LIVE_POLL_STORE},
+    slide::SlideType,
     svg_icons::SvgIcon,
 };
 use axum::{
@@ -26,46 +26,26 @@ use tower_sessions::Session;
 // These awesome SVG-avatars were obtained from dicebear.com (Adventurer Neutral by Lisa Wischofsky)
 // They are published under the CC BY 4.0 license (https://creativecommons.org/licenses/by/4.0/)
 const AVATARS: &[(&'static str, &'static str)] = &[
-    /* ("Zoey", include_str!("../avatars/zoey.svg")),
-    ("Tigger", include_str!("../avatars/tigger.svg")),
-    ("Bubba", include_str!("../avatars/bubba.svg")),
-    ("Spooky", include_str!("../avatars/spooky.svg")),
-    ("Sadie", include_str!("../avatars/sadie.svg")),
-    ("George", include_str!("../avatars/george.svg")),
-    ("Zoe", include_str!("../avatars/zoe.svg")),
-    ("Baby", include_str!("../avatars/baby.svg")),
-    ("Sammy", include_str!("../avatars/sammy.svg")),
-    ("Cookie", include_str!("../avatars/cookie.svg")),
-    ("Lola", include_str!("../avatars/lola.svg")),
-    ("Snickers", include_str!("../avatars/snickers.svg")),
-    ("Oliver", include_str!("../avatars/oliver.svg")),
-    ("Willow", include_str!("../avatars/willow.svg")),
-    ("Whiskers", include_str!("../avatars/whiskers.svg")),
-    ("Samantha", include_str!("../avatars/samantha.svg")),
-    ("Cuddles", include_str!("../avatars/cuddles.svg")),
-    ("Sassy", include_str!("../avatars/sassy.svg")),
-    ("Callie", include_str!("../avatars/callie.svg")),
-    ("Ginger", include_str!("../avatars/ginger.svg")),*/
-    ("Rascal", include_str!("../avatars/rascal_square.svg")),
-    ("Chester", include_str!("../avatars/chester_square.svg")),
-    ("Coco", include_str!("../avatars/coco_square.svg")),
-    ("Bella", include_str!("../avatars/bella_square.svg")),
-    ("Gizmo", include_str!("../avatars/gizmo_square.svg")),
-    ("Kitty", include_str!("../avatars/kitty_square.svg")),
-    ("Daisy", include_str!("../avatars/daisy_square.svg")),
-    ("Angel", include_str!("../avatars/angel_square.svg")),
-    ("Bubba", include_str!("../avatars/bubba_square.svg")),
-    ("Boots", include_str!("../avatars/boots_square.svg")),
-    ("Patches", include_str!("../avatars/patches_square.svg")),
-    ("Simon", include_str!("../avatars/simon_square.svg")),
-    ("Sugar", include_str!("../avatars/sugar_square.svg")),
-    ("Gracie", include_str!("../avatars/gracie_square.svg")),
-    ("Princess", include_str!("../avatars/princess_square.svg")),
-    ("Dusty", include_str!("../avatars/dusty_square.svg")),
-    ("Luna", include_str!("../avatars/luna_square.svg")),
-    ("Baby", include_str!("../avatars/baby_square.svg")),
-    ("Milo", include_str!("../avatars/milo_square.svg")),
-    ("Jasmine", include_str!("../avatars/jasmine_square.svg")),
+    ("Rascal", include_str!("static/svgs/rascal_square.svg")),
+    ("Chester", include_str!("static/svgs/chester_square.svg")),
+    ("Coco", include_str!("static/svgs/coco_square.svg")),
+    ("Bella", include_str!("static/svgs/bella_square.svg")),
+    ("Gizmo", include_str!("static/svgs/gizmo_square.svg")),
+    ("Kitty", include_str!("static/svgs/kitty_square.svg")),
+    ("Daisy", include_str!("static/svgs/daisy_square.svg")),
+    ("Angel", include_str!("static/svgs/angel_square.svg")),
+    ("Bubba", include_str!("static/svgs/bubba_square.svg")),
+    ("Boots", include_str!("static/svgs/boots_square.svg")),
+    ("Patches", include_str!("static/svgs/patches_square.svg")),
+    ("Simon", include_str!("static/svgs/simon_square.svg")),
+    ("Sugar", include_str!("static/svgs/sugar_square.svg")),
+    ("Gracie", include_str!("static/svgs/gracie_square.svg")),
+    ("Princess", include_str!("static/svgs/princess_square.svg")),
+    ("Dusty", include_str!("static/svgs/dusty_square.svg")),
+    ("Luna", include_str!("static/svgs/luna_square.svg")),
+    ("Baby", include_str!("static/svgs/baby_square.svg")),
+    ("Milo", include_str!("static/svgs/milo_square.svg")),
+    ("Jasmine", include_str!("static/svgs/jasmine_square.svg")),
 ];
 
 pub struct Player {
@@ -231,15 +211,12 @@ pub async fn get_sse_play(
     let stream = WatchStream::new(updates)
         .map(move |state| match state {
             QuestionAreaState::None => sse::Event::default().event("update").data(""),
-            QuestionAreaState::Item {
-                item_idx,
-                is_last_question: _,
-            } => sse::Event::default().event("update").data(
+            QuestionAreaState::Item(slide_idx) => sse::Event::default().event("update").data(
                 live_poll
                     .lock()
                     .unwrap()
                     .get_current_item()
-                    .render_participant_view(poll_id, item_idx, player_index)
+                    .render_participant_view(poll_id, slide_idx, player_index)
                     .into_string(),
             ),
             QuestionAreaState::PollFinished => sse::Event::default()
@@ -270,7 +247,7 @@ pub async fn post_mc_answer(
     let start_time = live_poll.get_current_item_start_time();
 
     let score =
-        if let LiveAnswers::SingleChoice(mc_answers) = &mut live_poll.get_current_item().answers {
+        if let SlideType::SingleChoice(mc_answers) = &mut live_poll.get_current_item().slide_type {
             mc_answers.submit_answer(player_index, form.answer_idx, start_time)?
         } else {
             return Err(AppError::BadRequest(
@@ -314,7 +291,7 @@ pub async fn post_free_text_answer(
     let player_index = live_poll.get_player_index(&auth_token)?;
 
     let response =
-        if let LiveAnswers::FreeText(ft_answers) = &mut live_poll.get_current_item().answers {
+        if let SlideType::FreeText(ft_answers) = &mut live_poll.get_current_item().slide_type {
             ft_answers.submit_answer(player_index, form_data.free_text_answer)?;
             ft_answers.render_form(player_index, poll_id)
         } else {

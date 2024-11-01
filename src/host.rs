@@ -70,10 +70,7 @@ pub async fn get_sse_host_question(
             QuestionAreaState::None => sse::Event::default()
                 .event("update")
                 .data(html! {}.into_string()),
-            QuestionAreaState::Item {
-                item_idx,
-                is_last_question: _,
-            } => sse::Event::default().event("update").data(
+            QuestionAreaState::Item(item_idx) => sse::Event::default().event("update").data(
                 lq.lock().unwrap().items[item_idx]
                     .render_host_view(poll_id, item_idx)
                     .into_string(),
@@ -174,7 +171,7 @@ pub async fn get_sse_leaderboard(
     Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()))
 }
 
-pub async fn post_next_item(
+pub async fn post_next_slide(
     Path(poll_id): Path<ShortID>,
     session: Session,
 ) -> Result<Response, AppError> {
@@ -191,7 +188,7 @@ pub async fn post_next_item(
     .into_response())
 }
 
-pub async fn post_previous_item(
+pub async fn post_previous_slide(
     Path(poll_id): Path<ShortID>,
     session: Session,
 ) -> Result<Response, AppError> {
