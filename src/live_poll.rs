@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::app_error::AppError;
 use crate::auth_token::AuthToken;
-use crate::config::LIVE_POLL_PARTICIPANT_LIMIT;
+use crate::config::{LIVE_POLL_PARTICIPANT_LIMIT, POLL_EXIT_TIMEOUT};
 use crate::live_poll_store::{ShortID, LIVE_POLL_STORE};
 use crate::play::Player;
 use crate::polls::PollV1;
@@ -32,7 +32,7 @@ pub struct LivePoll {
     pub items: Vec<Slide>,
     pub player_indices: BTreeMap<Uuid, usize>,
     pub players: Vec<Player>,
-    pub current_item_idx: usize,
+    pub current_slide_index: usize,
     pub current_item_start_time: tokio::time::Instant,
     pub ch_start_signal: Option<oneshot::Sender<()>>,
     pub ch_players_updated_send: watch::Sender<()>,
@@ -54,9 +54,9 @@ impl LivePoll {
     ) -> Result<(ShortID, Arc<Mutex<Self>>), AppError> {
         let (send_start_signal, recv_start_signal) = oneshot::channel::<()>();
         let (sse_host_question_send, sse_host_question_recv) =
-            watch::channel(QuestionAreaState::None);
+            watch::channel(QuestionAreaState::Empty);
         let (send_question_statistics, recv_question_statistics) =
-            watch::channel(QuestionStatisticsState::None);
+            watch::channel(QuestionStatisticsState::Empty);
         let (send_players_updated, recv_players_updated) = watch::channel(());
         let (send_next_question, mut recv_next_question) = mpsc::channel(4);
         let (send_previous_question, mut recv_previous_question) = mpsc::channel(4);
@@ -77,7 +77,7 @@ impl LivePoll {
             items: live_items,
             player_indices: BTreeMap::new(),
             players: Vec::new(),
-            current_item_idx: 0usize,
+            current_slide_index: 0usize,
             current_item_start_time: Instant::now(),
             ch_start_signal: Some(send_start_signal),
             ch_players_updated_send: send_players_updated,
@@ -95,51 +95,48 @@ impl LivePoll {
         let return_live_poll_handle = live_poll.clone();
 
         tokio::spawn(async move {
-            let _lq_drop = RmLqOnDrop(poll_id);
+            let _live_poll_drop = RmLivePollOnDrop(poll_id);
             let _ = recv_start_signal.await;
 
-            let mut active_item_index = 0usize;
+            let mut active_slide_index = 0usize;
 
             loop {
                 {
                     let mut live_poll = live_poll.lock().unwrap();
-                    if active_item_index >= live_poll.items.len() {
-                        break;
-                    }
 
-                    live_poll.current_item_idx = active_item_index;
+                    live_poll.current_slide_index = active_slide_index;
                     live_poll.current_item_start_time = Instant::now();
 
                     let _ = live_poll
                         .ch_question_statistics_send
-                        .send(QuestionStatisticsState::Item(active_item_index));
+                        .send(QuestionStatisticsState::Slide(active_slide_index));
                 }
 
-                let _ = sse_host_question_send.send(QuestionAreaState::Item(active_item_index));
+                let _ = sse_host_question_send.send(QuestionAreaState::Slide(active_slide_index));
 
                 select! {
                     _ = recv_next_question.recv() => {
-                        active_item_index += 1;
+                        if active_slide_index + 1 < live_poll.lock().unwrap().get_slide_count() {
+                            active_slide_index += 1;
+                        }
                     }
                     _ = recv_previous_question.recv() => {
-                        if active_item_index > 0 {
-                            active_item_index -= 1;
+                        if active_slide_index > 0 {
+                            active_slide_index -= 1;
                         }
                     }
                     _ = recv_exit_poll.recv() => {
+                        break;
+                    }
+                    _ = tokio::time::sleep(POLL_EXIT_TIMEOUT) => {
                         break;
                     }
                 };
             }
 
             let _ = sse_host_question_send.send(QuestionAreaState::PollFinished);
-            let _ = live_poll
-                .lock()
-                .unwrap()
-                .ch_question_statistics_send
-                .send(QuestionStatisticsState::None);
 
-            let _ = tokio::time::sleep(tokio::time::Duration::from_millis(250)).await;
+            let _ = tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
             let _ = sse_host_question_send.send(QuestionAreaState::CloseSSE);
             let _ = live_poll
@@ -191,33 +188,41 @@ impl LivePoll {
         return &self.players[player_index];
     }
 
-    pub fn get_current_item<'a>(&'a mut self) -> &'a mut Slide {
-        return &mut self.items[self.current_item_idx];
+    pub fn get_current_slide<'a>(&'a mut self) -> &'a mut Slide {
+        return &mut self.items[self.current_slide_index];
     }
 
-    pub fn get_current_item_start_time(&self) -> tokio::time::Instant {
+    pub fn get_current_slide_start_time(&self) -> tokio::time::Instant {
         return self.current_item_start_time.clone();
+    }
+
+    pub fn get_slide_count(&self) -> usize {
+        return self.items.len();
+    }
+
+    pub fn get_current_participant_count(&self) -> usize {
+        return self.players.len();
     }
 }
 
 #[derive(Clone)]
 pub enum QuestionAreaState {
-    None,
-    Item(usize), // Index of current slide
+    Empty,
+    Slide(usize), // index of the current slide
     PollFinished,
     CloseSSE,
 }
 
 #[derive(Clone)]
 pub enum QuestionStatisticsState {
-    None,
-    Item(usize), // index of the current active item
+    Empty,
+    Slide(usize), // index of the current slide
     CloseSSE,
 }
 
-pub struct RmLqOnDrop(pub ShortID);
+pub struct RmLivePollOnDrop(pub ShortID);
 
-impl Drop for RmLqOnDrop {
+impl Drop for RmLivePollOnDrop {
     fn drop(&mut self) {
         LIVE_POLL_STORE.remove(self.0);
     }

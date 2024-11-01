@@ -60,26 +60,33 @@ impl PollV1 {
 pub async fn post_poll_page(session: Session) -> Result<Response, AppError> {
     let auth_token = AuthToken::get_or_create(&session).await?;
 
-    let (poll_id, _lq) = match LIVE_POLL_STORE
+    let (poll_id, _live_poll) = match LIVE_POLL_STORE
         .get_from_session(&session, &auth_token)
         .await?
     {
-        Some((poll_id, lq)) => (poll_id, lq),
+        Some((poll_id, live_poll)) => (poll_id, live_poll),
         None => {
             let poll = PollV1::from_session(&session).await?;
 
-            let (poll_id, lq) = LivePoll::orchestrate(poll.clone(), auth_token)?;
+            tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
+
+            let (poll_id, live_poll) = LivePoll::orchestrate(poll.clone(), auth_token)?;
 
             session
                 .insert("live_poll_id", poll_id)
                 .await
                 .map_err(|e| AppError::DatabaseError(e))?;
 
-            lq.lock().unwrap().ch_start_signal.take().map(|signal| {
-                let _ = signal.send(());
-            });
+            live_poll
+                .lock()
+                .unwrap()
+                .ch_start_signal
+                .take()
+                .map(|signal| {
+                    let _ = signal.send(());
+                });
 
-            (poll_id, lq)
+            (poll_id, live_poll)
         }
     };
 
@@ -93,7 +100,7 @@ pub async fn get_poll_page(session: Session) -> Result<Response, AppError> {
         .get_from_session(&session, &auth_token)
         .await?
     {
-        Some((poll_id, _lq)) => return host::render_live_host(poll_id).await,
+        Some((poll_id, _live_poll)) => return host::render_live_host(poll_id).await,
         None => {
             let poll = PollV1::from_session(&session).await?;
             return render_edit_page(session, poll).await;
@@ -138,28 +145,28 @@ async fn render_edit_page(session: Session, mut poll: PollV1) -> Result<Response
                 "Poll items"
             }
             ."mb-8 flex flex-col gap-8" #poll-items {
-                @for (item_idx, item) in poll.items.iter().enumerate() {
+                @for (slide_index, item) in poll.items.iter().enumerate() {
                     ."flex items-center gap-3" {
                         div ."relative size-7 rounded-full bg-slate-600" {
-                            ."absolute inset-0 size-full flex justify-center items-center text-slate-50 text-sm font-bold" { (item_idx + 1) }
+                            ."absolute inset-0 size-full flex justify-center items-center text-slate-50 text-sm font-bold" { (slide_index + 1) }
                         }
                         ."flex-1 px-5 py-4 border shadow rounded" {
                             ."mb-4 flex items-center gap-4" {
                                 input type="text"
                                     name="question"
                                     ."px-4 py-1.5 flex-1 text-slate-900 font-medium bg-slate-100 rounded-lg"
-                                    hx-put={ "/poll/item/" (item_idx) "/text" }
+                                    hx-put={ "/poll/item/" (slide_index) "/text" }
                                     hx-trigger="input changed delay:300ms"
                                     "hx-on::before-request"="bindSavingIndicator();"
                                     "hx-on::after-request"="freeSavingIndicator();"
                                     maxlength="2048"
                                     placeholder="Enter question text"
-                                    onkeydown={ "onkeydownMCAnswer(this, event, " (item_idx) ");"}
+                                    onkeydown={ "onkeydownMCAnswer(this, event, " (slide_index) ");"}
                                     value=(item.question);
                                 button
                                     title="Delete item"
                                     ."group size-5 text-red-500 tracking-tight hover:text-red-700 disabled:text-red-300 transition"
-                                    hx-delete={ "/poll/item/" (item_idx) }
+                                    hx-delete={ "/poll/item/" (slide_index) }
                                     hx-select="#pollEditingArea"
                                     hx-target="#pollEditingArea"
                                     hx-swap="outerHTML"
@@ -176,7 +183,7 @@ async fn render_edit_page(session: Session, mut poll: PollV1) -> Result<Response
                                     }
                                     ."flex gap-4 justify-center" {
                                         button
-                                            hx-post={ "/poll/item/type/" (item_idx) "/single_choice" }
+                                            hx-post={ "/poll/item/type/" (slide_index) "/single_choice" }
                                             hx-select="#pollEditingArea"
                                             hx-target="#pollEditingArea"
                                             hx-swap="outerHTML"
@@ -189,7 +196,7 @@ async fn render_edit_page(session: Session, mut poll: PollV1) -> Result<Response
                                             ."hidden size-4 group-[.htmx-request]:block" { (SvgIcon::Spinner.render()) }
                                         }
                                         button
-                                            hx-post={ "/poll/item/type/" (item_idx) "/free_text" }
+                                            hx-post={ "/poll/item/type/" (slide_index) "/free_text" }
                                             hx-select="#pollEditingArea"
                                             hx-target="#pollEditingArea"
                                             hx-swap="outerHTML"
@@ -204,16 +211,16 @@ async fn render_edit_page(session: Session, mut poll: PollV1) -> Result<Response
                                     }
                                 }
                                 Answers::SingleChoice(answers) => {
-                                    @let mc_answers_div_name = format!("mc-answers-div-{}", item_idx);
+                                    @let mc_answers_div_name = format!("mc-answers-div-{}", slide_index);
                                     #(mc_answers_div_name) ."flex flex-col gap-2" {
                                         @for (answer_idx, (answer_txt, is_correct)) in answers.iter().enumerate() {
-                                            (render_mc_answer(item_idx, answer_idx, answer_txt, *is_correct, false))
+                                            (render_mc_answer(slide_index, answer_idx, answer_txt, *is_correct, false))
                                         }
 
                                         @if answers.len() < POLL_MAX_MC_ANSWERS {
-                                            button #{ "btn-add-answer-" (item_idx) }
+                                            button #{ "btn-add-answer-" (slide_index) }
                                                 ."relative group w-fit ml-2 mb-4 text-sm text-slate-500 underline hover:text-slate-800"
-                                                hx-post={ "/poll/item/" (item_idx) "/add_mc_answer" }
+                                                hx-post={ "/poll/item/" (slide_index) "/add_mc_answer" }
                                                 hx-swap="beforebegin"
                                                 "hx-on::after-request"={ "maybeHideAddAnswerBtn('" (mc_answers_div_name) "');" }
                                             {
@@ -317,7 +324,7 @@ async fn render_edit_page(session: Session, mut poll: PollV1) -> Result<Response
                 }
             }
             ."ml-6 mb-3 text-slate-400 text-sm" {
-                "Participants will receive points for submitting the correct answer. Longer response times will yield less points."
+                "Participants will receive points for submitting the correct answer. Faster responses get more points."
             }
             ."flex items-center gap-2" {
                 input
@@ -364,7 +371,7 @@ pub async fn post_add_item(session: Session) -> Result<Response, AppError> {
 }
 
 fn render_mc_answer(
-    item_idx: usize,
+    slide_index: usize,
     answer_idx: usize,
     answer_txt: &str,
     is_correct: bool,
@@ -382,21 +389,21 @@ fn render_mc_answer(
                 ."px-2 py-0.5 flex-1 font-medium transition"
                 ."text-slate-700"[!is_correct]
                 ."text-green-600"[is_correct]
-                hx-put={ "/poll/item/" (item_idx) "/mc_answer/" (answer_idx) "/text" }
+                hx-put={ "/poll/item/" (slide_index) "/mc_answer/" (answer_idx) "/text" }
                 hx-trigger="input changed delay:300ms"
                 "hx-on::before-request"="bindSavingIndicator();"
                 "hx-on::after-request"="freeSavingIndicator();"
                 maxlength="2048"
                 placeholder={ "Answer " (answer_idx + 1) }
                 value=(answer_txt)
-                onkeydown={ "onkeydownMCAnswer(this, event, " (item_idx) ");"}
+                onkeydown={ "onkeydownMCAnswer(this, event, " (slide_index) ");"}
                 autofocus[autofocus];
             /*button
                 title="Mark/Unmark answer as correct"
                 ."size-5 hover:text-green-600 transition"
                 ."text-slate-400"[!is_correct]
                 ."text-green-600"[is_correct]
-                hx-put={ "/poll/item/" (item_idx) "/mc_answer/" (answer_idx) "/toggle_correct" }
+                hx-put={ "/poll/item/" (slide_index) "/mc_answer/" (answer_idx) "/toggle_correct" }
                 hx-select="#pollEditingArea"
                 hx-target="#pollEditingArea"
                 hx-swap="outerHTML"
@@ -406,7 +413,7 @@ fn render_mc_answer(
             button
                 title="Delete answer"
                 ."group delete-mc-btn size-5 flex items-center justify-center text-slate-400 hover:text-red-500 disabled:hover:text-slate-400 transition"
-                hx-delete={ "/poll/item/" (item_idx) "/mc_answer/" (answer_idx) }
+                hx-delete={ "/poll/item/" (slide_index) "/mc_answer/" (answer_idx) }
                 hx-select="#pollEditingArea"
                 hx-target="#pollEditingArea"
                 hx-swap="outerHTML"
@@ -425,7 +432,7 @@ pub struct PutQuestionText {
 }
 
 pub async fn put_question_text(
-    Path(item_idx): Path<usize>,
+    Path(slide_index): Path<usize>,
     session: Session,
     Form(form_data): Form<PutQuestionText>,
 ) -> Result<Response, AppError> {
@@ -437,7 +444,7 @@ pub async fn put_question_text(
 
     let mut poll = PollV1::from_session(&session).await?;
 
-    match poll.items.get_mut(item_idx) {
+    match poll.items.get_mut(slide_index) {
         Some(item) => {
             item.question = form_data.question;
         }
@@ -459,7 +466,7 @@ pub struct PutMCAnswerForm {
 }
 
 pub async fn put_mc_answer_text(
-    Path((item_idx, answer_idx)): Path<(usize, usize)>,
+    Path((slide_index, answer_idx)): Path<(usize, usize)>,
     session: Session,
     Form(form_data): Form<PutMCAnswerForm>,
 ) -> Result<Response, AppError> {
@@ -473,7 +480,7 @@ pub async fn put_mc_answer_text(
 
     match &mut poll
         .items
-        .get_mut(item_idx)
+        .get_mut(slide_index)
         .ok_or(AppError::BadRequest(
             "Item index out of bounds.".to_string(),
         ))?
@@ -500,14 +507,14 @@ pub async fn put_mc_answer_text(
 }
 
 pub async fn put_mc_toggle_correct(
-    Path((item_idx, answer_idx)): Path<(usize, usize)>,
+    Path((slide_index, answer_idx)): Path<(usize, usize)>,
     session: Session,
 ) -> Result<Response, AppError> {
     let mut poll = PollV1::from_session(&session).await?;
 
     match &mut poll
         .items
-        .get_mut(item_idx)
+        .get_mut(slide_index)
         .ok_or(AppError::BadRequest(
             "Item index out of bounds.".to_string(),
         ))?
@@ -535,11 +542,11 @@ pub async fn put_mc_toggle_correct(
 
 pub async fn post_item_type(
     session: Session,
-    Path((item_idx, item_type_descriptor)): Path<(usize, SmartString<Compact>)>,
+    Path((slide_index, item_type_descriptor)): Path<(usize, SmartString<Compact>)>,
 ) -> Result<Response, AppError> {
     let mut poll = PollV1::from_session(&session).await?;
 
-    match poll.items.get_mut(item_idx) {
+    match poll.items.get_mut(slide_index) {
         Some(item) => match item_type_descriptor.as_str() {
             "single_choice" => item.answers = Answers::SingleChoice(Vec::new()),
             "free_text" => item.answers = Answers::FreeText(MAX_FREE_TEXT_ANSWERS, Vec::new()),
@@ -550,7 +557,11 @@ pub async fn post_item_type(
                 )));
             }
         },
-        None => return Err(AppError::BadRequest("item_idx out of bounds".to_string())),
+        None => {
+            return Err(AppError::BadRequest(
+                "slide_index out of bounds".to_string(),
+            ))
+        }
     }
 
     poll.save_to_session(&session).await?;
@@ -559,16 +570,16 @@ pub async fn post_item_type(
 }
 
 pub async fn delete_item(
-    Path(item_idx): Path<usize>,
+    Path(slide_index): Path<usize>,
     session: Session,
 ) -> Result<Response, AppError> {
     let mut poll = PollV1::from_session(&session).await?;
 
-    if item_idx >= poll.items.len() {
+    if slide_index >= poll.items.len() {
         return Err(AppError::BadRequest("Item index out of bounds".to_string()));
     }
 
-    poll.items.remove(item_idx);
+    poll.items.remove(slide_index);
 
     poll.save_to_session(&session).await?;
 
@@ -576,14 +587,14 @@ pub async fn delete_item(
 }
 
 pub async fn post_add_mc_answer(
-    Path(item_idx): Path<usize>,
+    Path(slide_index): Path<usize>,
     session: Session,
 ) -> Result<Response, AppError> {
     let mut poll = PollV1::from_session(&session).await?;
 
     let new_answer_idx = match &mut poll
         .items
-        .get_mut(item_idx)
+        .get_mut(slide_index)
         .ok_or(AppError::BadRequest("Item index out of bounds".to_string()))?
         .answers
     {
@@ -606,18 +617,18 @@ pub async fn post_add_mc_answer(
 
     poll.save_to_session(&session).await?;
 
-    return Ok(render_mc_answer(item_idx, new_answer_idx, "", false, true).into_response());
+    return Ok(render_mc_answer(slide_index, new_answer_idx, "", false, true).into_response());
 }
 
 pub async fn delete_mc_answer(
-    Path((item_idx, answer_idx)): Path<(usize, usize)>,
+    Path((slide_index, answer_idx)): Path<(usize, usize)>,
     session: Session,
 ) -> Result<Response, AppError> {
     let mut poll = PollV1::from_session(&session).await?;
 
     match &mut poll
         .items
-        .get_mut(item_idx)
+        .get_mut(slide_index)
         .ok_or(AppError::BadRequest("Item index out of bounds".to_string()))?
         .answers
     {

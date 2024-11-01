@@ -317,7 +317,7 @@ pub fn render_mc_demo(index: usize) -> Markup {
 
     return html! {
         input type="hidden" name="index" value=(index + 1);
-        (example_mc_item.render_host_view(1_000_000, 1))
+        (example_mc_item.render_host_view(1_000_000, 1, 22))
         ."h-24" {}
         (example_mc_item.render_statistics())
     };
@@ -360,7 +360,7 @@ pub fn render_ft_demo(index: usize) -> Markup {
 
             res.push(html! {
                 input type="hidden" name="index" value=(res.len() + 1);
-                (example_ft_item.render_host_view(1_000_000, 2))
+                (example_ft_item.render_host_view(1_000_000, 2, 25))
                 ."h-24" {}
                 (example_ft_item.render_statistics())
             });

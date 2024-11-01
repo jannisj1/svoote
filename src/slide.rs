@@ -9,6 +9,7 @@ use crate::{
     illustrations::Illustrations,
     live_poll::Item,
     live_poll_store::ShortID,
+    play::render_poll_finished,
     svg_icons::SvgIcon,
     word_cloud::WordCloud,
 };
@@ -102,13 +103,18 @@ impl Slide {
         }
     }
 
-    pub fn render_host_view(&self, poll_id: ShortID, item_idx: usize) -> Markup {
+    pub fn render_host_view(
+        &self,
+        poll_id: ShortID,
+        slide_index: usize,
+        current_participant_count: usize,
+    ) -> Markup {
         return html! {
             ."mb-6 grid grid-cols-3 items-center" {
                 div {}
                 ."text-center text-sm text-slate-500" {
                     @if !(self.is_entry_slide() || self.is_final_slide()) {
-                        "Item " (item_idx)
+                        "Item " (slide_index)
                     }
                 }
                 ."justify-self-end" {
@@ -116,7 +122,7 @@ impl Slide {
                     ."text-slate-600 size-5 translate-y-[0.05rem]" { (SvgIcon::Users.render()) }
                         div hx-ext="sse" sse-connect={"/sse/participant_counter/" (poll_id) } sse-close="close"  {
                             div sse-swap="update" {
-                                ."text-slate-600 text-lg" { "0" }
+                                ."text-slate-600 text-lg" { (current_participant_count) }
                             }
                         }
                     }
@@ -127,7 +133,7 @@ impl Slide {
                     button
                         hx-post={ "/previous_slide/" (poll_id) }
                         hx-swap="none"
-                        ."relative group size-8 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700 disabled:bg-slate-200"
+                        ."relative group size-8 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700 disabled:opacity-0"
                         disabled[self.is_entry_slide()]
                     {
                         ."absolute inset-0 size-full flex items-center justify-center" {
@@ -151,24 +157,24 @@ impl Slide {
                                 .build()
                             );
 
-                        ."flex justify-center gap-32" {
-                            ."w-48" {
-                               (Illustrations::Quiz.render())
-                            }
-                            ."mt-16" {
+                        ."flex justify-center gap-20" {
+                            ."" {
                                 ."mb-1 text-sm text-slate-500 text-center" {
                                     "Enter on " a ."text-indigo-500 underline" href=(path) { "svoote.com" }
                                 }
-                                ."mb-10 text-3xl tracking-wider font-bold text-slate-700 text-center" {
+                                ."mb-6 text-3xl tracking-wider font-bold text-slate-700 text-center" {
                                     (poll_id)
                                 }
                                 ."w-lg flex justify-center" {
                                     (PreEscaped(join_qr_code_svg.unwrap_or("Error generating QR-Code.".to_string())))
                                 }
                             }
+                            ."w-[25rem]" {
+                               (Illustrations::TeamCollaboration.render())
+                            }
                         }
                     } @else if self.is_final_slide() {
-                        ."mx-auto w-32" { (Illustrations::InLove.render()) }
+                        ."mx-auto mt-6 w-24" { (Illustrations::InLove.render()) }
                         ."mt-8 text-slate-500 text-center text-sm" { "This poll has no more items. Thank you for using svoote.com" }
                     } @else {
                         ."mb-6 text-left text-xl text-slate-900 font-medium" { (self.question )}
@@ -195,8 +201,9 @@ impl Slide {
                     button
                         hx-post={ "/next_slide/" (poll_id) }
                         hx-swap="none"
-                        ."relative group size-8 p-2 text-slate-50 rounded-full bg-cyan-600 hover:bg-cyan-800 disabled:bg-slate-200"
+                        ."relative group size-8 p-2 text-slate-50 rounded-full bg-cyan-600 hover:bg-cyan-800 disabled:opacity-0"
                         disabled[self.is_final_slide()]
+
                     {
                         ."absolute inset-0 size-full flex items-center justify-center" {
                             ."size-4" { (SvgIcon::ChevronRight.render()) }
@@ -277,20 +284,22 @@ impl Slide {
     pub fn render_participant_view(
         &self,
         poll_id: ShortID,
-        item_idx: usize,
+        slide_index: usize,
         player_index: usize,
     ) -> Markup {
         return html! {
             @if self.is_entry_slide() {
-                ."mt-20 mb-4 text-center text-slate-500" {
+                ."mx-auto mt-12 mb-6 w-44 md:w-60" { (Illustrations::People.render()) }
+                ."mb-4 mx-auto size-4" { (SvgIcon::Spinner.render()) }
+                ."text-center text-sm text-slate-500" {
+                    "Others are joining." br;
                     "Waiting for the host to start the poll."
                 }
-                ."flex justify-center" {
-                    ."size-4" { (SvgIcon::Spinner.render()) }
-                }
+            } @else if self.is_final_slide() {
+                (render_poll_finished())
             } @else {
                 ."mb-2 flex gap-6 text-sm text-slate-500" {
-                    "Question " (item_idx + 1)
+                    "Question " (slide_index)
                     @match &self.slide_type {
                         SlideType::EntrySlide => {}, // This can't actually happen
                         SlideType::FinalSlide => {}, // This can't actually happen
@@ -356,11 +365,6 @@ impl Slide {
                     },
                     SlideType::FreeText(ft_answers) => {
                         (ft_answers.render_form(player_index, poll_id))
-                    }
-                }
-                ."mt-36 text-sm text-slate-500 text-center" {
-                    p ."" {
-                        "Svoote does not assume responsibility for the polls created on this website."
                     }
                 }
             }

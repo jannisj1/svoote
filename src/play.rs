@@ -3,6 +3,7 @@ use crate::{
     auth_token::AuthToken,
     config::LIVE_POLL_PARTICIPANT_LIMIT,
     html_page::{self, render_header},
+    illustrations::Illustrations,
     live_poll::QuestionAreaState,
     live_poll_store::{ShortID, LIVE_POLL_STORE},
     slide::SlideType,
@@ -109,9 +110,15 @@ pub async fn get_play_page(
     let live_poll = match LIVE_POLL_STORE.get(params.c) {
         Some(live_poll) => live_poll,
         None => {
-            return Ok(
-                html_page::render_html_page("Svoote", render_poll_finished(), true).into_response(),
+            return Ok(html_page::render_html_page(
+                "Svoote",
+                html! {
+                    (render_header(html! {}))
+                    (render_poll_finished())
+                },
+                true,
             )
+            .into_response())
         }
     };
 
@@ -210,12 +217,12 @@ pub async fn get_sse_play(
 
     let stream = WatchStream::new(updates)
         .map(move |state| match state {
-            QuestionAreaState::None => sse::Event::default().event("update").data(""),
-            QuestionAreaState::Item(slide_idx) => sse::Event::default().event("update").data(
+            QuestionAreaState::Empty => sse::Event::default().event("update").data(""),
+            QuestionAreaState::Slide(slide_idx) => sse::Event::default().event("update").data(
                 live_poll
                     .lock()
                     .unwrap()
-                    .get_current_item()
+                    .get_current_slide()
                     .render_participant_view(poll_id, slide_idx, player_index)
                     .into_string(),
             ),
@@ -244,20 +251,21 @@ pub async fn post_mc_answer(
     let mut live_poll = live_poll.lock().unwrap();
 
     let player_index = live_poll.get_player_index(&auth_token)?;
-    let start_time = live_poll.get_current_item_start_time();
+    let start_time = live_poll.get_current_slide_start_time();
 
-    let score =
-        if let SlideType::SingleChoice(mc_answers) = &mut live_poll.get_current_item().slide_type {
-            mc_answers.submit_answer(player_index, form.answer_idx, start_time)?
-        } else {
-            return Err(AppError::BadRequest(
-                "This is not a multiple choice item".to_string(),
-            ));
-        };
+    let score = if let SlideType::SingleChoice(mc_answers) =
+        &mut live_poll.get_current_slide().slide_type
+    {
+        mc_answers.submit_answer(player_index, form.answer_idx, start_time)?
+    } else {
+        return Err(AppError::BadRequest(
+            "This is not a multiple choice item".to_string(),
+        ));
+    };
 
     if score != 0 {
         live_poll
-            .get_current_item()
+            .get_current_slide()
             .submit_score(player_index, score);
 
         let _ = live_poll.ch_players_updated_send.send(());
@@ -291,7 +299,7 @@ pub async fn post_free_text_answer(
     let player_index = live_poll.get_player_index(&auth_token)?;
 
     let response =
-        if let SlideType::FreeText(ft_answers) = &mut live_poll.get_current_item().slide_type {
+        if let SlideType::FreeText(ft_answers) = &mut live_poll.get_current_slide().slide_type {
             ft_answers.submit_answer(player_index, form_data.free_text_answer)?;
             ft_answers.render_form(player_index, poll_id)
         } else {
@@ -309,11 +317,12 @@ pub async fn post_free_text_answer(
     return Ok(response.into_response());
 }
 
-fn render_poll_finished() -> Markup {
+pub fn render_poll_finished() -> Markup {
     html! {
-        (render_header(html! {}))
-        ."my-36 text-center text-slate-500" {
-            "This poll has finished. Thank you for participating on svoote.com"
+        ."mx-auto mt-12 mb-6 w-24 md:w-32" { (Illustrations::InLove.render()) }
+        ."text-center text-sm text-slate-500" {
+            "This poll is finished." br;
+            "Thank you for using svoote.com"
         }
     }
 }

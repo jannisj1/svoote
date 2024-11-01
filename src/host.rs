@@ -16,6 +16,7 @@ use crate::{
     html_page::{self, render_header},
     live_poll::{QuestionAreaState, QuestionStatisticsState},
     live_poll_store::{ShortID, LIVE_POLL_STORE},
+    polls,
     svg_icons::SvgIcon,
 };
 
@@ -31,7 +32,9 @@ pub async fn render_live_host(poll_id: ShortID) -> Result<Response, AppError> {
                     button
                         #start-poll-btn
                         hx-post={ "/exit_poll/" (poll_id) }
-                        hx-swap="none"
+                        hx-select="main"
+                        hx-target="main"
+                        hx-swap="outerHTML"
                         ."relative group size-12 text-slate-100 bg-red-500 rounded-full hover:bg-red-700"
                     {
                         ."group-[.htmx-request]:opacity-0 flex justify-center" { ."size-6" { (SvgIcon::X.render()) } }
@@ -55,48 +58,43 @@ pub async fn render_live_host(poll_id: ShortID) -> Result<Response, AppError> {
     .into_response())
 }
 
-pub async fn get_sse_host_question(
+pub async fn get_sse_slides(
     Path(poll_id): Path<ShortID>,
     session: Session,
 ) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
-    let lq = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let auth_token = lq.lock().unwrap().host_auth_token.clone();
+    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    let auth_token = live_poll.lock().unwrap().host_auth_token.clone();
     auth_token.verify(&session).await?;
 
-    let updates = lq.lock().unwrap().ch_question_state.clone();
+    let updates = live_poll.lock().unwrap().ch_question_state.clone();
 
     let stream = WatchStream::new(updates)
-        .map(move |state| match state {
-            QuestionAreaState::None => sse::Event::default()
-                .event("update")
-                .data(html! {}.into_string()),
-            QuestionAreaState::Item(item_idx) => sse::Event::default().event("update").data(
-                lq.lock().unwrap().items[item_idx]
-                    .render_host_view(poll_id, item_idx)
-                    .into_string(),
+        .filter_map(move |state| match state {
+            QuestionAreaState::Empty => Some(
+                sse::Event::default()
+                    .event("update")
+                    .data(html! {}.into_string()),
             ),
-            QuestionAreaState::PollFinished => sse::Event::default().event("update").data(
-                html! {
-                    ."my-24 flex flex-col text-sm text-slate-500 text-center" {
-                        ."" { "This poll has no more items. Thank you for using svoote.com" }
-                        a
-                            href="/"
-                            ."mt-4 underline cursor-pointer hover:text-slate-700 transition"
-                        {
-                            "Back to editing this poll"
-                        }
-                    }
-                }
-                .into_string(),
-            ),
-            QuestionAreaState::CloseSSE => sse::Event::default().event("close").data(""),
+            QuestionAreaState::Slide(slide_index) => {
+                let current_participant_count =
+                    live_poll.lock().unwrap().get_current_participant_count();
+                Some(
+                    sse::Event::default().event("update").data(
+                        live_poll.lock().unwrap().items[slide_index]
+                            .render_host_view(poll_id, slide_index, current_participant_count)
+                            .into_string(),
+                    ),
+                )
+            }
+            QuestionAreaState::PollFinished => None,
+            QuestionAreaState::CloseSSE => Some(sse::Event::default().event("close").data("")),
         })
         .map(Ok);
 
-    Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()))
+    return Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()));
 }
 
-pub async fn get_live_statistics(
+pub async fn get_sse_statistics(
     Path(poll_id): Path<ShortID>,
     session: Session,
 ) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
@@ -112,17 +110,19 @@ pub async fn get_live_statistics(
 
     let stream = WatchStream::new(ch_question_statistics)
         .map(move |statistics| match statistics {
-            QuestionStatisticsState::None => sse::Event::default().event("update").data(""),
-            QuestionStatisticsState::Item(item_idx) => sse::Event::default().event("update").data(
-                live_poll.lock().unwrap().items[item_idx]
-                    .render_statistics()
-                    .into_string(),
-            ),
+            QuestionStatisticsState::Empty => sse::Event::default().event("update").data(""),
+            QuestionStatisticsState::Slide(slide_index) => {
+                sse::Event::default().event("update").data(
+                    live_poll.lock().unwrap().items[slide_index]
+                        .render_statistics()
+                        .into_string(),
+                )
+            }
             QuestionStatisticsState::CloseSSE => sse::Event::default().event("close").data(""),
         })
         .map(Ok);
 
-    Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()))
+    return Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()));
 }
 
 pub async fn get_sse_leaderboard(
@@ -175,11 +175,11 @@ pub async fn post_next_slide(
     Path(poll_id): Path<ShortID>,
     session: Session,
 ) -> Result<Response, AppError> {
-    let lq = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let auth_token = lq.lock().unwrap().host_auth_token.clone();
+    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    let auth_token = live_poll.lock().unwrap().host_auth_token.clone();
     auth_token.verify(&session).await?;
 
-    let next_question_send = lq.lock().unwrap().ch_next_question.clone();
+    let next_question_send = live_poll.lock().unwrap().ch_next_question.clone();
     let _ = next_question_send.send(()).await;
 
     Ok(html! {
@@ -192,11 +192,11 @@ pub async fn post_previous_slide(
     Path(poll_id): Path<ShortID>,
     session: Session,
 ) -> Result<Response, AppError> {
-    let lq = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let auth_token = lq.lock().unwrap().host_auth_token.clone();
+    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    let auth_token = live_poll.lock().unwrap().host_auth_token.clone();
     auth_token.verify(&session).await?;
 
-    let previous_question_send = lq.lock().unwrap().ch_previous_question.clone();
+    let previous_question_send = live_poll.lock().unwrap().ch_previous_question.clone();
     let _ = previous_question_send.send(()).await;
 
     Ok(html! {
@@ -209,17 +209,16 @@ pub async fn post_exit_poll(
     Path(poll_id): Path<ShortID>,
     session: Session,
 ) -> Result<Response, AppError> {
-    let lq = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let auth_token = lq.lock().unwrap().host_auth_token.clone();
+    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    let auth_token = live_poll.lock().unwrap().host_auth_token.clone();
     auth_token.verify(&session).await?;
 
-    let exit_poll_send = lq.lock().unwrap().ch_exit_poll.clone();
+    let exit_poll_send = live_poll.lock().unwrap().ch_exit_poll.clone();
     let _ = exit_poll_send.send(()).await;
 
-    Ok(html! {
-        p { "Success" }
-    }
-    .into_response())
+    tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
+
+    return polls::get_poll_page(session).await;
 }
 
 pub fn render_sse_loading_spinner() -> Markup {

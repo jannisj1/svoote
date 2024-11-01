@@ -23,14 +23,19 @@ impl LivePollStore {
     }
 
     pub fn get(&self, id: ShortID) -> Option<Arc<Mutex<LivePoll>>> {
-        return self.inner.lock().unwrap().get(&id).map(|lq| lq.clone());
+        return self
+            .inner
+            .lock()
+            .unwrap()
+            .get(&id)
+            .map(|live_poll| live_poll.clone());
     }
 
-    pub fn insert(&self, lq: LivePoll) -> Result<(ShortID, Arc<Mutex<LivePoll>>), AppError> {
+    pub fn insert(&self, live_poll: LivePoll) -> Result<(ShortID, Arc<Mutex<LivePoll>>), AppError> {
         use rand::Rng;
         let mut rng = rand::thread_rng();
 
-        let lq = Arc::new(Mutex::new(lq));
+        let live_poll = Arc::new(Mutex::new(live_poll));
         let mut polls = self.inner.lock().unwrap();
 
         let random_id = (0..1000).map(|_| rng.gen_range::<ShortID, _>(1000..10_000)).find(|id| !polls.contains_key(&id))
@@ -38,9 +43,9 @@ impl LivePollStore {
         .ok_or(AppError::OtherInternalServerError("Could not find a short id (between 1000 and 999 999 while creating a new live quiz."
                 .to_string()))?);
 
-        polls.insert(random_id, lq.clone());
+        polls.insert(random_id, live_poll.clone());
 
-        return Ok((random_id, lq));
+        return Ok((random_id, live_poll));
     }
 
     pub fn remove(&self, id: ShortID) {
@@ -57,9 +62,9 @@ impl LivePollStore {
             .await
             .map_err(|e| AppError::DatabaseError(e))?
         {
-            if let Some(lq) = self.get(poll_id) {
-                if lq.lock().unwrap().host_auth_token.token == auth_token.token {
-                    return Ok(Some((poll_id, lq)));
+            if let Some(live_poll) = self.get(poll_id) {
+                if live_poll.lock().unwrap().host_auth_token.token == auth_token.token {
+                    return Ok(Some((poll_id, live_poll)));
                 }
             }
         }

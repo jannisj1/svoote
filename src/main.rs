@@ -79,35 +79,35 @@ fn main() {
             )
             .route("/poll/item", post(polls::post_add_item))
             .route(
-                "/poll/item/type/:item_idx/:item_type_descriptor",
+                "/poll/item/type/:slide_index/:item_type_descriptor",
                 post(polls::post_item_type),
             )
-            .route("/poll/item/:item_idx/text", put(polls::put_question_text))
             .route(
-                "/poll/item/:item_idx/mc_answer/:answer_idx/text",
+                "/poll/item/:slide_index/text",
+                put(polls::put_question_text),
+            )
+            .route(
+                "/poll/item/:slide_index/mc_answer/:answer_idx/text",
                 put(polls::put_mc_answer_text),
             )
-            .route("/poll/item/:item_idx", delete(polls::delete_item))
+            .route("/poll/item/:slide_index", delete(polls::delete_item))
             .route(
-                "/poll/item/:item_idx/add_mc_answer",
+                "/poll/item/:slide_index/add_mc_answer",
                 post(polls::post_add_mc_answer),
             )
             .route(
-                "/poll/item/:item_idx/mc_answer/:answer_idx",
+                "/poll/item/:slide_index/mc_answer/:answer_idx",
                 delete(polls::delete_mc_answer),
             )
             .route(
-                "/poll/item/:item_idx/mc_answer/:answer_idx/toggle_correct",
+                "/poll/item/:slide_index/mc_answer/:answer_idx/toggle_correct",
                 put(polls::put_mc_toggle_correct),
             )
             .route("/next_slide/:poll_id", post(host::post_next_slide))
             .route("/previous_slide/:poll_id", post(host::post_previous_slide))
             .route("/exit_poll/:poll_id", post(host::post_exit_poll))
-            .route(
-                "/sse/host_question/:poll_id",
-                get(host::get_sse_host_question),
-            )
-            .route("/sse/host_results/:poll_id", get(host::get_live_statistics))
+            .route("/sse/host_question/:poll_id", get(host::get_sse_slides))
+            .route("/sse/host_results/:poll_id", get(host::get_sse_statistics))
             .route("/sse/leaderboard/:poll_id", get(host::get_sse_leaderboard))
             .route(
                 "/sse/participant_counter/:poll_id",

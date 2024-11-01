@@ -29,10 +29,10 @@ function maybeHideAddAnswerBtn(div_name) {
   }
 }
 
-function onkeydownMCAnswer(input_element, event, item_idx) {
+function onkeydownMCAnswer(input_element, event, slide_index) {
   /* Enter */
   if (event.keyCode == 13) {
-    document.getElementById(`btn-add-answer-${item_idx}`)?.click();
+    document.getElementById(`btn-add-answer-${slide_index}`)?.click();
     input_element.blur();
   }
 }
