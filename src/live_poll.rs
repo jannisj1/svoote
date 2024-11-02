@@ -188,6 +188,10 @@ impl LivePoll {
         return &self.players[player_index];
     }
 
+    pub fn get_player_mut<'a>(&'a mut self, player_index: usize) -> &'a mut Player {
+        return &mut self.players[player_index];
+    }
+
     pub fn get_current_slide<'a>(&'a mut self) -> &'a mut Slide {
         return &mut self.items[self.current_slide_index];
     }

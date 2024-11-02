@@ -1,7 +1,7 @@
 use crate::{
     app_error::AppError,
     auth_token::AuthToken,
-    config::LIVE_POLL_PARTICIPANT_LIMIT,
+    config::{CUSTOM_PLAYER_NAME_LENGTH_LIMIT, LIVE_POLL_PARTICIPANT_LIMIT},
     html_page::{self, render_header},
     illustrations::Illustrations,
     live_poll::QuestionAreaState,
@@ -14,6 +14,7 @@ use axum::{
     response::{sse, IntoResponse, Response, Sse},
 };
 
+use core::iter::Iterator;
 use futures::Stream;
 use maud::{html, Markup, PreEscaped};
 use serde::Deserialize;
@@ -85,12 +86,47 @@ impl Player {
         };
     }
 
+    pub fn set_name(&mut self, new_name: SmartString<Compact>) -> Result<(), AppError> {
+        let new_name = SmartString::from(new_name.trim());
+
+        if new_name.len() > CUSTOM_PLAYER_NAME_LENGTH_LIMIT {
+            return Err(AppError::BadRequest(format!(
+                "Name longer than custom name length limit ({})",
+                CUSTOM_PLAYER_NAME_LENGTH_LIMIT
+            )));
+        }
+
+        if new_name.is_empty() {
+            self.custom_name = None;
+        } else {
+            self.custom_name = Some(new_name);
+        }
+
+        return Ok(());
+    }
+
     pub fn get_generated_name<'a>(&'a self) -> &'a SmartString<Compact> {
         return &self.generated_name;
     }
 
     pub fn get_custom_name<'a>(&'a self) -> &'a Option<SmartString<Compact>> {
         return &self.custom_name;
+    }
+
+    pub fn get_avatar_index(&self) -> usize {
+        return self.avatar_index;
+    }
+
+    pub fn set_avatar_index(&mut self, new_index: usize) -> Result<(), AppError> {
+        if new_index >= AVATARS.len() {
+            return Err(AppError::BadRequest(
+                "Avatar index out of bounds".to_string(),
+            ));
+        }
+
+        self.avatar_index = new_index;
+
+        return Ok(());
     }
 
     pub fn get_avatar_svg(&self) -> PreEscaped<&'static str> {
@@ -132,58 +168,53 @@ pub async fn get_play_page(
                 let player = live_poll.get_player(player_index);
                 html! {
                     (render_header(html! {
-                        button
-                            ."px-5 py-2 flex items-center gap-2.5 bg-slate-700 hover:bg-slate-800 rounded-full transition"
-                            onclick="document.getElementById('participant-dialog').showModal()"
-                        {
-                            ."text-slate-300" {
-                                @if live_poll.leaderboard_enabled {
-                                    (player.get_name())
-                                } @else {
-                                    "Anonymous"
-                                }
-                            }
-                            ."size-8 text-slate-300" {
-                                @if live_poll.leaderboard_enabled {
-                                    (player.get_avatar_svg())
-                                } @else {
-                                    (SvgIcon::User.render())
-                                }
-                            }
-                        }
-                        dialog
-                            #participant-dialog
-                        {
-                            ."max-w-64 p-4" {
-                                ."mb-2 flex justify-end" {
-                                    button
-                                        onclick="document.getElementById('participant-dialog').close()"
-                                        ."size-5 text-red-500"
-                                    { (SvgIcon::X.render()) }
-                                }
-                                form
-                                    onsubmit="submitParticipantNameDialog(event)"
-                                    ."flex flex-col"
-                                {
-                                    label
-                                        for="input-txt-participant-modal-name"
-                                        ."text-slate-500"
-                                    { "Name" }
-                                    input type="text"
-                                        ."mb-4 px-4 py-1.5 flex-1 text-slate-700 bg-slate-100 rounded-lg"
-                                        #input-txt-participant-modal-name
-                                        name="player_name"
-                                        maxlength="32"
-                                        placeholder=(player.get_generated_name())
-                                        value=(player.get_custom_name().as_ref().unwrap_or(&SmartString::new()));
-                                    ."mb-1 text-slate-500" { "Avatar" }
-                                    ."flex flex-wrap gap-4" {
-                                        @for avatar in AVATARS {
-                                            ."size-8" { (PreEscaped(avatar.1)) }
-                                        }
+                        (render_name_avatar_button(live_poll.leaderboard_enabled, player.get_name(), player.get_avatar_svg()))
+                        @if live_poll.leaderboard_enabled {
+                            dialog #participant-dialog
+                            {
+                                ."max-w-64 p-4 bg-slate-700 rounded-lg" {
+                                    ."mb-2 flex justify-end" {
+                                        button
+                                            onclick="document.getElementById('participant-dialog').close()"
+                                            ."size-5 text-red-500"
+                                        { (SvgIcon::X.render()) }
                                     }
-                                    ."flex justify-end" {
-                                        button ."bg-slate-600 p-4 rounded" { "Submit" }
+                                    form
+                                        hx-post={ "/name_avatar/" (params.c) }
+                                        hx-target="#name-avatar-button"
+                                        hx-swap="outerHTML"
+                                        "hx-on::after-request"="document.getElementById('participant-dialog').close()"
+                                            //onsubmit="submitParticipantNameDialog(event)"
+                                        ."flex flex-col"
+                                    {
+                                        label
+                                            for="input-txt-participant-modal-name"
+                                            ."mb-1 text-slate-300"
+                                        { "Name" }
+                                        input type="text"
+                                            ."mb-1 px-4 py-1.5 flex-1 text-slate-700 bg-slate-100 rounded-lg"
+                                            #input-txt-participant-modal-name
+                                            name="name"
+                                            maxlength=(CUSTOM_PLAYER_NAME_LENGTH_LIMIT)
+                                            placeholder=(player.get_generated_name())
+                                            value=(player.get_custom_name().as_ref().unwrap_or(&SmartString::new()))
+                                            disabled[!live_poll.allow_custom_player_names];
+                                        @if !live_poll.allow_custom_player_names {
+                                            ."text-slate-300 text-sm" { "The host has turned off custom names." }
+                                        }
+                                        ."mb-4" {}
+                                        ."mb-2 text-slate-300" { "Avatar" }
+                                        ."mb-6 flex justify-around flex-wrap gap-4" {
+                                            @for (i, avatar) in AVATARS.iter().enumerate() {
+                                                label {
+                                                    input type="radio" name="avatar" value=(i) checked[player.get_avatar_index() == i] ."peer hidden";
+                                                    ."size-9 p-0.5 ring-slate-100 rounded peer-checked:ring-2" { (PreEscaped(avatar.1)) }
+                                                }
+                                            }
+                                        }
+                                        ."flex justify-end" {
+                                            button type="submit" ."bg-slate-100 px-4 py-2 text-slate-800 rounded hover:bg-slate-300" { "Submit" }
+                                        }
                                     }
                                 }
                             }
@@ -325,4 +356,63 @@ pub fn render_poll_finished() -> Markup {
             "Thank you for using svoote.com"
         }
     }
+}
+
+fn render_name_avatar_button(
+    leaderboard_enabled: bool,
+    player_name: &SmartString<Compact>,
+    avatar_svg: PreEscaped<&str>,
+) -> Markup {
+    return html! {
+        button
+            #name-avatar-button
+            ."px-3 py-1 flex items-center gap-2.5 bg-slate-700 hover:bg-slate-800 rounded-lg"
+            onclick="document.getElementById('participant-dialog').showModal()"
+        {
+            ."text-slate-300" {
+                @if leaderboard_enabled {
+                    (player_name)
+                } @else {
+                    "Anonymous"
+                }
+            }
+            ."size-6 text-slate-300" {
+                @if leaderboard_enabled {
+                    (avatar_svg)
+                } @else {
+                    (SvgIcon::User.render())
+                }
+            }
+        }
+    };
+}
+
+#[derive(Deserialize)]
+pub struct NameAvatarParams {
+    pub name: SmartString<Compact>,
+    pub avatar: usize,
+}
+
+pub async fn post_name_avatar(
+    Path(poll_id): Path<ShortID>,
+    session: Session,
+    Form(params): Form<NameAvatarParams>,
+) -> Result<Response, AppError> {
+    let auth_token = AuthToken::get_or_create(&session).await?;
+    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+
+    let mut live_poll = live_poll.lock().unwrap();
+    let leaderboard_enabled = live_poll.leaderboard_enabled;
+
+    let (player_name, avatar_svg) = {
+        let player_index = live_poll.get_player_index(&auth_token)?;
+        let player = live_poll.get_player_mut(player_index);
+        player.set_name(params.name)?;
+        player.set_avatar_index(params.avatar)?;
+        (player.get_name(), player.get_avatar_svg())
+    };
+
+    return Ok(
+        render_name_avatar_button(leaderboard_enabled, player_name, avatar_svg).into_response(),
+    );
 }

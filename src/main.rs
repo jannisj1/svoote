@@ -120,6 +120,7 @@ fn main() {
                 post(play::post_free_text_answer),
             )
             .route("/sse/play/:quiz_id", get(play::get_sse_play))
+            .route("/name_avatar/:poll_id", post(play::post_name_avatar))
             .route("/static/:file_name", get(static_file::get_handler))
             .route("/data-privacy", get(compliance::get_privacy_policy_page))
             .route(

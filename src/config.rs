@@ -15,3 +15,5 @@ pub const POLL_MAX_ITEMS: usize = 32;
 pub const POLL_MAX_STR_LEN: usize = 1024;
 
 pub const POLL_EXIT_TIMEOUT: tokio::time::Duration = tokio::time::Duration::from_secs(2 * 60 * 60); // 2 hours
+
+pub const CUSTOM_PLAYER_NAME_LENGTH_LIMIT: usize = 32;
