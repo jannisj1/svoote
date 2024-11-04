@@ -37,10 +37,16 @@ pub fn init() {
         &["./src/static/enzuzo_24_07_18.js"],
     ));
 
+    bundles.push(create_bundle(
+        "alpine.js",
+        "text/javascript",
+        &["./src/static/alpine_3_14_3.min.js"],
+    ));
+
     let _ = BUNDLES.set(bundles);
 }
 
-pub async fn get_handler(Path(file_name): Path<String>) -> Result<Response, AppError> {
+pub async fn http_get_static_file(Path(file_name): Path<String>) -> Result<Response, AppError> {
     for bundle in BUNDLES.get().unwrap().iter() {
         if file_name.contains(&bundle.name) {
             use axum::http::header;

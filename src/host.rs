@@ -259,5 +259,5 @@ pub async fn get_sse_user_counter(
         })
         .map(Ok);
 
-    Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()))
+    return Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()));
 }

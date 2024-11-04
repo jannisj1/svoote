@@ -18,11 +18,13 @@ use crate::{
     html_page::{self, render_header},
     live_poll::{Answers, Item, LivePoll},
     live_poll_store::LIVE_POLL_STORE,
+    slide::Slide,
+    static_file,
     svg_icons::SvgIcon,
 };
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct PollV1 {
+pub struct PersistablePoll {
     pub items: Vec<Item>,
     pub version: usize,
     pub leaderboard_enabled: bool,
@@ -30,9 +32,9 @@ pub struct PollV1 {
     pub allow_custom_names: bool,
 }
 
-impl PollV1 {
+impl PersistablePoll {
     pub fn new() -> Self {
-        return PollV1 {
+        return PersistablePoll {
             items: Vec::new(),
             version: 1,
             leaderboard_enabled: false,
@@ -43,10 +45,10 @@ impl PollV1 {
 
     pub async fn from_session(session: &Session) -> Result<Self, AppError> {
         return Ok(session
-            .get::<PollV1>("poll_v1")
+            .get::<PersistablePoll>("poll_v1")
             .await
             .map_err(|e| AppError::DatabaseError(e))?
-            .unwrap_or(PollV1::new()));
+            .unwrap_or(PersistablePoll::new()));
     }
 
     pub async fn save_to_session(&self, session: &Session) -> Result<(), AppError> {
@@ -57,7 +59,7 @@ impl PollV1 {
     }
 }
 
-pub async fn post_poll_page(session: Session) -> Result<Response, AppError> {
+pub async fn post_start_poll(session: Session) -> Result<Response, AppError> {
     let auth_token = AuthToken::get_or_create(&session).await?;
 
     let (poll_id, _live_poll) = match LIVE_POLL_STORE
@@ -66,7 +68,7 @@ pub async fn post_poll_page(session: Session) -> Result<Response, AppError> {
     {
         Some((poll_id, live_poll)) => (poll_id, live_poll),
         None => {
-            let poll = PollV1::from_session(&session).await?;
+            let poll = PersistablePoll::from_session(&session).await?;
 
             tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
 
@@ -102,13 +104,17 @@ pub async fn get_poll_page(session: Session) -> Result<Response, AppError> {
     {
         Some((poll_id, _live_poll)) => return host::render_live_host(poll_id).await,
         None => {
-            let poll = PollV1::from_session(&session).await?;
-            return render_edit_page(session, poll).await;
+            let poll = PersistablePoll::from_session(&session).await?;
+            return render_edit_page(session, poll, 0).await;
         }
     };
 }
 
-async fn render_edit_page(session: Session, mut poll: PollV1) -> Result<Response, AppError> {
+async fn render_edit_page(
+    session: Session,
+    mut poll: PersistablePoll,
+    mut active_item_index: usize,
+) -> Result<Response, AppError> {
     if poll.items.len() == 0 {
         poll.items.push(Item {
             question: String::new(),
@@ -119,7 +125,7 @@ async fn render_edit_page(session: Session, mut poll: PollV1) -> Result<Response
     }
 
     return Ok(html_page::render_html_page("Svoote", html! {
-        #pollEditingArea."mb-16" {
+        #pollEditingArea ."mb-16" {
             (render_header(html! {
                 ."flex items-center gap-3" {
                     ."text-sm text-slate-500" {
@@ -141,104 +147,102 @@ async fn render_edit_page(session: Session, mut poll: PollV1) -> Result<Response
                     }
                 }
             }))
-            ."mb-4 text-xl font-semibold text-slate-700" {
-                "Poll items"
-            }
-            ."mb-8 flex flex-col gap-8" #poll-items {
-                @for (slide_index, item) in poll.items.iter().enumerate() {
-                    ."flex items-center gap-3" {
-                        div ."relative size-7 rounded-full bg-slate-600" {
-                            ."absolute inset-0 size-full flex justify-center items-center text-slate-50 text-sm font-bold" { (slide_index + 1) }
-                        }
-                        ."flex-1 px-5 py-4 border shadow rounded" {
-                            ."mb-4 flex items-center gap-4" {
-                                input type="text"
-                                    name="question"
-                                    ."px-4 py-1.5 flex-1 text-slate-900 font-medium bg-slate-100 rounded-lg"
-                                    hx-put={ "/poll/item/" (slide_index) "/text" }
-                                    hx-trigger="input changed delay:300ms"
-                                    "hx-on::before-request"="bindSavingIndicator();"
-                                    "hx-on::after-request"="freeSavingIndicator();"
-                                    maxlength="2048"
-                                    placeholder="Enter question text"
-                                    onkeydown={ "onkeydownMCAnswer(this, event, " (slide_index) ");"}
-                                    value=(item.question);
-                                button
-                                    title="Delete item"
-                                    ."group size-5 text-red-500 tracking-tight hover:text-red-700 disabled:text-red-300 transition"
-                                    hx-delete={ "/poll/item/" (slide_index) }
-                                    hx-select="#pollEditingArea"
-                                    hx-target="#pollEditingArea"
-                                    hx-swap="outerHTML"
-                                    disabled[poll.items.len() == 1 && matches!(poll.items[0].answers, Answers::Untyped)]
-                                {
-                                    ."block group-[.htmx-request]:hidden" { (SvgIcon::X.render()) }
-                                    ."hidden size-4 group-[.htmx-request]:block" { (SvgIcon::Spinner.render()) }
-                                }
+            div x-data="poll" {
+                div ."mb-4 grid grid-cols-3" {
+                    div x-data="{ open: false }" ."relative" {
+                        button "@click"="open = !open" ."size-6 text-slate-400 hover:text-slate-600" { (SvgIcon::Settings.render()) }
+                        div x-show="open" "@click.outside"="open = false" ."absolute left-0 top-8 w-64 h-fit z-10 p-4 text-left bg-white border rounded-lg shadow-lg" {
+                            ."mb-3 text-xl font-semibold text-slate-700" { "Options" }
+                            label ."flex items-center gap-2 text-slate-600 font-semibold" {
+                                input type="checkbox" x-model="poll.leaderboardEnabled" ."size-4 accent-indigo-500";
+                                "Leaderboard"
                             }
-                            @match &item.answers {
-                                Answers::Untyped => {
+                            ."ml-6 mb-3 text-slate-400 text-sm" { "Participants will receive points for submitting the correct answer. Faster responses get more points." }
+                            label ."flex items-center gap-2 text-slate-600 font-semibold" {
+                                input type="checkbox" x-model="poll.allowCustomNames" ."size-4 accent-indigo-500";
+                                "Custom names"
+                            }
+                            ."ml-6 mb-3 text-slate-400 text-sm" { "Allow participants to set a custom name." }
+                            a download="poll.json" ":href"="'data:application/json;charset=utf-8,' + JSON.stringify(poll)" ."mb-3 flex gap-2 items-center text-slate-600 font-semibold" {
+                                ."size-4" { (SvgIcon::Download.render()) }
+                                "Save poll (.json)"
+                            }
+                            button ."flex gap-2 items-center text-slate-600 font-semibold" {
+                                ."size-4" { (SvgIcon::UploadCloud.render()) }
+                                "Import poll (.json)"
+                            }
+                        }
+                    }
+                }
+                div ."flex gap-4" {
+                    button ."relative size-8 mt-20 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700 disabled:opacity-0" {
+                        ."absolute inset-0 size-full flex items-center justify-center" {
+                            ."size-4 translate-x-[-0.05rem]" { (SvgIcon::ChevronLeft.render()) }
+                        }
+                    }
+                    template x-for="(slide, slide_index) in poll.slides" {
+                        div x-show="slide_index == poll.activeSlide" ."flex-1 px-8 py-6 border shadow rounded" {
+                            input type="text" x-model="slide.question" "@input"="save"
+                                "@keyup.enter"="let e = document.getElementById('s-' + slide_index + '-mc-answer-0'); if (e !== null) e.focus(); else document.getElementById('add-mc-answer-' + slide_index).click();"
+                                placeholder="Question"
+                                ."w-full mb-6 text-xl text-slate-700 outline-none";
+                            template x-if="slide.type == 'undefined'" {
+                                div {
                                     ."mb-2 text-slate-500 tracking-tight text-center" {
                                         "Choose item type:"
                                     }
-                                    ."flex gap-4 justify-center" {
-                                        button
-                                            hx-post={ "/poll/item/type/" (slide_index) "/single_choice" }
-                                            hx-select="#pollEditingArea"
-                                            hx-target="#pollEditingArea"
-                                            hx-swap="outerHTML"
-                                            ."group flex justify-center items-center px-3.5 py-2 text-slate-600 border rounded hover:bg-slate-100 transition"
+                                    ."flex justify-center gap-4" {
+                                        button "@click"="slide.type = 'mc'" ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
                                         {
-                                            ."flex group-[.htmx-request]:hidden items-center justify-center gap-2" {
-                                                ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) }
-                                                "Multiple choice"
-                                            }
-                                            ."hidden size-4 group-[.htmx-request]:block" { (SvgIcon::Spinner.render()) }
+                                            ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) }
+                                            "Multiple choice"
                                         }
-                                        button
-                                            hx-post={ "/poll/item/type/" (slide_index) "/free_text" }
-                                            hx-select="#pollEditingArea"
-                                            hx-target="#pollEditingArea"
-                                            hx-swap="outerHTML"
-                                            ."group flex justify-center items-center px-3.5 py-2 text-slate-600 border rounded hover:bg-slate-100 transition"
+                                        button "@click"="slide.type = 'ft'" ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
                                         {
-                                            ."flex group-[.htmx-request]:hidden items-center justify-center gap-2" {
-                                                ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
-                                                "Free text"
-                                            }
-                                            ."hidden size-4 group-[.htmx-request]:block" { (SvgIcon::Spinner.render()) }
+                                            ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
+                                            "Free text"
                                         }
                                     }
                                 }
-                                Answers::SingleChoice(answers) => {
-                                    @let mc_answers_div_name = format!("mc-answers-div-{}", slide_index);
-                                    #(mc_answers_div_name) ."flex flex-col gap-2" {
-                                        @for (answer_idx, (answer_txt, is_correct)) in answers.iter().enumerate() {
-                                            (render_mc_answer(slide_index, answer_idx, answer_txt, *is_correct, false))
-                                        }
-
-                                        @if answers.len() < POLL_MAX_MC_ANSWERS {
-                                            button #{ "btn-add-answer-" (slide_index) }
-                                                ."relative group w-fit ml-2 mb-4 text-sm text-slate-500 underline hover:text-slate-800"
-                                                hx-post={ "/poll/item/" (slide_index) "/add_mc_answer" }
-                                                hx-swap="beforebegin"
-                                                "hx-on::after-request"={ "maybeHideAddAnswerBtn('" (mc_answers_div_name) "');" }
-                                            {
-                                                ."group-[.htmx-request]:opacity-0" { "Add answer" }
-                                                ."absolute inset-0 size-full hidden group-[.htmx-request]:flex justify-center items-center" {
-                                                    ."size-4" { (SvgIcon::Spinner.render()) }
-                                                }
-                                            }
+                            }
+                            template x-if="slide.type == 'mc'" {
+                                div {
+                                    template x-for="(answer, answer_index) in slide.mcAnswers" {
+                                        div ."mb-4 flex items-center gap-3" {
+                                            div x-text="incrementChar('A', answer_index)" ."text-slate-500" {}
+                                            input type="text"
+                                                x-model="answer.text"
+                                                "@input"="save()"
+                                                "@keyup.enter"="let next = $el.parentElement.nextSibling; if (next.tagName == 'DIV') next.children[1].focus(); else next.click();"
+                                                ":id"="(answer_index == 0) && 's-' + slide_index + '-mc-answer-0'" ":class"="answer.isCorrect ? 'ring-[3px] ring-green-600' : 'ring-2 ring-slate-400 focus:ring-slate-500'"
+                                                ."w-full px-3 py-2 text-slate-700 rounded-lg outline-none";
+                                            button "@click"="answer.isCorrect = !answer.isCorrect; save()" ":class"="answer.isCorrect ? 'text-green-600' : 'text-slate-300 hover:text-green-600'" ."size-6" { (SvgIcon::CheckSquare.render()) }
+                                            button "@click"="slide.mcAnswers.splice(answer_index, 1); save();" ."size-6 text-slate-300 hover:text-slate-500" { (SvgIcon::Trash2.render()) }
                                         }
                                     }
-                                },
-                                Answers::FreeText(_, _) => {
+                                    button
+                                        "@click"={"if (slide.mcAnswers.length < " (POLL_MAX_MC_ANSWERS) ") { slide.mcAnswers.push({ text: '', isCorrect: false }); save(); $nextTick(() => $el.previousSibling.children[1].focus()); }" }
+                                        ":class"={ "(slide.mcAnswers.length >= " (POLL_MAX_MC_ANSWERS) ") && 'hidden'" }
+                                        ."ml-6 text-slate-700 underline"
+                                        ":id"="'add-mc-answer-' + slide_index"
+                                    {
+                                        "Add answer"
+                                    }
+                                }
+                            }
+                            template x-if="slide.type == 'ft'" {
+                                div {
                                     ."pl-2 flex gap-2 items-center text-slate-500" {
                                         ."size-4 shrink-0" { (SvgIcon::Edit3.render()) }
                                         "Free text: Participants can submit their own answer."
                                     }
                                 }
                             }
+                        }
+                    }
+                    button ."relative size-8 mt-20 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700 disabled:opacity-0" {
+                        ."absolute inset-0 size-full flex items-center justify-center" {
+                            ."size-4" { (SvgIcon::ChevronRight.render()) }
                         }
                     }
                 }
@@ -257,102 +261,13 @@ async fn render_edit_page(session: Session, mut poll: PollV1) -> Result<Response
                     "Add item"
                 }
             }
-            form #poll_upload_form
-                ."mb-4"
-                hx-post="/poll/json"
-                hx-trigger="change"
-                hx-encoding="multipart/form-data"
-                hx-select="#pollEditingArea"
-                hx-target="#pollEditingArea"
-                hx-swap="outerHTML"
-            {
-                label
-                    ."group flex justify-start items-center gap-3 cursor-pointer"
-                {
-                    ."relative size-7 rounded-full bg-slate-600 group-hover:bg-slate-800 group-focus-within:bg-slate-800" {
-                        ."absolute inset-0 size-full flex justify-center items-center text-slate-50" {
-                            ."size-4" { (SvgIcon::UploadCloud.render()) }
-                        }
-                    }
-                    ."text-slate-600 group-hover:text-slate-700 group-focus-within:hidden" {
-                        "Import poll (.json)"
-                    }
-                    input
-                        ."hidden"
-                        type="file"
-                        name="poll_file"
-                        accept="application/json"
-                    ;
-                }
-            }
-            a ."group mb-4 flex justify-start items-center gap-3"
-                href="/poll/json"
-                download="poll.json"
-            {
-                ."relative size-7 rounded-full bg-slate-600 group-hover:bg-slate-800 group-focus-within:bg-slate-800" {
-                    ."absolute inset-0 size-full flex justify-center items-center text-slate-50" {
-                        ."size-4" { (SvgIcon::Download.render()) }
-                    }
-                }
-                ."text-slate-600 group-hover:text-slate-700 group-focus-within:hidden" {
-                    "Save poll"
-                }
-            }
-            ."mb-12 text-slate-400 text-sm max-w-xl" {
-                "Your poll will be available from this device for up to 30 days. "
-                "If you wish to reuse it in the future or transfer it to another device, download a copy via 'Save poll'."
-            }
-            ."mb-3 text-xl font-semibold text-slate-700" {
-                "Options"
-            }
-            ."flex items-center gap-2" {
-                input
-                    #"check-enable-leaderboard"
-                    type="checkbox"
-                    name="enable_leaderboard"
-                    value="true"
-                    checked[poll.leaderboard_enabled]
-                    hx-post="/poll/enable_leaderboard"
-                    hx-swap="none"
-                    hx-trigger="change"
-                    ."size-4 accent-indigo-500";
-                label
-                    for="check-enable-leaderboard"
-                    ."text-slate-600 font-semibold"
-                {
-                    "Leaderboard"
-                }
-            }
-            ."ml-6 mb-3 text-slate-400 text-sm" {
-                "Participants will receive points for submitting the correct answer. Faster responses get more points."
-            }
-            ."flex items-center gap-2" {
-                input
-                    #"check-allow-custom-names"
-                    type="checkbox"
-                    name="allow_custom_names"
-                    value="true"
-                    checked[poll.allow_custom_names]
-                    hx-post="/poll/allow_custom_player_names"
-                    hx-swap="none"
-                    hx-trigger="change"
-                    ."size-4 accent-indigo-500";
-                label
-                    for="check-allow-custom-names"
-                    ."text-slate-600 font-semibold"
-                {
-                    "Custom names"
-                }
-            }
-            ."ml-6 mb-3 text-slate-400 text-sm" {
-                "Allow participants to set a custom name."
-            }
         }
+        script src=(static_file::get_path("alpine.js")) {}
     }, true).into_response());
 }
 
 pub async fn post_add_item(session: Session) -> Result<Response, AppError> {
-    let mut poll = PollV1::from_session(&session).await?;
+    let mut poll = PersistablePoll::from_session(&session).await?;
 
     if poll.items.len() > POLL_MAX_ITEMS {
         return Err(AppError::BadRequest(
@@ -442,7 +357,7 @@ pub async fn put_question_text(
         ));
     }
 
-    let mut poll = PollV1::from_session(&session).await?;
+    let mut poll = PersistablePoll::from_session(&session).await?;
 
     match poll.items.get_mut(slide_index) {
         Some(item) => {
@@ -476,7 +391,7 @@ pub async fn put_mc_answer_text(
         ));
     }
 
-    let mut poll = PollV1::from_session(&session).await?;
+    let mut poll = PersistablePoll::from_session(&session).await?;
 
     match &mut poll
         .items
@@ -510,7 +425,7 @@ pub async fn put_mc_toggle_correct(
     Path((slide_index, answer_idx)): Path<(usize, usize)>,
     session: Session,
 ) -> Result<Response, AppError> {
-    let mut poll = PollV1::from_session(&session).await?;
+    let mut poll = PersistablePoll::from_session(&session).await?;
 
     match &mut poll
         .items
@@ -544,7 +459,7 @@ pub async fn post_item_type(
     session: Session,
     Path((slide_index, item_type_descriptor)): Path<(usize, SmartString<Compact>)>,
 ) -> Result<Response, AppError> {
-    let mut poll = PollV1::from_session(&session).await?;
+    let mut poll = PersistablePoll::from_session(&session).await?;
 
     match poll.items.get_mut(slide_index) {
         Some(item) => match item_type_descriptor.as_str() {
@@ -573,7 +488,7 @@ pub async fn delete_item(
     Path(slide_index): Path<usize>,
     session: Session,
 ) -> Result<Response, AppError> {
-    let mut poll = PollV1::from_session(&session).await?;
+    let mut poll = PersistablePoll::from_session(&session).await?;
 
     if slide_index >= poll.items.len() {
         return Err(AppError::BadRequest("Item index out of bounds".to_string()));
@@ -590,7 +505,7 @@ pub async fn post_add_mc_answer(
     Path(slide_index): Path<usize>,
     session: Session,
 ) -> Result<Response, AppError> {
-    let mut poll = PollV1::from_session(&session).await?;
+    let mut poll = PersistablePoll::from_session(&session).await?;
 
     let new_answer_idx = match &mut poll
         .items
@@ -624,7 +539,7 @@ pub async fn delete_mc_answer(
     Path((slide_index, answer_idx)): Path<(usize, usize)>,
     session: Session,
 ) -> Result<Response, AppError> {
-    let mut poll = PollV1::from_session(&session).await?;
+    let mut poll = PersistablePoll::from_session(&session).await?;
 
     match &mut poll
         .items
@@ -653,8 +568,8 @@ pub async fn delete_mc_answer(
     return get_poll_page(session).await;
 }
 
-pub async fn get_poll_json(session: Session) -> Result<Json<PollV1>, AppError> {
-    return Ok(Json(PollV1::from_session(&session).await?));
+pub async fn get_poll_json(session: Session) -> Result<Json<PersistablePoll>, AppError> {
+    return Ok(Json(PersistablePoll::from_session(&session).await?));
 }
 
 pub async fn post_poll_json(
@@ -681,7 +596,7 @@ pub async fn post_poll_json(
     let uploaded_data = String::from_utf8(uploaded_data.to_vec())
         .map_err(|e| AppError::BadRequest(format!("UTF-8 error: {}", e)))?;
 
-    let poll: PollV1 =
+    let poll: PersistablePoll =
         serde_json::from_str(&uploaded_data).map_err(|e| AppError::BadRequest(e.to_string()))?;
 
     if poll.items.len() > POLL_MAX_ITEMS {
@@ -721,7 +636,7 @@ pub async fn post_enable_leaderboard(
     session: Session,
     Form(params): Form<EnableLeaderboardParams>,
 ) -> Result<Response, AppError> {
-    let mut poll = PollV1::from_session(&session).await?;
+    let mut poll = PersistablePoll::from_session(&session).await?;
     poll.leaderboard_enabled = params.enable_leaderboard.is_some();
     poll.save_to_session(&session).await?;
 
@@ -737,7 +652,7 @@ pub async fn post_allow_custom_player_names(
     session: Session,
     Form(params): Form<AllowCustomPlayerNamesParams>,
 ) -> Result<Response, AppError> {
-    let mut poll = PollV1::from_session(&session).await?;
+    let mut poll = PersistablePoll::from_session(&session).await?;
     poll.allow_custom_names = params.allow_custom_names.is_some();
     poll.save_to_session(&session).await?;
 

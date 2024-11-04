@@ -70,3 +70,43 @@ function submitParticipantNameDialog(event) {
   event.preventDefault();
   return false;
 }
+
+function incrementChar(c, add) {
+  return String.fromCharCode(c.charCodeAt(0) + add);
+}
+
+function createSlide() {
+  return {
+    type: "undefined",
+    question: "",
+    mcAnswers: [],
+    ftAnswers: [],
+  };
+}
+
+function createPoll() {
+  return {
+    slides: [createSlide()],
+    enableLeaderboard: false,
+    allowCustomNames: false,
+    activeSlide: 0,
+  };
+}
+
+function loadPollFromLocalStorage() {
+  let poll = JSON.parse(localStorage.getItem("poll"));
+
+  if (poll !== null) {
+    return poll;
+  } else return createPoll();
+}
+
+document.addEventListener("alpine:init", () => {
+  Alpine.data("poll", () => ({
+    poll: loadPollFromLocalStorage(),
+
+    save() {
+      localStorage.setItem("poll", JSON.stringify(this.poll));
+    },
+  }));
+});

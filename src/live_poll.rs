@@ -11,7 +11,7 @@ use crate::auth_token::AuthToken;
 use crate::config::{LIVE_POLL_PARTICIPANT_LIMIT, POLL_EXIT_TIMEOUT};
 use crate::live_poll_store::{ShortID, LIVE_POLL_STORE};
 use crate::play::Player;
-use crate::polls::PollV1;
+use crate::polls::PersistablePoll;
 use crate::slide::Slide;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -49,7 +49,7 @@ pub struct LivePoll {
 
 impl LivePoll {
     pub fn orchestrate(
-        poll: PollV1,
+        poll: PersistablePoll,
         auth_token: AuthToken,
     ) -> Result<(ShortID, Arc<Mutex<Self>>), AppError> {
         let (send_start_signal, recv_start_signal) = oneshot::channel::<()>();
@@ -66,7 +66,7 @@ impl LivePoll {
 
         live_items.push(Slide::create_join_slide());
         for item in poll.items {
-            if let Some(live_item) = Slide::from_item(item) {
+            if let Some(live_item) = Slide::from_item(&item) {
                 live_items.push(live_item);
             }
         }

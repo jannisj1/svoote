@@ -332,7 +332,7 @@ pub async fn post_free_text_answer(
     let response =
         if let SlideType::FreeText(ft_answers) = &mut live_poll.get_current_slide().slide_type {
             ft_answers.submit_answer(player_index, form_data.free_text_answer)?;
-            ft_answers.render_form(player_index, poll_id)
+            ft_answers.render_participant_form(player_index, poll_id)
         } else {
             return Err(AppError::BadRequest(
                 "This is not a free text item".to_string(),
@@ -366,17 +366,18 @@ fn render_name_avatar_button(
     return html! {
         button
             #name-avatar-button
-            ."px-3 py-1 flex items-center gap-2.5 bg-slate-700 hover:bg-slate-800 rounded-lg"
+            ."px-3 py-1 flex items-center gap-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:bg-slate-100"
             onclick="document.getElementById('participant-dialog').showModal()"
+            disabled[!leaderboard_enabled]
         {
-            ."text-slate-300" {
+            ."text-slate-600" {
                 @if leaderboard_enabled {
                     (player_name)
                 } @else {
                     "Anonymous"
                 }
             }
-            ."size-6 text-slate-300" {
+            ."size-6 text-slate-500" {
                 @if leaderboard_enabled {
                     (avatar_svg)
                 } @else {
@@ -389,7 +390,7 @@ fn render_name_avatar_button(
 
 #[derive(Deserialize)]
 pub struct NameAvatarParams {
-    pub name: SmartString<Compact>,
+    pub name: Option<SmartString<Compact>>,
     pub avatar: usize,
 }
 
@@ -403,12 +404,18 @@ pub async fn post_name_avatar(
 
     let mut live_poll = live_poll.lock().unwrap();
     let leaderboard_enabled = live_poll.leaderboard_enabled;
+    let allow_custom_player_names = live_poll.allow_custom_player_names;
 
     let (player_name, avatar_svg) = {
         let player_index = live_poll.get_player_index(&auth_token)?;
         let player = live_poll.get_player_mut(player_index);
-        player.set_name(params.name)?;
+
+        if allow_custom_player_names {
+            player.set_name(params.name.unwrap_or(SmartString::new()))?;
+        }
+
         player.set_avatar_index(params.avatar)?;
+
         (player.get_name(), player.get_avatar_svg())
     };
 

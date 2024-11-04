@@ -39,12 +39,12 @@ pub struct FreeTextLiveAnswers {
 }
 
 impl Slide {
-    pub fn from_item(item: Item) -> Option<Slide> {
-        let answers = match item.answers {
+    pub fn from_item(item: &Item) -> Option<Slide> {
+        let answers = match &item.answers {
             crate::live_poll::Answers::SingleChoice(answers) => {
                 SlideType::SingleChoice(MultipleChoiceLiveAnswers {
                     answer_counts: std::iter::repeat(0usize).take(answers.len()).collect(),
-                    answers,
+                    answers: answers.clone(),
                     player_answers: Vec::new(),
                 })
             }
@@ -58,7 +58,7 @@ impl Slide {
         };
 
         return Some(Slide {
-            question: item.question,
+            question: item.question.clone(),
             slide_type: answers,
             player_scores: Vec::new(),
         });
@@ -364,7 +364,7 @@ impl Slide {
                         }
                     },
                     SlideType::FreeText(ft_answers) => {
-                        (ft_answers.render_form(player_index, poll_id))
+                        (ft_answers.render_participant_form(player_index, poll_id))
                     }
                 }
             }
@@ -432,7 +432,7 @@ impl FreeTextLiveAnswers {
         return Ok(());
     }
 
-    pub fn render_form(&self, player_index: usize, poll_id: ShortID) -> Markup {
+    pub fn render_participant_form(&self, player_index: usize, poll_id: ShortID) -> Markup {
         let answers = &self.player_answers[player_index];
 
         return html! {

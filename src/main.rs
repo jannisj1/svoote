@@ -64,7 +64,7 @@ fn main() {
             .route("/about", get(about_page::get_about_page))
             .route("/about/demo_mc", get(about_page::get_mc_start_page_demo))
             .route("/about/demo_ft", get(about_page::get_ft_start_page_demo))
-            .route("/", get(polls::get_poll_page).post(polls::post_poll_page))
+            .route("/", get(polls::get_poll_page).post(polls::post_start_poll))
             .route(
                 "/poll/json",
                 get(polls::get_poll_json).post(polls::post_poll_json),
@@ -121,7 +121,7 @@ fn main() {
             )
             .route("/sse/play/:quiz_id", get(play::get_sse_play))
             .route("/name_avatar/:poll_id", post(play::post_name_avatar))
-            .route("/static/:file_name", get(static_file::get_handler))
+            .route("/static/:file_name", get(static_file::http_get_static_file))
             .route("/data-privacy", get(compliance::get_privacy_policy_page))
             .route(
                 "/terms-of-service",
