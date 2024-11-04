@@ -92,14 +92,6 @@ fn main() {
             )
             .route("/poll/item/:slide_index", delete(polls::delete_item))
             .route(
-                "/poll/item/:slide_index/add_mc_answer",
-                post(polls::post_add_mc_answer),
-            )
-            .route(
-                "/poll/item/:slide_index/mc_answer/:answer_idx",
-                delete(polls::delete_mc_answer),
-            )
-            .route(
                 "/poll/item/:slide_index/mc_answer/:answer_idx/toggle_correct",
                 put(polls::put_mc_toggle_correct),
             )
