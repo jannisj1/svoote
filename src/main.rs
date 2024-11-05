@@ -19,7 +19,7 @@ mod svg_icons;
 mod word_cloud;
 
 use axum::response::{IntoResponse, Response};
-use axum::routing::{delete, get, post, put};
+use axum::routing::{get, post};
 
 use app_error::AppError;
 use time::Duration;
@@ -65,36 +65,6 @@ fn main() {
             .route("/about/demo_mc", get(about_page::get_mc_start_page_demo))
             .route("/about/demo_ft", get(about_page::get_ft_start_page_demo))
             .route("/", get(polls::get_poll_page).post(polls::post_start_poll))
-            .route(
-                "/poll/json",
-                get(polls::get_poll_json).post(polls::post_poll_json),
-            )
-            .route(
-                "/poll/enable_leaderboard",
-                post(polls::post_enable_leaderboard),
-            )
-            .route(
-                "/poll/allow_custom_player_names",
-                post(polls::post_allow_custom_player_names),
-            )
-            .route("/poll/item", post(polls::post_add_item))
-            .route(
-                "/poll/item/type/:slide_index/:item_type_descriptor",
-                post(polls::post_item_type),
-            )
-            .route(
-                "/poll/item/:slide_index/text",
-                put(polls::put_question_text),
-            )
-            .route(
-                "/poll/item/:slide_index/mc_answer/:answer_idx/text",
-                put(polls::put_mc_answer_text),
-            )
-            .route("/poll/item/:slide_index", delete(polls::delete_item))
-            .route(
-                "/poll/item/:slide_index/mc_answer/:answer_idx/toggle_correct",
-                put(polls::put_mc_toggle_correct),
-            )
             .route("/next_slide/:poll_id", post(host::post_next_slide))
             .route("/previous_slide/:poll_id", post(host::post_previous_slide))
             .route("/exit_poll/:poll_id", post(host::post_exit_poll))

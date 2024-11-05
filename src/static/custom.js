@@ -1,42 +1,3 @@
-let requestsInFlight = 0;
-
-function bindSavingIndicator() {
-  requestsInFlight += 1;
-
-  if (requestsInFlight == 1) {
-    let btn = document.getElementById("start-poll-btn");
-    btn.classList.add("htmx-request");
-    btn.disabled = true;
-  }
-}
-
-function freeSavingIndicator() {
-  requestsInFlight -= 1;
-
-  if (requestsInFlight == 0) {
-    let btn = document.getElementById("start-poll-btn");
-    btn.classList.remove("htmx-request");
-    btn.disabled = false;
-  }
-}
-
-function maybeHideAddAnswerBtn(div_name) {
-  let mc_answers_div = document.getElementById(div_name);
-
-  if (mc_answers_div.childElementCount >= 7) {
-    let btn = document.querySelector(`#${div_name}>button`);
-    btn.remove();
-  }
-}
-
-function onkeydownMCAnswer(input_element, event, slide_index) {
-  /* Enter */
-  if (event.keyCode == 13) {
-    document.getElementById(`btn-add-answer-${slide_index}`)?.click();
-    input_element.blur();
-  }
-}
-
 let demoAnimationsStarted = false;
 
 function initStartPageDemoAnimations() {
@@ -62,13 +23,6 @@ function tickDemoElement(count, limit, elementId) {
       700 + Math.random() * 3800,
     );
   }
-}
-
-function submitParticipantNameDialog(event) {
-  alert(event);
-
-  event.preventDefault();
-  return false;
 }
 
 function incrementChar(c, add) {
