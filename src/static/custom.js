@@ -29,9 +29,10 @@ function incrementChar(c, add) {
   return String.fromCharCode(c.charCodeAt(0) + add);
 }
 
-function createSlide() {
+function createSlide(type) {
+  if (type === null) type = "undefined";
   return {
-    type: "undefined",
+    type: type,
     question: "",
     mcAnswers: [],
     ftAnswers: [],
@@ -40,10 +41,14 @@ function createSlide() {
 
 function createPoll() {
   return {
-    slides: [createSlide()],
+    slides: [
+      createSlide("firstSlide"),
+      createSlide(null),
+      createSlide("lastSlide"),
+    ],
     enableLeaderboard: false,
     allowCustomNames: false,
-    activeSlide: 0,
+    activeSlide: 1,
   };
 }
 
@@ -58,9 +63,14 @@ function loadPollFromLocalStorage() {
 document.addEventListener("alpine:init", () => {
   Alpine.data("poll", () => ({
     poll: loadPollFromLocalStorage(),
+    isLive: false,
 
     save() {
       localStorage.setItem("poll", JSON.stringify(this.poll));
+    },
+
+    startPoll() {
+      this.isLive = true;
     },
   }));
 });

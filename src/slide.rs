@@ -143,39 +143,7 @@ impl Slide {
                 }
                 ."flex-1" {
                     @if self.is_entry_slide() {
-                        @let domain = "https://svoote.com";
-                        @let path = format!("/p?c={}", poll_id);
-                        @let complete_url = format!("{}{}", domain, path);
-
-                        @let join_qr_code_svg = QrCode::new(&complete_url)
-                            .map(|qr|
-                                qr.render()
-                                .min_dimensions(160, 160)
-                                .quiet_zone(false)
-                                .dark_color(svg::Color("#1e293b"))
-                                .light_color(svg::Color("#FFFFFF"))
-                                .build()
-                            );
-
-                        ."flex justify-center gap-20" {
-                            ."" {
-                                ."mb-1 text-sm text-slate-500 text-center" {
-                                    "Enter on " a ."text-indigo-500 underline" href=(path) { "svoote.com" }
-                                }
-                                ."mb-6 text-3xl tracking-wider font-bold text-slate-700 text-center" {
-                                    (poll_id)
-                                }
-                                ."w-lg flex justify-center" {
-                                    (PreEscaped(join_qr_code_svg.unwrap_or("Error generating QR-Code.".to_string())))
-                                }
-                            }
-                            ."w-[25rem]" {
-                               (Illustrations::TeamCollaboration.render())
-                            }
-                        }
                     } @else if self.is_final_slide() {
-                        ."mx-auto mt-6 w-24" { (Illustrations::InLove.render()) }
-                        ."mt-8 text-slate-500 text-center text-sm" { "This poll has no more items. Thank you for using svoote.com" }
                     } @else {
                         ."mb-6 text-left text-xl text-slate-900 font-medium" { (self.question )}
                         @match &self.slide_type {

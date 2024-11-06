@@ -6,11 +6,10 @@ use tower_sessions::Session;
 use crate::{
     app_error::AppError,
     auth_token::AuthToken,
-    config::{
-        COLOR_PALETTE, MAX_FREE_TEXT_ANSWERS, POLL_MAX_ITEMS, POLL_MAX_MC_ANSWERS, POLL_MAX_STR_LEN,
-    },
+    config::{COLOR_PALETTE, POLL_MAX_MC_ANSWERS, POLL_MAX_SLIDES, POLL_MAX_STR_LEN},
     host,
     html_page::{self, render_header},
+    illustrations::Illustrations,
     live_poll::{Answers, Item, LivePoll},
     live_poll_store::LIVE_POLL_STORE,
     static_file,
@@ -120,27 +119,7 @@ async fn render_edit_page(
 
     return Ok(html_page::render_html_page("Svoote", html! {
         #pollEditingArea ."mb-16" {
-            (render_header(html! {
-                ."flex items-center gap-3" {
-                    ."text-sm text-slate-500" {
-                        "Start poll"
-                    }
-                    button
-                        #start-poll-btn
-                        hx-post="/"
-                        hx-select="main"
-                        hx-target="main"
-                        hx-swap="outerHTML"
-                        disabled[poll.items.len() == 1 && matches!(poll.items[0].answers, Answers::Untyped)]
-                        ."relative group size-12 text-slate-100 bg-cyan-600 rounded-full hover:bg-cyan-800 disabled:bg-slate-300"
-                    {
-                        ."group-[.htmx-request]:opacity-0 flex justify-center" { ."translate-x-[0.1rem] size-6" { (SvgIcon::Play.render()) } }
-                        ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
-                            ."size-4" { (SvgIcon::Spinner.render()) }
-                        }
-                    }
-                }
-            }))
+            (render_header(html! {}))
             div x-data="poll" {
                 div ."mb-4 grid grid-cols-3" {
                     div x-data="{ open: false }" ."relative" {
@@ -167,6 +146,13 @@ async fn render_edit_page(
                             }
                         }
                     }
+                    div {}
+                    div ."flex justify-end" {
+                        button "@click"="startPoll()" ."flex items-center gap-2" {
+                            "Start"
+                            ."size-5 text-slate-500" { (SvgIcon::Play.render()) }
+                        }
+                    }
                 }
                 div ."flex gap-6 overflow-hidden" {
                     button "@click"="poll.activeSlide -= 1; save();" ":disabled"="poll.activeSlide == 0" ."z-10 relative size-8 mt-20 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700 disabled:bg-slate-300" {
@@ -176,12 +162,12 @@ async fn render_edit_page(
                     }
                     div ."flex-1 relative h-[36rem]" {
                         template x-for="(slide, slide_index) in poll.slides" {
-                            div ."absolute inset-0 size-full px-12 py-8 border rounded transition duration-500 ease-out transform-gpu" ":class"="slide_index == poll.activeSlide && 'shadow-xl'"
+                            div ."absolute inset-0 size-full px-16 py-10 border rounded transition duration-500 ease-out transform-gpu" ":class"="slide_index == poll.activeSlide && 'shadow-xl'"
                                 ":style"="'transform: perspective(100px) translateX(' + ((slide_index - poll.activeSlide) * 106) + '%) translateZ(' + (slide_index == poll.activeSlide ? '0' : '-10')  + 'px)'" {
-                                input type="text" x-model="slide.question" "@input"="save"
+                                input type="text" x-model="slide.question" "@input"="save" x-show="slide_index != 0 && slide_index != poll.slides.length - 1"
                                     "@keyup.enter"="let e = document.getElementById('s-' + slide_index + '-mc-answer-0'); if (e !== null) e.focus(); else document.getElementById('add-mc-answer-' + slide_index).click();"
                                     placeholder="Question"
-                                    ."w-full mb-6 text-xl text-slate-700 outline-none";
+                                    ."w-full mb-6 text-xl text-slate-800 outline-none";
                                 template x-if="slide.type == 'undefined'" {
                                     div {
                                         ."mb-2 text-slate-500 tracking-tight text-center" {
@@ -201,14 +187,34 @@ async fn render_edit_page(
                                         }
                                     }
                                 }
+                                template x-if="slide.type == 'firstSlide'" {
+                                    div ."h-full flex justify-center items-center gap-20" {
+                                        div ."" {
+                                            ."mb-1 text-sm text-slate-500 text-center" {
+                                                "Enter on " a ."text-indigo-500 underline" href="" { "svoote.com" }
+                                            }
+                                            ."mb-6 text-3xl tracking-wider font-bold text-slate-700 text-center" {
+                                                "1234"
+                                            }
+                                            ."w-lg flex justify-center" { " QR-Code" }
+                                        }
+                                        div ."w-[25rem]" {
+                                            (Illustrations::TeamCollaboration.render())
+                                        }
+                                    }
+                                }
+                                template x-if="slide.type == 'lastSlide'" {
+                                    div ."h-full flex flex-col justify-center" {
+                                        ."mx-auto mt-6 w-24" { (Illustrations::InLove.render()) }
+                                        ."mt-8 text-slate-500 text-center text-sm" { "This poll has no more items. Thank you for using svoote.com" }
+                                    }
+                                }
                                 template x-if="slide.type == 'mc'" {
                                     div {
                                         template x-for="(answer, answer_index) in slide.mcAnswers" {
                                             div ."mb-4 flex items-center gap-3" {
                                                 div x-text="incrementChar('A', answer_index)" ."text-slate-500" {}
-                                                input type="text"
-                                                    x-model="answer.text"
-                                                    "@input"="save()"
+                                                input type="text" x-model="answer.text" "@input"="save()"
                                                     "@keyup.enter"="let next = $el.parentElement.nextSibling; if (next.tagName == 'DIV') next.children[1].focus(); else next.click();"
                                                     ":id"="(answer_index == 0) && 's-' + slide_index + '-mc-answer-0'" ":class"="answer.isCorrect ? 'ring-[3px] ring-green-600' : 'ring-2 ring-slate-400 focus:ring-slate-500'"
                                                     ."w-full px-3 py-2 text-slate-700 rounded-lg outline-none";
@@ -237,12 +243,12 @@ async fn render_edit_page(
                                             template x-for="(answer, answer_index) in slide.ftAnswers" {
                                                 div ."flex items-center gap-1" {
                                                     span x-init="$el.innerText = answer.text" "@input"="answer.text = $el.innerText; save();" contenteditable
-                                                        ."block w-fit min-w-24 px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full outline-none"
+                                                        ."block w-fit min-w-24 px-3 py-0.5 bg-slate-100 text-slate-500 rounded-full outline-none"
                                                         "@keydown.enter.prevent"="let next = $el.parentElement.nextSibling; if (next.tagName == 'DIV') next.children[0].focus(); else next.click();" {}
                                                     button "@click"="slide.ftAnswers.splice(answer_index, 1); save();" ."size-4 text-slate-300" { (SvgIcon::X.render()) }
                                                 }
                                             }
-                                            button "@click"="slide.ftAnswers.push({ text: '' }); save(); $nextTick(() => $el.previousSibling.children[0].focus());" ."size-7 p-0.5 text-slate-400 border rounded-full" { (SvgIcon::Plus.render()) }
+                                            button "@click"="slide.ftAnswers.push({ text: '' }); save(); $nextTick(() => $el.previousSibling.children[0].focus());" ."size-7 p-0.5 text-slate-300 border rounded-full" { (SvgIcon::Plus.render()) }
                                         }
                                         div ."text-slate-500 text-center text-sm"  { "If the leaderboard is enabled, Participants can receive points for submitting the correct answer." }
                                     }
@@ -250,23 +256,28 @@ async fn render_edit_page(
                             }
                         }
                     }
-                    template x-if="poll.activeSlide + 1 < poll.slides.length" {
-                        button "@click"="poll.activeSlide += 1; save();" ."relative size-8 mt-20 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700" {
-                            ."absolute inset-0 size-full flex items-center justify-center" {
-                                ."size-4" { (SvgIcon::ChevronRight.render()) }
-                            }
+                    button x-show="poll.activeSlide + 1 < poll.slides.length" "@click"="poll.activeSlide += 1; save();" ."relative size-8 mt-20 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700" {
+                        ."absolute inset-0 size-full flex items-center justify-center" {
+                            ."size-4" { (SvgIcon::ChevronRight.render()) }
                         }
                     }
-                    template x-if="poll.activeSlide + 1 == poll.slides.length" {
-                        button "@click"="poll.slides.push(createSlide()); save(); $nextTick(() => poll.activeSlide += 1);" ."relative size-8 mt-20 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700" {
-                            ."absolute inset-0 size-full flex items-center justify-center" {
-                                ."size-4" { (SvgIcon::Plus.render()) }
-                            }
+                    button x-ref="btnAddSlide" x-show="poll.activeSlide + 1 == poll.slides.length" "@click"="poll.slides.splice(poll.slides.length - 1, 0, createSlide(null)); $nextTick(() => { poll.activeSlide = poll.slides.length - 2; save() });"
+                        ":disabled"={ "poll.slides.length >= " (POLL_MAX_SLIDES) }
+                        ."relative size-8 mt-20 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700 disabled:bg-slate-300"
+                    {
+                        ."absolute inset-0 size-full flex items-center justify-center" {
+                            ."size-4" { (SvgIcon::Plus.render()) }
                         }
                     }
                 }
-                div ."mt-4 flex justify-center" {
-                    button "@click"="poll.slides.splice(poll.activeSlide, 1); if (poll.activeSlide == poll.slides.length) poll.activeSlide -= 1; save();" ":disabled"="poll.slides.length == 1"
+                div ."mt-4 flex justify-center gap-4" {
+                    button "@click"="$refs.btnAddSlide.click();" ":disabled"={ "poll.slides.length >= " (POLL_MAX_SLIDES) }
+                        ."group px-2 py-1 flex items-center gap-1 text-slate-500 border border-slate-300 rounded-full hover:bg-slate-100 disabled:text-slate-300 disabled:bg-transparent"
+                    {
+                        ."size-4 text-slate-500 group-disabled:text-slate-300" { (SvgIcon::Plus.render()) }
+                        "Add slide"
+                    }
+                    button "@click"="poll.slides.splice(poll.activeSlide, 1); if (poll.activeSlide > 0) poll.activeSlide -= 1; save();" ":disabled"="poll.activeSlide == 0 || poll.activeSlide == poll.slides.length - 1"
                         ."group px-2 py-1 flex items-center gap-1 text-slate-500 border border-slate-300 rounded-full hover:bg-slate-100 disabled:text-slate-300 disabled:bg-transparent"
                     {
                         ."size-4 text-red-400 group-disabled:text-slate-300" { (SvgIcon::Trash2.render()) }
