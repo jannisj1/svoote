@@ -7,7 +7,6 @@ use tokio::time::Instant;
 use uuid::Uuid;
 
 use crate::app_error::AppError;
-use crate::auth_token::AuthToken;
 use crate::config::{LIVE_POLL_PARTICIPANT_LIMIT, POLL_EXIT_TIMEOUT};
 use crate::live_poll_store::{ShortID, LIVE_POLL_STORE};
 use crate::play::Player;
@@ -28,7 +27,7 @@ pub enum Answers {
 }
 
 pub struct LivePoll {
-    pub host_auth_token: AuthToken,
+    pub host_session_id: Uuid,
     pub items: Vec<Slide>,
     pub player_indices: BTreeMap<Uuid, usize>,
     pub players: Vec<Player>,
@@ -50,7 +49,7 @@ pub struct LivePoll {
 impl LivePoll {
     pub fn orchestrate(
         poll: PersistablePoll,
-        auth_token: AuthToken,
+        host_session_id: Uuid,
     ) -> Result<(ShortID, Arc<Mutex<Self>>), AppError> {
         let (send_start_signal, recv_start_signal) = oneshot::channel::<()>();
         let (sse_host_question_send, sse_host_question_recv) =
@@ -73,7 +72,7 @@ impl LivePoll {
         live_items.push(Slide::create_final_slide());
 
         let (poll_id, live_poll) = LIVE_POLL_STORE.insert(LivePoll {
-            host_auth_token: auth_token,
+            host_session_id,
             items: live_items,
             player_indices: BTreeMap::new(),
             players: Vec::new(),
@@ -95,7 +94,10 @@ impl LivePoll {
         let return_live_poll_handle = live_poll.clone();
 
         tokio::spawn(async move {
-            let _live_poll_drop = RmLivePollOnDrop(poll_id);
+            let _live_poll_drop = RmLivePollOnDrop {
+                poll_id,
+                host_session_id,
+            };
             let _ = recv_start_signal.await;
 
             let mut active_slide_index = 0usize;
@@ -149,8 +151,8 @@ impl LivePoll {
         return Ok((poll_id, return_live_poll_handle));
     }
 
-    pub fn get_or_create_player(&mut self, auth_token: &AuthToken) -> Option<usize> {
-        if let Ok(player_index) = self.get_player_index(auth_token) {
+    pub fn get_or_create_player(&mut self, player_session_id: &Uuid) -> Option<usize> {
+        if let Ok(player_index) = self.get_player_index(player_session_id) {
             return Some(player_index);
         }
 
@@ -162,7 +164,7 @@ impl LivePoll {
         let new_player = Player::new(new_player_idx);
 
         self.player_indices
-            .insert(auth_token.token.clone(), new_player_idx);
+            .insert(player_session_id.clone(), new_player_idx);
         self.players.push(new_player);
 
         for item in &mut self.items {
@@ -174,10 +176,10 @@ impl LivePoll {
         return Some(new_player_idx);
     }
 
-    pub fn get_player_index(&self, auth_token: &AuthToken) -> Result<usize, AppError> {
+    pub fn get_player_index(&self, player_session_id: &Uuid) -> Result<usize, AppError> {
         return self
             .player_indices
-            .get(&auth_token.token)
+            .get(&player_session_id)
             .map(|index| *index)
             .ok_or(AppError::BadRequest(
                 "Player with this auth token did not join the poll yet".to_string(),
@@ -224,10 +226,13 @@ pub enum QuestionStatisticsState {
     CloseSSE,
 }
 
-pub struct RmLivePollOnDrop(pub ShortID);
+pub struct RmLivePollOnDrop {
+    pub poll_id: ShortID,
+    pub host_session_id: Uuid,
+}
 
 impl Drop for RmLivePollOnDrop {
     fn drop(&mut self) {
-        LIVE_POLL_STORE.remove(self.0);
+        LIVE_POLL_STORE.remove(&self.host_session_id, self.poll_id);
     }
 }

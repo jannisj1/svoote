@@ -1,11 +1,11 @@
 use crate::{
     app_error::AppError,
-    auth_token::AuthToken,
     config::{CUSTOM_PLAYER_NAME_LENGTH_LIMIT, LIVE_POLL_PARTICIPANT_LIMIT},
     html_page::{self, render_header},
     illustrations::Illustrations,
     live_poll::QuestionAreaState,
     live_poll_store::{ShortID, LIVE_POLL_STORE},
+    session_id,
     slide::SlideType,
     svg_icons::SvgIcon,
 };
@@ -13,6 +13,7 @@ use axum::{
     extract::{Form, Path, Query},
     response::{sse, IntoResponse, Response, Sse},
 };
+use axum_extra::extract::CookieJar;
 
 use core::iter::Iterator;
 use futures::Stream;
@@ -23,7 +24,6 @@ use std::convert::Infallible;
 use std::fmt::Write;
 use tokio_stream::wrappers::WatchStream;
 use tokio_stream::StreamExt as _;
-use tower_sessions::Session;
 
 // These awesome SVG-avatars were obtained from dicebear.com (Adventurer Neutral by Lisa Wischofsky)
 // They are published under the CC BY 4.0 license (https://creativecommons.org/licenses/by/4.0/)
@@ -141,7 +141,7 @@ pub struct PlayPageParams {
 
 pub async fn get_play_page(
     Query(params): Query<PlayPageParams>,
-    session: Session,
+    cookies: CookieJar,
 ) -> Result<Response, AppError> {
     let live_poll = match LIVE_POLL_STORE.get(params.c) {
         Some(live_poll) => live_poll,
@@ -158,12 +158,12 @@ pub async fn get_play_page(
         }
     };
 
-    let auth_token = AuthToken::get_or_create(&session).await?;
+    let (session_id, cookies) = session_id::get_or_create_session_id(cookies);
     let mut live_poll = live_poll.lock().unwrap();
 
-    return Ok(html_page::render_html_page(
+    let html = html_page::render_html_page(
         "Svoote",
-        match live_poll.get_or_create_player(&auth_token) {
+        match live_poll.get_or_create_player(&session_id) {
             Some(player_index) => {
                 let player = live_poll.get_player(player_index);
                 html! {
@@ -233,18 +233,20 @@ pub async fn get_play_page(
                 }
             }
         },
-        true
-    ).into_response());
+        true,
+    );
+
+    return Ok((cookies, html).into_response());
 }
 
 pub async fn get_sse_play(
     Path(poll_id): Path<ShortID>,
-    session: Session,
+    cookies: CookieJar,
 ) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
     let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
     let updates = live_poll.lock().unwrap().ch_question_state.clone();
-    let auth_token = AuthToken::get_or_create(&session).await?;
-    let player_index = live_poll.lock().unwrap().get_player_index(&auth_token)?;
+    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
+    let player_index = live_poll.lock().unwrap().get_player_index(&session_id)?;
 
     let stream = WatchStream::new(updates)
         .map(move |state| match state {
@@ -274,14 +276,14 @@ pub struct PostMCAnswerForm {
 
 pub async fn post_mc_answer(
     Path(poll_id): Path<ShortID>,
-    session: Session,
+    cookies: CookieJar,
     Form(form): Form<PostMCAnswerForm>,
 ) -> Result<Response, AppError> {
-    let auth_token = AuthToken::get_or_create(&session).await?;
     let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let mut live_poll = live_poll.lock().unwrap();
+    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
 
-    let player_index = live_poll.get_player_index(&auth_token)?;
+    let mut live_poll = live_poll.lock().unwrap();
+    let player_index = live_poll.get_player_index(&session_id)?;
     let start_time = live_poll.get_current_slide_start_time();
 
     let score = if let SlideType::SingleChoice(mc_answers) =
@@ -320,14 +322,14 @@ pub struct PostFreeTextAnswerForm {
 
 pub async fn post_free_text_answer(
     Path(poll_id): Path<ShortID>,
-    session: Session,
+    cookies: CookieJar,
     Form(form_data): Form<PostFreeTextAnswerForm>,
 ) -> Result<Response, AppError> {
-    let auth_token = AuthToken::get_or_create(&session).await?;
     let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let mut live_poll = live_poll.lock().unwrap();
+    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
 
-    let player_index = live_poll.get_player_index(&auth_token)?;
+    let mut live_poll = live_poll.lock().unwrap();
+    let player_index = live_poll.get_player_index(&session_id)?;
 
     let response =
         if let SlideType::FreeText(ft_answers) = &mut live_poll.get_current_slide().slide_type {
@@ -396,18 +398,19 @@ pub struct NameAvatarParams {
 
 pub async fn post_name_avatar(
     Path(poll_id): Path<ShortID>,
-    session: Session,
+    cookies: CookieJar,
     Form(params): Form<NameAvatarParams>,
 ) -> Result<Response, AppError> {
-    let auth_token = AuthToken::get_or_create(&session).await?;
     let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
 
     let mut live_poll = live_poll.lock().unwrap();
+    let player_index = live_poll.get_player_index(&session_id)?;
+
     let leaderboard_enabled = live_poll.leaderboard_enabled;
     let allow_custom_player_names = live_poll.allow_custom_player_names;
 
     let (player_name, avatar_svg) = {
-        let player_index = live_poll.get_player_index(&auth_token)?;
         let player = live_poll.get_player_mut(player_index);
 
         if allow_custom_player_names {

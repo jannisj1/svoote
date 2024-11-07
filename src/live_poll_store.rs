@@ -3,28 +3,30 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use tower_sessions::Session;
+use uuid::Uuid;
 
-use crate::{app_error::AppError, auth_token::AuthToken, live_poll::LivePoll};
+use crate::{app_error::AppError, live_poll::LivePoll};
 
 pub type ShortID = u32;
 
 pub static LIVE_POLL_STORE: LivePollStore = LivePollStore::new();
 
 pub struct LivePollStore {
-    inner: Mutex<BTreeMap<ShortID, Arc<Mutex<LivePoll>>>>,
+    polls: Mutex<BTreeMap<ShortID, Arc<Mutex<LivePoll>>>>,
+    session_lookup: Mutex<BTreeMap<Uuid, ShortID>>,
 }
 
 impl LivePollStore {
     pub const fn new() -> Self {
         return LivePollStore {
-            inner: Mutex::new(BTreeMap::new()),
+            polls: Mutex::new(BTreeMap::new()),
+            session_lookup: Mutex::new(BTreeMap::new()),
         };
     }
 
     pub fn get(&self, id: ShortID) -> Option<Arc<Mutex<LivePoll>>> {
         return self
-            .inner
+            .polls
             .lock()
             .unwrap()
             .get(&id)
@@ -35,8 +37,10 @@ impl LivePollStore {
         use rand::Rng;
         let mut rng = rand::thread_rng();
 
+        let host_session_id = live_poll.host_session_id.clone();
+
         let live_poll = Arc::new(Mutex::new(live_poll));
-        let mut polls = self.inner.lock().unwrap();
+        let mut polls = self.polls.lock().unwrap();
 
         let random_id = (0..1000).map(|_| rng.gen_range::<ShortID, _>(1000..10_000)).find(|id| !polls.contains_key(&id))
             .unwrap_or((0..1000).map(|_| rng.gen_range::<ShortID, _>(10_000..1_000_000)).find(|id| !polls.contains_key(&id))
@@ -44,31 +48,32 @@ impl LivePollStore {
                 .to_string()))?);
 
         polls.insert(random_id, live_poll.clone());
+        self.session_lookup
+            .lock()
+            .unwrap()
+            .insert(host_session_id, random_id);
 
         return Ok((random_id, live_poll));
     }
 
-    pub fn remove(&self, id: ShortID) {
-        self.inner.lock().unwrap().remove(&id);
+    pub fn remove(&self, host_session_id: &Uuid, id: ShortID) {
+        self.polls.lock().unwrap().remove(&id);
+        self.session_lookup.lock().unwrap().remove(host_session_id);
     }
 
-    pub async fn get_from_session(
+    pub fn get_by_session_id(
         &self,
-        session: &Session,
-        auth_token: &AuthToken,
-    ) -> Result<Option<(ShortID, Arc<Mutex<LivePoll>>)>, AppError> {
-        if let Some(poll_id) = session
-            .get::<ShortID>("live_poll_id")
-            .await
-            .map_err(|e| AppError::DatabaseError(e))?
-        {
-            if let Some(live_poll) = self.get(poll_id) {
-                if live_poll.lock().unwrap().host_auth_token.token == auth_token.token {
-                    return Ok(Some((poll_id, live_poll)));
-                }
-            }
-        }
+        host_session_id: &Uuid,
+    ) -> Option<(ShortID, Arc<Mutex<LivePoll>>)> {
+        let poll_id = match self.session_lookup.lock().unwrap().get(host_session_id) {
+            Some(poll_id) => *poll_id,
+            None => return None,
+        };
 
-        return Ok(None);
+        if let Some(live_poll) = self.get(poll_id) {
+            return Some((poll_id, live_poll));
+        } else {
+            return None;
+        }
     }
 }

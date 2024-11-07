@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+[x-cloak] {
+    display: none !important;
+}
+
 .word-cloud-object {
     top: var(--top-rem-end);
     font-size: var(--font-size-end);

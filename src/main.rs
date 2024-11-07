@@ -3,7 +3,6 @@ extern crate log;
 
 mod about_page;
 mod app_error;
-mod auth_token;
 mod compliance;
 mod config;
 mod host;
@@ -13,6 +12,7 @@ mod live_poll;
 mod live_poll_store;
 mod play;
 mod polls;
+mod session_id;
 mod slide;
 mod static_file;
 mod svg_icons;
@@ -22,12 +22,6 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 
 use app_error::AppError;
-use time::Duration;
-use tower_sessions::{Expiry, SessionManagerLayer};
-use tower_sessions_redis_store::{
-    fred::{prelude::*, types::RedisConfig},
-    RedisStore,
-};
 
 fn main() {
     let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -43,22 +37,6 @@ fn main() {
         let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
 
         info!("Listening on http://{}", addr);
-
-        let pool = match RedisPool::new(RedisConfig::default(), None, None, None, 6) {
-            Ok(pool) => pool,
-            Err(e) => {
-                error!("Could not connect to redis server: {e}");
-                return;
-            }
-        };
-
-        let _ = pool.connect();
-        pool.wait_for_connect().await.unwrap();
-
-        let session_store = RedisStore::new(pool);
-        let session_layer = SessionManagerLayer::new(session_store)
-            .with_secure(false)
-            .with_expiry(Expiry::OnInactivity(Duration::days(30)));
 
         let routes = axum::Router::new()
             .route("/about", get(about_page::get_about_page))
@@ -92,7 +70,6 @@ fn main() {
             .route("/cookie-policy", get(compliance::get_cookie_policy_page))
             .route("/contact", get(compliance::get_contact_page))
             .route("/robots.txt", get(compliance::get_robots_txt))
-            .layer(session_layer)
             .fallback(get(get_fallback));
 
         axum::serve(listener, routes).await.unwrap();

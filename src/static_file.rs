@@ -43,6 +43,12 @@ pub fn init() {
         &["./src/static/alpine_3_14_3.min.js"],
     ));
 
+    bundles.push(create_bundle(
+        "qrcode.js",
+        "text/javascript",
+        &["./src/static/qrcode.min.js"],
+    ));
+
     let _ = BUNDLES.set(bundles);
 }
 

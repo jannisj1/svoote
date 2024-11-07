@@ -7,7 +7,7 @@ use crate::html_page;
 pub enum AppError {
     NotFound,
     BadRequest(String),
-    DatabaseError(tower_sessions::session::Error),
+    Unauthorized(String),
     OtherInternalServerError(String),
 }
 
@@ -26,9 +26,8 @@ impl IntoResponse for AppError {
             AppError::BadRequest(msg) => {
                 return (axum::http::StatusCode::BAD_REQUEST, msg).into_response();
             }
-            AppError::DatabaseError(e) => {
-                error!("Redis database error: {e}");
-                return generate_500_response();
+            AppError::Unauthorized(msg) => {
+                return (axum::http::StatusCode::UNAUTHORIZED, msg).into_response();
             }
             AppError::OtherInternalServerError(s) => {
                 error!("Other internal server error: {s}");
@@ -43,16 +42,16 @@ impl core::fmt::Display for AppError {
         match self {
             Self::NotFound => write!(f, "Not Found")?,
             Self::BadRequest(s) => write!(f, "Bad request: {s}")?,
-            Self::DatabaseError(e) => write!(f, "Database error: {e}")?,
+            Self::Unauthorized(s) => write!(f, "Unauthorized: {s}")?,
             Self::OtherInternalServerError(s) => write!(f, "Internal server error: {s}")?,
         }
 
-        Ok(())
+        return Ok(());
     }
 }
 
 fn generate_500_response() -> Response {
-    (
+    return (
         axum::http::StatusCode::INTERNAL_SERVER_ERROR,
         html_page::render_html_page(
             "Svoote - 500 Internal server error",
@@ -63,5 +62,5 @@ fn generate_500_response() -> Response {
         )
         .into_response(),
     )
-        .into_response()
+        .into_response();
 }

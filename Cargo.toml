@@ -5,20 +5,18 @@ edition = "2021"
 
 [dependencies]
 axum = { version = "0.7.7", features = ["tokio", "query", "multipart"] }
-tower-sessions = { version = "0.13.0" }
-tower-sessions-redis-store = { version = "0.14.0" }
-time = { version = "0.3.36", features = ["serde"] }
-serde = { version = "1.0.210", features = ["derive"] }
-serde_json = "1.0.128"
-tokio = { version = "1.40.0", features = ["rt-multi-thread", "sync", "time"] }
+axum-extra = { version = "0.9.4", features = ["cookie"] }
+time = "0.3.36"
+serde = { version = "1.0.214", features = ["derive"] }
+serde_json = "1.0.132"
+tokio = { version = "1.41.0", features = ["rt-multi-thread", "sync", "time"] }
 tokio-stream = { version = "0.1.16", features = ["sync"] }
 futures = "0.3.31"
-uuid = { version = "1.10.0", features = ["v4", "serde"] }
+uuid = { version = "1.11.0", features = ["v4", "serde"] }
 log = "0.4.22"
 env_logger = "0.11.5"
 rand = "0.8.5"
 md5 = "0.7.0"
 maud = { version = "0.26.0", features = ["axum"] }
-qrcode = { version = "0.14.1" }
 arrayvec = "0.7.6"
 smartstring = { version = "1.0.1", features = ["serde"] }

@@ -1,6 +1,5 @@
 use arrayvec::ArrayVec;
-use maud::{html, Markup, PreEscaped};
-use qrcode::{render::svg, QrCode};
+use maud::{html, Markup};
 use smartstring::{Compact, SmartString};
 
 use crate::{
