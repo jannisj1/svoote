@@ -6,7 +6,6 @@ use crate::{
     app_error::AppError,
     config::{COLOR_PALETTE, MAX_FREE_TEXT_ANSWERS},
     illustrations::Illustrations,
-    live_poll::Item,
     live_poll_store::ShortID,
     play::render_poll_finished,
     svg_icons::SvgIcon,
@@ -38,7 +37,7 @@ pub struct FreeTextLiveAnswers {
 }
 
 impl Slide {
-    pub fn from_item(item: &Item) -> Option<Slide> {
+    /*pub fn new(value: serde_json::Value) -> Option<Slide> {
         let answers = match &item.answers {
             crate::live_poll::Answers::SingleChoice(answers) => {
                 SlideType::SingleChoice(MultipleChoiceLiveAnswers {
@@ -61,7 +60,7 @@ impl Slide {
             slide_type: answers,
             player_scores: Vec::new(),
         });
-    }
+    }*/
 
     pub fn create_join_slide() -> Slide {
         return Slide {

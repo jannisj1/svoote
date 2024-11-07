@@ -11,7 +11,6 @@ mod illustrations;
 mod live_poll;
 mod live_poll_store;
 mod play;
-mod polls;
 mod session_id;
 mod slide;
 mod static_file;
@@ -39,10 +38,11 @@ fn main() {
         info!("Listening on http://{}", addr);
 
         let routes = axum::Router::new()
+            .route("/", get(host::get_poll_page))
+            .route("/start_poll", post(host::post_start_poll))
             .route("/about", get(about_page::get_about_page))
             .route("/about/demo_mc", get(about_page::get_mc_start_page_demo))
             .route("/about/demo_ft", get(about_page::get_ft_start_page_demo))
-            .route("/", get(polls::get_poll_page).post(polls::post_start_poll))
             .route("/next_slide/:poll_id", post(host::post_next_slide))
             .route("/previous_slide/:poll_id", post(host::post_previous_slide))
             .route("/exit_poll/:poll_id", post(host::post_exit_poll))

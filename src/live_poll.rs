@@ -1,4 +1,3 @@
-use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tokio::select;
@@ -10,25 +9,24 @@ use crate::app_error::AppError;
 use crate::config::{LIVE_POLL_PARTICIPANT_LIMIT, POLL_EXIT_TIMEOUT};
 use crate::live_poll_store::{ShortID, LIVE_POLL_STORE};
 use crate::play::Player;
-use crate::polls::PersistablePoll;
 use crate::slide::Slide;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+/*#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Item {
     pub question: String,
     pub answers: Answers,
-}
+}*/
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+/*#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Answers {
     Untyped,                           // When users first add a new item
     SingleChoice(Vec<(String, bool)>), // Answer text, is correct
     FreeText(usize, Vec<String>),      // Max answers per User, correct answers
-}
+}*/
 
 pub struct LivePoll {
     pub host_session_id: Uuid,
-    pub items: Vec<Slide>,
+    pub slides: Vec<Slide>,
     pub player_indices: BTreeMap<Uuid, usize>,
     pub players: Vec<Player>,
     pub current_slide_index: usize,
@@ -48,8 +46,10 @@ pub struct LivePoll {
 
 impl LivePoll {
     pub fn orchestrate(
-        poll: PersistablePoll,
+        slides: Vec<Slide>,
         host_session_id: Uuid,
+        leaderboard_enabled: bool,
+        allow_custom_player_names: bool,
     ) -> Result<(ShortID, Arc<Mutex<Self>>), AppError> {
         let (send_start_signal, recv_start_signal) = oneshot::channel::<()>();
         let (sse_host_question_send, sse_host_question_recv) =
@@ -61,19 +61,9 @@ impl LivePoll {
         let (send_previous_question, mut recv_previous_question) = mpsc::channel(4);
         let (send_exit_poll, mut recv_exit_poll) = mpsc::channel(4);
 
-        let mut live_items = Vec::with_capacity(poll.items.len() + 1);
-
-        live_items.push(Slide::create_join_slide());
-        for item in poll.items {
-            if let Some(live_item) = Slide::from_item(&item) {
-                live_items.push(live_item);
-            }
-        }
-        live_items.push(Slide::create_final_slide());
-
         let (poll_id, live_poll) = LIVE_POLL_STORE.insert(LivePoll {
             host_session_id,
-            items: live_items,
+            slides,
             player_indices: BTreeMap::new(),
             players: Vec::new(),
             current_slide_index: 0usize,
@@ -87,8 +77,8 @@ impl LivePoll {
             ch_previous_question: send_previous_question,
             ch_exit_poll: send_exit_poll,
             ch_question_state: sse_host_question_recv,
-            leaderboard_enabled: poll.leaderboard_enabled,
-            allow_custom_player_names: poll.allow_custom_names,
+            leaderboard_enabled,
+            allow_custom_player_names,
         })?;
 
         let return_live_poll_handle = live_poll.clone();
@@ -167,7 +157,7 @@ impl LivePoll {
             .insert(player_session_id.clone(), new_player_idx);
         self.players.push(new_player);
 
-        for item in &mut self.items {
+        for item in &mut self.slides {
             item.add_player();
         }
 
@@ -195,7 +185,7 @@ impl LivePoll {
     }
 
     pub fn get_current_slide<'a>(&'a mut self) -> &'a mut Slide {
-        return &mut self.items[self.current_slide_index];
+        return &mut self.slides[self.current_slide_index];
     }
 
     pub fn get_current_slide_start_time(&self) -> tokio::time::Instant {
@@ -203,7 +193,7 @@ impl LivePoll {
     }
 
     pub fn get_slide_count(&self) -> usize {
-        return self.items.len();
+        return self.slides.len();
     }
 
     pub fn get_current_participant_count(&self) -> usize {

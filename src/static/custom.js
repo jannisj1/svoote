@@ -1,30 +1,3 @@
-let demoAnimationsStarted = false;
-
-function initStartPageDemoAnimations() {
-  let observer = new IntersectionObserver(function (entries, observer) {
-    if (entries[0].isIntersecting && !demoAnimationsStarted) {
-      demoAnimationsStarted = true;
-      tickDemoElement(0, 50, "demo-mc-container");
-      tickDemoElement(0, 50, "demo-ft-container");
-    }
-  });
-
-  observer.observe(document.querySelector("#features"));
-}
-
-function tickDemoElement(count, limit, elementId) {
-  document.getElementById(elementId).dispatchEvent(new Event("demoTick"));
-
-  if (count < limit) {
-    setTimeout(
-      () => {
-        tickDemoElement(count + 1, limit, elementId);
-      },
-      700 + Math.random() * 3800,
-    );
-  }
-}
-
 function incrementChar(c, add) {
   return String.fromCharCode(c.charCodeAt(0) + add);
 }
@@ -72,6 +45,16 @@ document.addEventListener("alpine:init", () => {
     },
 
     startPoll() {
+      fetch("/start_poll", {
+        method: "POST",
+        body: JSON.stringify(this.poll),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      })
+        .then((response) => response.text())
+        .then((code) => console.log(code));
+
       this.isLive = true;
       this.code = "1234";
     },
