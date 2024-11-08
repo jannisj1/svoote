@@ -40,8 +40,49 @@ document.addEventListener("alpine:init", () => {
     code: null,
     qrCode: null,
 
+    init() {
+      /*addEventListener("focusin", (event) => {
+        let parentSlide = event.target.closest("[data-slide-index]");
+        if (parentSlide !== null) {
+          this.poll.activeSlide = Number(parentSlide.dataset.slideIndex);
+          this.save();
+        }
+        });*/
+
+      addEventListener("keyup", (event) => {
+        if (event.target === document.body) {
+          if (event.code === "ArrowRight") {
+            this.gotoSlide(this.poll.activeSlide + 1);
+          } else if (event.code === "ArrowLeft") {
+            this.gotoSlide(this.poll.activeSlide - 1);
+          }
+        }
+      });
+    },
+
     save() {
       localStorage.setItem("poll", JSON.stringify(this.poll));
+    },
+
+    gotoSlide(slideIndex) {
+      slideIndex = Math.max(
+        0,
+        Math.min(slideIndex, this.poll.slides.length - 1),
+      );
+      this.poll.activeSlide = slideIndex;
+      this.save();
+    },
+
+    questionInputEnterEvent(slideIndex, slide) {
+      if (slide.type == "mc") {
+        let e = document.getElementById("s-" + slideIndex + "-mc-answer-0");
+        if (e !== null) e.focus();
+        else document.getElementById("add-mc-answer-" + slideIndex).click();
+      } else if (slide.type == "ft") {
+        let e = document.getElementById("s-" + slideIndex + "-ft-answer-0");
+        if (e !== null) e.focus();
+        else document.getElementById("add-ft-answer-" + slideIndex).click();
+      }
     },
 
     startPoll() {
