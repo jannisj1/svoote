@@ -26,9 +26,8 @@ use crate::{
 
 pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
     let (_session_id, cookies) = session_id::get_or_create_session_id(cookies);
-    /*let auth_token = AuthToken::get_or_create(&session).await?;
 
-    match LIVE_POLL_STORE
+    /*match LIVE_POLL_STORE
         .get_from_session(&session, &auth_token)
         .await?
     {
@@ -46,7 +45,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
             #pollEditingArea ."mb-16" {
                 (render_header(html! {}))
                 div x-data="poll" {
-                    div ."mb-4 grid grid-cols-3" {
+                    div ."mb-4 grid grid-cols-3 items-center" {
                         div x-data="{ open: false }" ."relative" {
                             button "@click"="open = !open" ."size-6 text-slate-400 hover:text-slate-600" { (SvgIcon::Settings.render()) }
                             div x-show="open" x-cloak "@click.outside"="open = false" ."absolute left-0 top-8 w-64 h-fit z-20 p-4 text-left bg-white border rounded-lg shadow-lg" {
@@ -61,26 +60,45 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                     "Custom names"
                                 }
                                 ."ml-6 mb-3 text-slate-400 text-sm" { "Allow participants to set a custom name." }
-                                a download="poll.json" ":href"="'data:application/json;charset=utf-8,' + JSON.stringify(poll)" ."mb-3 flex gap-2 items-center text-slate-600 font-semibold" {
-                                    ."size-4" { (SvgIcon::Download.render()) }
+                                hr ."mb-3";
+                                a download="poll.json" ":href"="'data:application/json;charset=utf-8,' + JSON.stringify(poll)"
+                                    ."mb-2 flex gap-2 items-center text-slate-600"
+                                {
+                                    ."size-4" { (SvgIcon::Save.render()) }
                                     "Save poll (.json)"
                                 }
-                                button ."flex gap-2 items-center text-slate-600 font-semibold" {
-                                    ."size-4" { (SvgIcon::UploadCloud.render()) }
-                                    "Import poll (.json)"
+                                button ."mb-3 flex gap-2 items-center text-slate-600" {
+                                    ."size-4" { (SvgIcon::Folder.render()) }
+                                    "Load poll (.json)"
+                                }
+                                hr ."mb-3";
+                                button "@click"="reset()" ":disabled"="isLive" ."flex gap-2 items-center text-slate-600 disabled:text-slate-300" {
+                                    ."size-4" { (SvgIcon::Refresh.render()) }
+                                    "Reset slides and settings"
                                 }
                             }
                         }
-                        div {}
+                        div {
+                            div ."relative" {
+                                template x-for="i in poll.slides.length - 2" {
+                                    button x-text="i"
+                                        ."absolute top-0 left-1/2 w-fit text-sm text-slate-600 transition duration-500 ease-out"
+                                        ":class"="(i == poll.activeSlide ? 'font-bold ' : 'font-medium ')"
+                                        ":style"="`transform: translateX(${ (i - poll.activeSlide) * 24 }px); opacity: ${ Math.abs(i - poll.activeSlide) > 4 ? 0 : Math.max(0, 12 - Math.abs(i - poll.activeSlide)) / 12 };`"
+                                        ":disabled"="Math.abs(i - poll.activeSlide) > 4"
+                                        "@click"="gotoSlide(i)" {}
+                                }
+                            }
+                        }
                         div ."flex justify-end" {
-                            button "@click"="startPoll()" ."flex items-center gap-2" {
+                            button "@click"="startPoll()" ."px-4 py-2 flex items-center gap-2 text-slate-100 bg-indigo-600 rounded-lg hover:bg-indigo-700" {
                                 "Start"
-                                ."size-5 text-slate-500" { (SvgIcon::Play.render()) }
+                                ."size-5" { (SvgIcon::Play.render()) }
                             }
                         }
                     }
                     div ."flex gap-6 overflow-hidden" {
-                        button "@click"="gotoSlide(poll.activeSlide - 1)" ":disabled"="poll.activeSlide == 0" ."z-10 relative size-8 mt-20 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700 disabled:bg-slate-300" {
+                        button "@click"="gotoSlide(poll.activeSlide - 1)" ":disabled"="poll.activeSlide == 0" ."z-10 relative size-8 mt-48 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700 disabled:bg-slate-300" {
                             ."absolute inset-0 size-full flex items-center justify-center" {
                                 ."size-4 translate-x-[-0.05rem]" { (SvgIcon::ChevronLeft.render()) }
                             }
@@ -92,6 +110,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                 {
                                     input type="text" x-model="slide.question" "@input"="save" x-show="slide_index != 0 && slide_index != poll.slides.length - 1"
                                         "@keyup.enter"="questionInputEnterEvent(slide_index, slide)"
+                                        ":id"="'question-input-' + slide_index"
                                         ":tabindex"="slide_index == poll.activeSlide ? '0' : '-1'"
                                         placeholder="Question"
                                         ."w-full mb-6 text-xl text-slate-800 outline-none";
@@ -101,13 +120,13 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                 "Choose item type:"
                                             }
                                             ."flex justify-center gap-4" {
-                                                button "@click"="slide.type = 'mc'; save();" ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
+                                                button "@click"="slide.type = 'mc'; slide.mcAnswers.push({ text: '', isCorrect: false }, { text: '', isCorrect: false }); save(); document.getElementById('question-input-' + slide_index).focus();" ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
                                                     ":tabindex"="slide_index == poll.activeSlide ? '0' : '-1'"
                                                 {
                                                     ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) }
                                                     "Multiple choice"
                                                 }
-                                                button "@click"="slide.type = 'ft'; save();" ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
+                                                button "@click"="slide.type = 'ft'; save(); document.getElementById('question-input-' + slide_index).focus();" ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
                                                     ":tabindex"="slide_index == poll.activeSlide ? '0' : '-1'"
                                                 {
                                                     ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
@@ -128,7 +147,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                 div ."relative w-32 flex justify-center" {
                                                     div #"qrcode" ":class"="isLive || 'blur-sm'" x-effect="renderQRCode($el, code)" {}
                                                     div x-show="!isLive" ."absolute size-full inset-0 flex justify-center items-center" {
-                                                        button "@click"="startPoll()" ."px-4 py-2 flex items-center gap-2 text-slate-100 bg-indigo-600 rounded-lg"
+                                                        button "@click"="startPoll()" ."px-4 py-2 flex items-center gap-2 text-slate-100 bg-indigo-600 rounded-lg hover:bg-indigo-700"
                                                             ":tabindex"="slide_index == poll.activeSlide ? '0' : '-1'"
                                                         {
                                                             "Start"
@@ -203,7 +222,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                             }
                         }
                         button ":disabled"="poll.activeSlide + 1 == poll.slides.length" "@click"="gotoSlide(poll.activeSlide + 1)"
-                            ."relative size-8 mt-20 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700 disabled:bg-slate-300"
+                            ."relative size-8 mt-48 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700 disabled:bg-slate-300"
                         {
                             ."absolute inset-0 size-full flex items-center justify-center" {
                                 ."size-4" { (SvgIcon::ChevronRight.render()) }

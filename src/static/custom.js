@@ -41,14 +41,6 @@ document.addEventListener("alpine:init", () => {
     qrCode: null,
 
     init() {
-      /*addEventListener("focusin", (event) => {
-        let parentSlide = event.target.closest("[data-slide-index]");
-        if (parentSlide !== null) {
-          this.poll.activeSlide = Number(parentSlide.dataset.slideIndex);
-          this.save();
-        }
-        });*/
-
       addEventListener("keyup", (event) => {
         if (event.target === document.body) {
           if (event.code === "ArrowRight") {
@@ -62,6 +54,13 @@ document.addEventListener("alpine:init", () => {
 
     save() {
       localStorage.setItem("poll", JSON.stringify(this.poll));
+    },
+
+    reset() {
+      if (this.isLive == false) {
+        this.poll = createPoll();
+        this.save();
+      }
     },
 
     gotoSlide(slideIndex) {
