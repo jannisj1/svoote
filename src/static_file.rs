@@ -27,7 +27,9 @@ pub fn init() {
         &[
             "./src/static/htmx.2.0.0.min.js",
             "./src/static/htmx_sse.2.0.0.js",
+            "./src/static/reconnecting-websocket.min.js",
             "./src/static/custom.js",
+            "./src/static/alpine_3_14_3.min.js",
         ],
     ));
 
@@ -35,12 +37,6 @@ pub fn init() {
         "cookies.js",
         "text/javascript",
         &["./src/static/enzuzo_24_07_18.js"],
-    ));
-
-    bundles.push(create_bundle(
-        "alpine.js",
-        "text/javascript",
-        &["./src/static/alpine_3_14_3.min.js"],
     ));
 
     bundles.push(create_bundle(

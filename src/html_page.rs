@@ -1,6 +1,6 @@
 use maud::{html, Markup, DOCTYPE};
 
-use crate::{static_file, svg_icons::SvgIcon};
+use crate::{config::COLOR_PALETTE, static_file, svg_icons::SvgIcon};
 
 pub fn render_html_page(
     title: &str,
@@ -21,9 +21,16 @@ pub fn render_html_page(
                     script src="https://cdn.tailwindcss.com" {}
                 }
                 link rel="stylesheet" href=(static_file::get_path("bundle.css"));
-                script src=(static_file::get_path("app.js")) {}
+                script defer src=(static_file::get_path("app.js")) {}
                 script defer src=(static_file::get_path("cookies.js")) {}
                 script defer data-domain="svoote.com" src="https://plausible.io/js/script.js" {}
+                script {
+                    "let colorPalette = ["
+                    @for color in COLOR_PALETTE {
+                        "'" (color) "',"
+                    }
+                    "];"
+                }
             }
             body ."min-h-screen flex flex-col bg-white" {
                 main
@@ -33,42 +40,27 @@ pub fn render_html_page(
                     (main_content)
                 }
 
-                footer ."mt-12 px-4 py-8 bg-slate-100 text-slate-900 flex justify-center items-start gap-8 md:gap-16" {
-                    ."flex flex-col gap-2 text-xs" {
-                        ."mb-2 font-medium text-sm" { "Polls" }
-                        a href="/" ."hover:underline" {
-                            "Join poll"
-                        }
-                        a href="/about#features" ."hover:underline" {
-                            "Features"
-                        }
-                        a href="/about#pricing" ."hover:underline" {
-                            "Pricing"
-                        }
-                        a href="/" ."hover:underline" {
-                            "Create a poll"
-                        }
+                footer ."mt-4 px-4 py-8 text-xs text-slate-500 flex justify-center flex-wrap gap-4" {
+                    a href="/" ."hover:underline" {
+                        "Home"
                     }
-                    ."flex flex-col gap-2 text-xs" {
-                        ."mb-2 font-medium text-sm" { "Svoote" }
-                        a href="/about" ."hover:underline" {
-                            "About"
-                        }
-                        a href="/data-privacy" ."hover:underline" {
-                            "Data privacy"
-                        }
-                        a href="/terms-of-service" ."hover:underline" {
-                            "Terms of service"
-                        }
-                        a href="/cookie-policy" ."hover:underline" {
-                            "Cookie policy"
-                        }
-                        a href="#manage_cookies" ."hover:underline" {
-                            "Manage cookies"
-                        }
-                        a href="/contact" ."hover:underline" {
-                            "Contact"
-                        }
+                    a href="/about" ."hover:underline" {
+                        "About"
+                    }
+                    a href="/data-privacy" ."hover:underline" {
+                        "Data privacy"
+                    }
+                    a href="/terms-of-service" ."hover:underline" {
+                        "Terms of service"
+                    }
+                    a href="/cookie-policy" ."hover:underline" {
+                        "Cookie policy"
+                    }
+                    a href="#manage_cookies" ."hover:underline" {
+                        "Manage cookies"
+                    }
+                    a href="/contact" ."hover:underline" {
+                        "Contact"
                     }
                 }
             }
@@ -79,7 +71,7 @@ pub fn render_html_page(
 pub fn render_header(top_right_content: Markup) -> Markup {
     return html! {
         header . "mt-8 mb-12 flex justify-between" {
-            a href="/" ."flex items-baseline gap-2 text-indigo-500" {
+            a href="/" ."flex items-baseline gap-2 text-slate-500" {
                 span ."text-3xl tracking-tighter font-medium" { "Svoote" }
                 ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
             }

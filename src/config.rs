@@ -2,11 +2,11 @@ pub const MAX_FREE_TEXT_ANSWERS: usize = 3;
 pub const LIVE_POLL_PARTICIPANT_LIMIT: usize = 100usize;
 
 pub const COLOR_PALETTE: &[&'static str] = &[
-    "bg-rose-500",
-    "bg-cyan-600",
+    "bg-rose-400",
+    "bg-cyan-500",
     "bg-lime-500",
-    "bg-fuchsia-600",
-    "bg-slate-600",
+    "bg-fuchsia-500",
+    "bg-slate-500",
     "bg-teal-500",
 ];
 

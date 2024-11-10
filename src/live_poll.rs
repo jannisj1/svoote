@@ -11,19 +11,6 @@ use crate::live_poll_store::{ShortID, LIVE_POLL_STORE};
 use crate::play::Player;
 use crate::slide::Slide;
 
-/*#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Item {
-    pub question: String,
-    pub answers: Answers,
-}*/
-
-/*#[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum Answers {
-    Untyped,                           // When users first add a new item
-    SingleChoice(Vec<(String, bool)>), // Answer text, is correct
-    FreeText(usize, Vec<String>),      // Max answers per User, correct answers
-}*/
-
 pub struct LivePoll {
     pub host_session_id: Uuid,
     pub slides: Vec<Slide>,
@@ -194,10 +181,6 @@ impl LivePoll {
 
     pub fn get_slide_count(&self) -> usize {
         return self.slides.len();
-    }
-
-    pub fn get_current_participant_count(&self) -> usize {
-        return self.players.len();
     }
 }
 

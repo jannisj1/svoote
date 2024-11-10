@@ -3,7 +3,6 @@ use crate::{
     config::{CUSTOM_PLAYER_NAME_LENGTH_LIMIT, LIVE_POLL_PARTICIPANT_LIMIT},
     html_page::{self, render_header},
     illustrations::Illustrations,
-    live_poll::QuestionAreaState,
     live_poll_store::{ShortID, LIVE_POLL_STORE},
     session_id,
     slide::SlideType,
@@ -16,14 +15,10 @@ use axum::{
 use axum_extra::extract::CookieJar;
 
 use core::iter::Iterator;
-use futures::Stream;
 use maud::{html, Markup, PreEscaped};
 use serde::Deserialize;
 use smartstring::{Compact, SmartString};
-use std::convert::Infallible;
 use std::fmt::Write;
-use tokio_stream::wrappers::WatchStream;
-use tokio_stream::StreamExt as _;
 
 // These awesome SVG-avatars were obtained from dicebear.com (Adventurer Neutral by Lisa Wischofsky)
 // They are published under the CC BY 4.0 license (https://creativecommons.org/licenses/by/4.0/)
@@ -239,7 +234,7 @@ pub async fn get_play_page(
     return Ok((cookies, html).into_response());
 }
 
-pub async fn get_sse_play(
+/*pub async fn get_sse_play(
     Path(poll_id): Path<ShortID>,
     cookies: CookieJar,
 ) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
@@ -267,7 +262,7 @@ pub async fn get_sse_play(
         .map(Ok);
 
     Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()))
-}
+}*/
 
 #[derive(Deserialize)]
 pub struct PostMCAnswerForm {

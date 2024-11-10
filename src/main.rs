@@ -40,26 +40,27 @@ fn main() {
         let routes = axum::Router::new()
             .route("/", get(host::get_poll_page))
             .route("/start_poll", post(host::post_start_poll))
-            .route("/about", get(about_page::get_about_page))
-            .route("/about/demo_mc", get(about_page::get_mc_start_page_demo))
-            .route("/about/demo_ft", get(about_page::get_ft_start_page_demo))
+            .route("/stop_poll/:poll_id", post(host::post_stop_poll))
+            //.route("/about", get(about_page::get_about_page))
+            //.route("/about/demo_mc", get(about_page::get_mc_start_page_demo))
+            //.route("/about/demo_ft", get(about_page::get_ft_start_page_demo))
             .route("/next_slide/:poll_id", post(host::post_next_slide))
             .route("/previous_slide/:poll_id", post(host::post_previous_slide))
             .route("/exit_poll/:poll_id", post(host::post_exit_poll))
-            .route("/sse/host_question/:poll_id", get(host::get_sse_slides))
-            .route("/sse/host_results/:poll_id", get(host::get_sse_statistics))
+            .route("/ws/host/:poll_id", get(host::host_socket))
+            /*.route("/sse/host_results/:poll_id", get(host::get_sse_statistics))
             .route("/sse/leaderboard/:poll_id", get(host::get_sse_leaderboard))
             .route(
                 "/sse/participant_counter/:poll_id",
                 get(host::get_sse_user_counter),
-            )
+            )*/
             .route("/p", get(play::get_play_page))
             .route("/submit_mc_answer/:poll_id", post(play::post_mc_answer))
             .route(
                 "/submit_free_text_answer/:poll_id",
                 post(play::post_free_text_answer),
             )
-            .route("/sse/play/:quiz_id", get(play::get_sse_play))
+            //.route("/sse/play/:quiz_id", get(play::get_sse_play))
             .route("/name_avatar/:poll_id", post(play::post_name_avatar))
             .route("/static/:file_name", get(static_file::http_get_static_file))
             .route("/data-privacy", get(compliance::get_privacy_policy_page))

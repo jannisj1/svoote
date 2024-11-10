@@ -1,4 +1,4 @@
-use std::sync::OnceLock;
+/*use std::sync::OnceLock;
 
 use crate::{
     app_error::AppError,
@@ -371,3 +371,4 @@ pub fn render_ft_demo(index: usize) -> Markup {
 
     return markup_array[index % markup_array.len()].clone();
 }
+*/

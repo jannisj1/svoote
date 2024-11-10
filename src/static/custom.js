@@ -3,12 +3,12 @@ function incrementChar(c, add) {
 }
 
 function createSlide(type) {
-  if (type === null) type = "undefined";
   return {
     type: type,
     question: "",
     mcAnswers: [],
     ftAnswers: [],
+    stats: null,
   };
 }
 
@@ -16,7 +16,7 @@ function createPoll() {
   return {
     slides: [
       createSlide("firstSlide"),
-      createSlide(null),
+      createSlide("undefined"),
       createSlide("lastSlide"),
     ],
     enableLeaderboard: false,
@@ -39,6 +39,7 @@ document.addEventListener("alpine:init", () => {
     isLive: false,
     code: null,
     qrCode: null,
+    socket: null,
 
     init() {
       addEventListener("keyup", (event) => {
@@ -50,6 +51,10 @@ document.addEventListener("alpine:init", () => {
           }
         }
       });
+
+      if (document.pollAlreadyLive === true) {
+        this.startPoll();
+      }
     },
 
     save() {
@@ -84,19 +89,25 @@ document.addEventListener("alpine:init", () => {
       }
     },
 
-    startPoll() {
-      fetch("/start_poll", {
+    async startPoll() {
+      let response = await fetch("/start_poll", {
         method: "POST",
         body: JSON.stringify(this.poll),
         headers: {
           "Content-type": "application/json; charset=UTF-8",
         },
-      })
-        .then((response) => response.text())
-        .then((code) => console.log(code));
+      });
 
-      this.isLive = true;
-      this.code = "1234";
+      if (response.ok) {
+        this.code = await response.text();
+        this.isLive = true;
+        const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws/host/${this.code}`;
+        this.socket = new ReconnectingWebSocket(wsUrl);
+        this.socket.onopen = (e) => {};
+        this.socket.onmessage = (e) => {
+          console.log(e.data);
+        };
+      }
     },
 
     renderQRCode(el, code) {
@@ -116,6 +127,17 @@ document.addEventListener("alpine:init", () => {
       } else {
         this.qrCode.clear();
         this.qrCode.makeCode(link);
+      }
+    },
+
+    async stopPoll() {
+      let response = await fetch("/stop_poll/" + this.code, {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        this.code = null;
+        this.isLive = false;
       }
     },
   }));

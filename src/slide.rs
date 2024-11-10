@@ -3,12 +3,8 @@ use maud::{html, Markup};
 use smartstring::{Compact, SmartString};
 
 use crate::{
-    app_error::AppError,
-    config::{COLOR_PALETTE, MAX_FREE_TEXT_ANSWERS},
-    illustrations::Illustrations,
-    live_poll_store::ShortID,
-    play::render_poll_finished,
-    svg_icons::SvgIcon,
+    app_error::AppError, config::MAX_FREE_TEXT_ANSWERS, illustrations::Illustrations,
+    live_poll_store::ShortID, play::render_poll_finished, svg_icons::SvgIcon,
     word_cloud::WordCloud,
 };
 
@@ -19,6 +15,7 @@ pub struct Slide {
 }
 
 pub enum SlideType {
+    Undefined,
     EntrySlide,
     SingleChoice(MultipleChoiceLiveAnswers),
     FreeText(FreeTextLiveAnswers),
@@ -32,6 +29,7 @@ pub struct MultipleChoiceLiveAnswers {
 }
 
 pub struct FreeTextLiveAnswers {
+    pub correct_answers: Vec<SmartString<Compact>>,
     pub word_cloud: WordCloud,
     pub player_answers: Vec<ArrayVec<SmartString<Compact>, MAX_FREE_TEXT_ANSWERS>>,
 }
@@ -62,22 +60,6 @@ impl Slide {
         });
     }*/
 
-    pub fn create_join_slide() -> Slide {
-        return Slide {
-            question: String::new(),
-            slide_type: SlideType::EntrySlide,
-            player_scores: Vec::new(),
-        };
-    }
-
-    pub fn create_final_slide() -> Slide {
-        return Slide {
-            question: String::new(),
-            slide_type: SlideType::FinalSlide,
-            player_scores: Vec::new(),
-        };
-    }
-
     pub fn is_entry_slide(&self) -> bool {
         return matches!(self.slide_type, SlideType::EntrySlide);
     }
@@ -90,6 +72,7 @@ impl Slide {
         self.player_scores.push(0usize);
 
         match &mut self.slide_type {
+            SlideType::Undefined => {}
             SlideType::EntrySlide => {}
             SlideType::FinalSlide => {}
             SlideType::SingleChoice(mc_answers) => {
@@ -101,87 +84,9 @@ impl Slide {
         }
     }
 
-    pub fn render_host_view(
-        &self,
-        poll_id: ShortID,
-        slide_index: usize,
-        current_participant_count: usize,
-    ) -> Markup {
-        return html! {
-            ."mb-6 grid grid-cols-3 items-center" {
-                div {}
-                ."text-center text-sm text-slate-500" {
-                    @if !(self.is_entry_slide() || self.is_final_slide()) {
-                        "Item " (slide_index)
-                    }
-                }
-                ."justify-self-end" {
-                    ."px-4 flex items-center gap-2 border rounded-full w-fit" {
-                    ."text-slate-600 size-5 translate-y-[0.05rem]" { (SvgIcon::Users.render()) }
-                        div hx-ext="sse" sse-connect={"/sse/participant_counter/" (poll_id) } sse-close="close"  {
-                            div sse-swap="update" {
-                                ."text-slate-600 text-lg" { (current_participant_count) }
-                            }
-                        }
-                    }
-                }
-            }
-            ."flex justify-between gap-8" {
-                ."mt-20" {
-                    button
-                        hx-post={ "/previous_slide/" (poll_id) }
-                        hx-swap="none"
-                        ."relative group size-8 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700 disabled:opacity-0"
-                        disabled[self.is_entry_slide()]
-                    {
-                        ."absolute inset-0 size-full flex items-center justify-center" {
-                            ."size-4 translate-x-[-0.05rem]" { (SvgIcon::ChevronLeft.render()) }
-                        }
-                    }
-                }
-                ."flex-1" {
-                    @if self.is_entry_slide() {
-                    } @else if self.is_final_slide() {
-                    } @else {
-                        ."mb-6 text-left text-xl text-slate-900 font-medium" { (self.question )}
-                        @match &self.slide_type {
-                            SlideType::EntrySlide => {} // This can never happen actually
-                            SlideType::FinalSlide => {} // This can never happen actually
-                            SlideType::SingleChoice(mc_answers) => {
-                                @for (answer_txt, _is_correct) in &mc_answers.answers {
-                                    ."p-2 mb-4 text-center text-slate-700 font-medium rounded-lg ring-2 ring-slate-500" {
-                                        (answer_txt)
-                                    }
-                                }
-                            },
-                            SlideType::FreeText(_answers) => {
-                                ."pl-2 flex gap-2 items-center text-slate-500" {
-                                    ."size-4" { (SvgIcon::Edit3.render()) }
-                                    "Submit your answer now."
-                                }
-                            }
-                        }
-                    }
-                }
-                ."mt-20" {
-                    button
-                        hx-post={ "/next_slide/" (poll_id) }
-                        hx-swap="none"
-                        ."relative group size-8 p-2 text-slate-50 rounded-full bg-cyan-600 hover:bg-cyan-800 disabled:opacity-0"
-                        disabled[self.is_final_slide()]
-
-                    {
-                        ."absolute inset-0 size-full flex items-center justify-center" {
-                            ."size-4" { (SvgIcon::ChevronRight.render()) }
-                        }
-                    }
-                }
-            }
-        };
-    }
-
     pub fn render_statistics(&mut self) -> Markup {
         match &mut self.slide_type {
+            SlideType::Undefined => return html! {},
             SlideType::EntrySlide => return html! {},
             SlideType::FinalSlide => return html! {},
             SlideType::SingleChoice(mc_answers) => {
@@ -191,24 +96,7 @@ impl Slide {
                     max = 1;
                 }
 
-                return html! {
-                    ."flex flex-wrap items-start justify-center gap-6 md:gap-8 gap-y-16" {
-                        @for (i, (count, (answer_txt, _is_correct))) in mc_answers.answer_counts.iter().zip(&mc_answers.answers).enumerate() {
-                            ."min-w-16 md:min-w-24 max-w-36 flex-1" {
-                                ."h-48 flex flex-col justify-end items-center" {
-                                    #{ "ans_" (i) } // needed for the CSS height transitions
-                                        ."w-24 transition-all duration-300 relative shadow-lg"
-                                        .(COLOR_PALETTE[i % COLOR_PALETTE.len()])
-                                        style={ "height:" (((*count as f32 / max as f32) * 100f32).max(2f32)) "%;" }
-                                    {
-                                        ."absolute w-full text-slate-600 text-center font-medium -translate-y-7" { (count) }
-                                    }
-                                }
-                                ."mt-3 text-slate-600 text-sm text-center break-words" { (answer_txt) }
-                            }
-                        }
-                    }
-                };
+                return html! {};
             }
             SlideType::FreeText(ft_answers) => {
                 let (words, container_height) = ft_answers.word_cloud.render();
@@ -267,6 +155,7 @@ impl Slide {
                 ."mb-2 flex gap-6 text-sm text-slate-500" {
                     "Question " (slide_index)
                     @match &self.slide_type {
+                        SlideType::Undefined => {}, // This can't actually happen
                         SlideType::EntrySlide => {}, // This can't actually happen
                         SlideType::FinalSlide => {}, // This can't actually happen
                         SlideType::SingleChoice(_mc_answers) => {
@@ -287,6 +176,7 @@ impl Slide {
                     (self.question)
                 }
                 @match &self.slide_type {
+                    SlideType::Undefined => {}, // This can't actually happen
                     SlideType::EntrySlide => {}, // This can't actually happen
                     SlideType::FinalSlide => {}, // This can't actually happen
                     SlideType::SingleChoice(mc_answers) => {
