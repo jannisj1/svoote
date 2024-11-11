@@ -16,6 +16,126 @@ use serde::Deserialize;
 use smartstring::{Compact, SmartString};
 use std::fmt::Write;
 
+#[derive(Deserialize)]
+pub struct PlayPageParams {
+    pub c: Option<String>,
+}
+
+pub async fn get_play_page(
+    Query(params): Query<PlayPageParams>,
+    cookies: CookieJar,
+) -> Result<Response, AppError> {
+    let poll_id: Option<ShortID> = params.c.map(|poll_id| poll_id.parse().ok()).flatten();
+
+    let (session_id, cookies) = session_id::get_or_create_session_id(cookies);
+    let live_poll = poll_id
+        .map(|poll_id| LIVE_POLL_STORE.get(poll_id))
+        .flatten();
+
+    if live_poll.is_none() {
+        let html = html_page::render_html_page(
+            "Svoote",
+            html! {
+                (render_header(html! {}))
+                div ."flex justify-center" {
+                    form ."max-w-sm mx-4 mt-12 md:mt-24 px-8 py-10 border rounded-lg" {
+                        label for="code" ."text-2xl text-slate-600 font-bold tracking-tight" { "Join now" }
+                        input #"code" name="c" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="Code"
+                            ."mt-6 mb-2 px-3 py-1.5 w-full text-lg text-slate-800 border-2 border-slate-800 focus:border-indigo-500 rounded-lg outline-none";
+                        @match poll_id {
+                            Some(c) => {
+                                div ."mb-6 text-xs text-red-400" { "No poll with code " (c) " found." }
+                            }
+                            None => {
+                                div ."mb-6 text-xs text-slate-500" { "Enter the 4-digit code you see in front." }
+                            }
+                        };
+                        button type="submit" ."w-full py-1.5 text-center text-lg text-slate-50 font-bold bg-indigo-500 rounded-lg" { "Join" }
+                    }
+                }
+            },
+        );
+
+        return Ok((cookies, html).into_response());
+    }
+
+    let live_poll = live_poll.unwrap();
+    let mut live_poll = live_poll.lock().unwrap();
+
+    let html = html_page::render_html_page(
+        "Svoote",
+        match live_poll.get_or_create_player(&session_id) {
+            Some(player_index) => {
+                let _player = live_poll.get_player(player_index);
+                html! {
+                    /*(render_header(html! {
+                        (render_name_avatar_button(live_poll.leaderboard_enabled, player.get_name(), player.get_avatar_svg()))
+                        @if live_poll.leaderboard_enabled {
+                            dialog #participant-dialog
+                            {
+                                ."max-w-64 p-4 bg-slate-700 rounded-lg" {
+                                    ."mb-2 flex justify-end" {
+                                        button
+                                            onclick="document.getElementById('participant-dialog').close()"
+                                            ."size-5 text-red-500"
+                                        { (SvgIcon::X.render()) }
+                                    }
+                                    form
+                                        hx-post={ "/name_avatar/" (params.c) }
+                                        hx-target="#name-avatar-button"
+                                        hx-swap="outerHTML"
+                                        "hx-on::after-request"="document.getElementById('participant-dialog').close()"
+                                            //onsubmit="submitParticipantNameDialog(event)"
+                                        ."flex flex-col"
+                                    {
+                                        label
+                                            for="input-txt-participant-modal-name"
+                                            ."mb-1 text-slate-300"
+                                        { "Name" }
+                                        input type="text"
+                                            ."mb-1 px-4 py-1.5 flex-1 text-slate-700 bg-slate-100 rounded-lg"
+                                            #input-txt-participant-modal-name
+                                            name="name"
+                                            maxlength=(CUSTOM_PLAYER_NAME_LENGTH_LIMIT)
+                                            placeholder=(player.get_generated_name())
+                                            value=(player.get_custom_name().as_ref().unwrap_or(&SmartString::new()))
+                                            disabled[!live_poll.allow_custom_player_names];
+                                        @if !live_poll.allow_custom_player_names {
+                                            ."text-slate-300 text-sm" { "The host has turned off custom names." }
+                                        }
+                                        ."mb-4" {}
+                                        ."mb-2 text-slate-300" { "Avatar" }
+                                        ."mb-6 flex justify-around flex-wrap gap-4" {
+                                            @for (i, avatar) in AVATARS.iter().enumerate() {
+                                                label {
+                                                    input type="radio" name="avatar" value=(i) checked[player.get_avatar_index() == i] ."peer hidden";
+                                                    ."size-9 p-0.5 ring-slate-100 rounded peer-checked:ring-2" { (PreEscaped(avatar.1)) }
+                                                }
+                                            }
+                                        }
+                                        ."flex justify-end" {
+                                            button type="submit" ."bg-slate-100 px-4 py-2 text-slate-800 rounded hover:bg-slate-300" { "Submit" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }))*/
+                }
+            }
+            None => {
+                html! {
+                    ."my-36 text-center text-slate-500" {
+                        "The participant limit for this poll was reached (" (LIVE_POLL_PARTICIPANT_LIMIT) " participants)."
+                    }
+                }
+            }
+        },
+    );
+
+    return Ok((cookies, html).into_response());
+}
+
 // These awesome SVG-avatars were obtained from dicebear.com (Adventurer Neutral by Lisa Wischofsky)
 // They are published under the CC BY 4.0 license (https://creativecommons.org/licenses/by/4.0/)
 const AVATARS: &[(&'static str, &'static str)] = &[
@@ -125,139 +245,6 @@ impl Player {
     }
 }
 
-#[derive(Deserialize)]
-pub struct PlayPageParams {
-    pub c: Option<ShortID>,
-}
-
-pub async fn get_play_page(
-    Query(params): Query<PlayPageParams>,
-    cookies: CookieJar,
-) -> Result<Response, AppError> {
-    let (session_id, cookies) = session_id::get_or_create_session_id(cookies);
-    let live_poll = params
-        .c
-        .map(|poll_id| LIVE_POLL_STORE.get(poll_id))
-        .flatten();
-
-    if live_poll.is_none() {
-        let html = html_page::render_html_page(
-            "Svoote",
-            html! {
-               (render_header(html! {}))
-               div { "TODO" }
-            },
-        );
-
-        return Ok((cookies, html).into_response());
-    }
-
-    let live_poll = live_poll.unwrap();
-    let mut live_poll = live_poll.lock().unwrap();
-
-    let html = html_page::render_html_page(
-        "Svoote",
-        match live_poll.get_or_create_player(&session_id) {
-            Some(player_index) => {
-                let _player = live_poll.get_player(player_index);
-                html! {
-                    /*(render_header(html! {
-                        (render_name_avatar_button(live_poll.leaderboard_enabled, player.get_name(), player.get_avatar_svg()))
-                        @if live_poll.leaderboard_enabled {
-                            dialog #participant-dialog
-                            {
-                                ."max-w-64 p-4 bg-slate-700 rounded-lg" {
-                                    ."mb-2 flex justify-end" {
-                                        button
-                                            onclick="document.getElementById('participant-dialog').close()"
-                                            ."size-5 text-red-500"
-                                        { (SvgIcon::X.render()) }
-                                    }
-                                    form
-                                        hx-post={ "/name_avatar/" (params.c) }
-                                        hx-target="#name-avatar-button"
-                                        hx-swap="outerHTML"
-                                        "hx-on::after-request"="document.getElementById('participant-dialog').close()"
-                                            //onsubmit="submitParticipantNameDialog(event)"
-                                        ."flex flex-col"
-                                    {
-                                        label
-                                            for="input-txt-participant-modal-name"
-                                            ."mb-1 text-slate-300"
-                                        { "Name" }
-                                        input type="text"
-                                            ."mb-1 px-4 py-1.5 flex-1 text-slate-700 bg-slate-100 rounded-lg"
-                                            #input-txt-participant-modal-name
-                                            name="name"
-                                            maxlength=(CUSTOM_PLAYER_NAME_LENGTH_LIMIT)
-                                            placeholder=(player.get_generated_name())
-                                            value=(player.get_custom_name().as_ref().unwrap_or(&SmartString::new()))
-                                            disabled[!live_poll.allow_custom_player_names];
-                                        @if !live_poll.allow_custom_player_names {
-                                            ."text-slate-300 text-sm" { "The host has turned off custom names." }
-                                        }
-                                        ."mb-4" {}
-                                        ."mb-2 text-slate-300" { "Avatar" }
-                                        ."mb-6 flex justify-around flex-wrap gap-4" {
-                                            @for (i, avatar) in AVATARS.iter().enumerate() {
-                                                label {
-                                                    input type="radio" name="avatar" value=(i) checked[player.get_avatar_index() == i] ."peer hidden";
-                                                    ."size-9 p-0.5 ring-slate-100 rounded peer-checked:ring-2" { (PreEscaped(avatar.1)) }
-                                                }
-                                            }
-                                        }
-                                        ."flex justify-end" {
-                                            button type="submit" ."bg-slate-100 px-4 py-2 text-slate-800 rounded hover:bg-slate-300" { "Submit" }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }))*/
-                }
-            }
-            None => {
-                html! {
-                    ."my-36 text-center text-slate-500" {
-                        "The participant limit for this poll was reached (" (LIVE_POLL_PARTICIPANT_LIMIT) " participants)."
-                    }
-                }
-            }
-        },
-    );
-
-    return Ok((cookies, html).into_response());
-}
-
-/*pub async fn get_sse_play(
-    Path(poll_id): Path<ShortID>,
-    cookies: CookieJar,
-) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
-    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let updates = live_poll.lock().unwrap().ch_question_state.clone();
-    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
-    let player_index = live_poll.lock().unwrap().get_player_index(&session_id)?;
-
-    let stream = WatchStream::new(updates)
-        .map(move |state| match state {
-            QuestionAreaState::Empty => sse::Event::default().event("update").data(""),
-            QuestionAreaState::Slide(slide_idx) => sse::Event::default().event("update").data(
-                live_poll
-                    .lock()
-                    .unwrap()
-                    .get_current_slide()
-                    .render_participant_view(poll_id, slide_idx, player_index)
-                    .into_string(),
-            ),
-            QuestionAreaState::PollFinished => sse::Event::default()
-                .event("update")
-                .data(render_poll_finished().into_string()),
-            QuestionAreaState::CloseSSE => sse::Event::default().event("close").data(""),
-        })
-        .map(Ok);
-
-    Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()))
-}*/
 /*
 #[derive(Deserialize)]
 pub struct PostMCAnswerForm {

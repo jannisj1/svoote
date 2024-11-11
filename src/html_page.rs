@@ -60,16 +60,10 @@ pub fn render_html_page(title: &str, main_content: maud::Markup) -> maud::Markup
 pub fn render_header(top_right_content: Markup) -> Markup {
     return html! {
         header . "mx-6 lg:mx-10 mt-8 mb-12 flex justify-between" {
-            a href="/" ."flex items-baseline gap-2 text-slate-500" {
-                span ."text-3xl tracking-tighter font-medium" { "Svoote" }
-                ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
+            a href="/" ."flex items-baseline gap-1.5 text-slate-700" {
+                span ."text-2xl tracking-tight font-medium" { "Svoote" }
+                ."size-4 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
             }
-            /*."mt-1 absolute inset-0 h-full w-fit mx-auto hidden md:flex justify-center items-center gap-8" {
-                a href="/" ."text-slate-700 text-sm font-medium" { "Create poll" }
-                a href="/about#features" ."text-slate-700 text-sm font-medium" { "Features" }
-                a href="/about#pricing" ."text-slate-700 text-sm font-medium" { "Pricing" }
-                a href="/about#mission" ."text-slate-700 text-sm font-medium" { "Why Svoote?" }
-            }*/
             (top_right_content)
         }
     };
