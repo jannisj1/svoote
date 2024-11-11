@@ -14,14 +14,10 @@ function createSlide(type) {
 
 function createPoll() {
   return {
-    slides: [
-      createSlide("firstSlide"),
-      createSlide("undefined"),
-      createSlide("lastSlide"),
-    ],
+    slides: [createSlide("undefined")],
     enableLeaderboard: false,
     allowCustomNames: false,
-    activeSlide: 1,
+    activeSlide: 0,
   };
 }
 
@@ -75,6 +71,15 @@ document.addEventListener("alpine:init", () => {
       );
       this.poll.activeSlide = slideIndex;
       this.save();
+
+      if (this.isLive) {
+        this.socket.send(
+          JSON.stringify({
+            cmd: "gotoSlide",
+            data: { slideIndex: this.poll.activeSlide },
+          }),
+        );
+      }
     },
 
     questionInputEnterEvent(slideIndex, slide) {
@@ -102,31 +107,21 @@ document.addEventListener("alpine:init", () => {
         this.code = await response.text();
         this.isLive = true;
         const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws/host/${this.code}`;
+
         this.socket = new ReconnectingWebSocket(wsUrl);
-        this.socket.onopen = (e) => {};
-        this.socket.onmessage = (e) => {
-          console.log(e.data);
+        this.socket.onopen = (_e) => {
+          this.gotoSlide(0);
         };
-      }
-    },
+        this.socket.onmessage = (e) => {
+          let msg = JSON.parse(e.data);
 
-    renderQRCode(el, code) {
-      let link;
-      if (code === null) link = "http://svoote.com";
-      else link = "http://svoote.com/p?c=" + code;
-
-      if (this.qrCode === null) {
-        this.qrCode = new QRCode(el, {
-          text: link,
-          width: 256,
-          height: 256,
-          colorDark: "#1e293b",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.L,
-        });
-      } else {
-        this.qrCode.clear();
-        this.qrCode.makeCode(link);
+          switch (msg.cmd) {
+            case "updateStats":
+              console.log(msg);
+              this.poll.slides[msg.data.slideIndex].stats = msg.data.stats;
+              break;
+          }
+        };
       }
     },
 
@@ -138,6 +133,29 @@ document.addEventListener("alpine:init", () => {
       if (response.ok) {
         this.code = null;
         this.isLive = false;
+        this.socket.close();
+      }
+    },
+  }));
+
+  Alpine.data("qrCode", () => ({
+    qrCodeObj: null,
+
+    render(el, code) {
+      let link = `${window.location.protocol}//${window.location.host}/${code !== null ? "p?c=" + code : ""}`;
+
+      if (this.qrCodeObj === null) {
+        this.qrCodeObj = new QRCode(el, {
+          text: link,
+          width: 256,
+          height: 256,
+          colorDark: "#334155",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.L,
+        });
+      } else {
+        this.qrCodeObj.clear();
+        this.qrCodeObj.makeCode(link);
       }
     },
   }));

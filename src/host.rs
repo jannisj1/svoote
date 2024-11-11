@@ -9,7 +9,9 @@ use axum::{
 };
 
 use axum_extra::extract::CookieJar;
-use maud::{html, Markup};
+use maud::html;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use smartstring::{Compact, SmartString};
 use tokio::select;
 
@@ -17,21 +19,18 @@ use crate::{
     app_error::AppError,
     config::{COLOR_PALETTE, POLL_MAX_MC_ANSWERS, POLL_MAX_SLIDES},
     html_page::{self, render_header},
-    illustrations::Illustrations,
     live_poll::LivePoll,
     live_poll_store::{ShortID, LIVE_POLL_STORE},
     session_id,
     slide::{FreeTextLiveAnswers, MultipleChoiceLiveAnswers, Slide, SlideType},
     static_file,
     svg_icons::SvgIcon,
-    word_cloud::WordCloud,
 };
 
 pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
     let (session_id, cookies) = session_id::get_or_create_session_id(cookies);
 
     let poll_is_live = LIVE_POLL_STORE.get_by_session_id(&session_id).is_some();
-    // percentages: (((*count as f32 / max as f32) * 100f32).max(2f32))
 
     let html = html_page::render_html_page(
         "Svoote",
@@ -75,13 +74,13 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                     }
                     div {
                         div ."relative" {
-                            template x-for="i in poll.slides.length - 2" {
+                            template x-for="i in poll.slides.length" {
                                 button x-text="i"
                                     ."absolute -top-3 left-1/2 w-fit text-sm text-slate-600 transition duration-500 ease-out"
-                                    ":class"="(i == poll.activeSlide ? 'font-bold ' : 'font-medium ')"
-                                    ":style"="`transform: translateX(${ (i - poll.activeSlide) * 24 }px); opacity: ${ Math.abs(i - poll.activeSlide) > 4 ? 0 : Math.max(0, 12 - Math.abs(i - poll.activeSlide)) / 12 };`"
-                                    ":disabled"="Math.abs(i - poll.activeSlide) > 4"
-                                    "@click"="gotoSlide(i)" {}
+                                    ":class"="(i - 1 == poll.activeSlide ? 'font-bold ' : 'font-medium ')"
+                                    ":style"="`transform: translateX(${ ((i - 1) - poll.activeSlide) * 24 }px); opacity: ${ Math.abs((i - 1) - poll.activeSlide) > 4 ? 0 : Math.max(0, 12 - Math.abs((i - 1) - poll.activeSlide)) / 12 };`"
+                                    ":disabled"="Math.abs((i - 1) - poll.activeSlide) > 4"
+                                    "@click"="gotoSlide(i - 1)" {}
                             }
                         }
                     }
@@ -94,18 +93,16 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                         }
                     }
                 }
-                div ."flex gap-6 overflow-hidden" {
-                    button "@click"="gotoSlide(poll.activeSlide - 1)" ":disabled"="poll.activeSlide == 0" ."z-10 relative size-8 mt-48 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700 disabled:bg-slate-300" {
-                        ."absolute inset-0 size-full flex items-center justify-center" {
-                            ."size-4 translate-x-[-0.05rem]" { (SvgIcon::ChevronLeft.render()) }
-                        }
-                    }
-                    div ."flex-1 relative h-[36rem]" {
+                div ."px-12 overflow-hidden" {
+                    div ."relative h-[36rem]" {
                         template x-for="(slide, slide_index) in poll.slides" {
-                            div ."absolute inset-0 size-full px-16 py-10 border rounded transition duration-500 ease-out transform-gpu" ":class"="slide_index == poll.activeSlide && 'shadow-xl'"
+                            div ."absolute inset-0 size-full px-16 py-10 border rounded transition duration-500 ease-out transform-gpu"
+                                ":class"="slide_index == poll.activeSlide ? 'shadow-xl' : 'cursor-pointer hover:bg-slate-100 hover:shadow-lg'"
+                                "@click"="if (slide_index != poll.activeSlide) gotoSlide(slide_index)"
                                 ":style"="'transform: perspective(100px) translateX(' + ((slide_index - poll.activeSlide) * 106) + '%) translateZ(' + (slide_index == poll.activeSlide ? '0' : '-10')  + 'px)'"
                             {
-                                input type="text" x-model="slide.question" "@input"="save" x-show="slide_index != 0 && slide_index != poll.slides.length - 1"
+                                input type="text" x-model="slide.question"
+                                    "@input"="save"
                                     "@keyup.enter"="questionInputEnterEvent(slide_index, slide)"
                                     ":id"="'question-input-' + slide_index"
                                     ":tabindex"="slide_index == poll.activeSlide ? '0' : '-1'"
@@ -133,7 +130,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                         }
                                     }
                                 }
-                                template x-if="slide.type == 'firstSlide'" {
+                                /*template x-if="slide.type == 'firstSlide'" {
                                     div ."h-full flex justify-center items-center gap-20" {
                                         div ."p-4" {
                                             div ."mb-1 text-sm text-slate-500 text-center" {
@@ -157,12 +154,12 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                         ."mx-auto w-24" { (Illustrations::InLove.render()) }
                                         ."mt-8 text-slate-500 text-center text-sm" { "This poll has no more items. Thank you for using svoote.com" }
                                     }
-                                }
+                                }*/
                                 template x-if="slide.type == 'mc'" {
                                     div ."relative h-full" {
                                         template x-for="(answer, answer_index) in slide.mcAnswers" {
                                             div ."mb-1.5 flex items-center gap-2" {
-                                                div x-text="incrementChar('A', answer_index)" ."ml-1 text-sm text-slate-500" {}
+                                                div x-text="incrementChar('A', answer_index)" ."ml-2 text-sm text-slate-400" {}
                                                 input type="text" x-model="answer.text" "@input"="save()"
                                                     "@keyup.enter"="let next = $el.parentElement.nextSibling; if (next.tagName == 'DIV') next.children[1].focus(); else next.click();"
                                                     ":tabindex"="slide_index == poll.activeSlide ? '0' : '-1'"
@@ -227,26 +224,28 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                         div ."text-slate-500 text-center text-sm"  { "If the leaderboard is enabled, Participants can receive points for submitting the correct answer." }
                                     }
                                 }
+                                div x-show="isLive" x-cloak ."absolute right-8 top-10 flex flex-col items-center" {
+                                    div x-data="qrCode" x-effect="render($el, code)" ."mb-4 w-24" {}
+                                    div x-text="code !== null ? code : ''" ."text-2xl text-slate-600 tracking-wide font-bold" {}
+                                    div ."text-xs text-slate-500 text-center" {
+                                        "Go to "
+                                        a x-show="code !== null" ."text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
+                                        span x-show="code === null" ."text-indigo-300 underline" { "svoote.com" }
+                                    }
+                                }
                             }
-                        }
-                    }
-                    button ":disabled"="poll.activeSlide + 1 == poll.slides.length" "@click"="gotoSlide(poll.activeSlide + 1)"
-                        ."relative size-8 mt-48 p-2 text-slate-50 rounded-full bg-slate-500 hover:bg-slate-700 disabled:bg-slate-300"
-                    {
-                        ."absolute inset-0 size-full flex items-center justify-center" {
-                            ."size-4" { (SvgIcon::ChevronRight.render()) }
                         }
                     }
                 }
                 div ."mt-4 flex justify-center gap-4" {
-                    button "@click"="poll.slides.splice(poll.slides.length - 1, 0, createSlide('undefined')); $nextTick(() => { gotoSlide(poll.slides.length - 2) });"
+                    button "@click"="poll.slides.splice(poll.slides.length, 0, createSlide('undefined')); $nextTick(() => { gotoSlide(poll.slides.length - 1) });"
                         ":disabled"={ "poll.slides.length >= " (POLL_MAX_SLIDES) }
                         ."group px-2 py-1 flex items-center gap-1 text-slate-500 border border-slate-300 rounded-full hover:bg-slate-100 disabled:text-slate-300 disabled:bg-transparent"
                     {
                         ."size-4 text-slate-500 group-disabled:text-slate-300" { (SvgIcon::Plus.render()) }
                         "Add slide"
                     }
-                    button "@click"="poll.slides.splice(poll.activeSlide, 1); gotoSlide(poll.activeSlide - 1);" ":disabled"="poll.activeSlide == 0 || poll.activeSlide == poll.slides.length - 1"
+                    button "@click"="poll.slides.splice(poll.activeSlide, 1); gotoSlide(poll.activeSlide - 1);" ":disabled"="poll.slides.length == 1"
                         ."group px-2 py-1 flex items-center gap-1 text-slate-500 border border-slate-300 rounded-full hover:bg-slate-100 disabled:text-slate-300 disabled:bg-transparent"
                     {
                         ."size-4 text-red-400 group-disabled:text-slate-300" { (SvgIcon::Trash2.render()) }
@@ -255,7 +254,6 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                 }
             }
         },
-        true,
     );
 
     return Ok((cookies, html).into_response());
@@ -317,7 +315,7 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
                                     "Question field missing for slide".to_string(),
                                 ))?
                                 .to_string(),
-                            slide_type: SlideType::SingleChoice(MultipleChoiceLiveAnswers {
+                            slide_type: SlideType::MultipleChoice(MultipleChoiceLiveAnswers {
                                 answer_counts: std::iter::repeat(0usize)
                                     .take(answers.len())
                                     .collect(),
@@ -348,7 +346,6 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
                                 .to_string(),
                             slide_type: SlideType::FreeText(FreeTextLiveAnswers {
                                 correct_answers: answers,
-                                word_cloud: WordCloud::new(),
                                 player_answers: Vec::new(),
                             }),
                             player_scores: Vec::new(),
@@ -368,7 +365,7 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
             live_poll
                 .lock()
                 .unwrap()
-                .ch_start_signal
+                .start_poll_channel_sender
                 .take()
                 .map(|signal| {
                     let _ = signal.send(());
@@ -379,6 +376,20 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
     };
 
     return Ok(poll_id.to_string().into_response());
+}
+
+pub async fn post_stop_poll(
+    cookies: CookieJar,
+    Path(poll_id): Path<ShortID>,
+) -> Result<Response, AppError> {
+    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
+    session_id::assert_equal_ids(&session_id, &live_poll.lock().unwrap().host_session_id)?;
+
+    let exit_channel = live_poll.lock().unwrap().exit_poll_channel_sender.clone();
+    let _ = exit_channel.send(()).await;
+
+    return Ok("Exited successfully".into_response());
 }
 
 pub async fn host_socket(
@@ -393,15 +404,83 @@ pub async fn host_socket(
     return Ok(ws.on_upgrade(|socket| handle_host_socket(socket, live_poll)));
 }
 
-async fn handle_host_socket(mut socket: WebSocket, _live_poll: Arc<Mutex<LivePoll>>) {
-    let _ = socket
-        .send(Message::Text("Hello client!".to_string()))
-        .await;
+#[derive(Deserialize, Serialize)]
+struct WSMessage {
+    pub cmd: SmartString<Compact>,
+    pub data: Value,
+}
+
+impl Into<Message> for WSMessage {
+    fn into(self) -> Message {
+        return Message::Text(serde_json::to_string(&self).unwrap());
+    }
+}
+
+impl WSMessage {
+    fn parse(message: Message) -> Option<Self> {
+        if let Ok(text) = message.into_text() {
+            if let Ok(msg) = serde_json::from_str::<WSMessage>(&text) {
+                return Some(msg);
+            }
+        }
+
+        return None;
+    }
+}
+
+async fn handle_host_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll>>) {
+    let (mut stats_updated_receiver, slide_index_sender) = {
+        let live_poll = live_poll.lock().unwrap();
+
+        (
+            live_poll
+                .stats_change_notification_channel_receiver
+                .resubscribe(),
+            live_poll.set_slide_index_channel_sender.clone(),
+        )
+    };
 
     loop {
         select! {
             msg = socket.recv() => {
-                if let Some(Ok(_msg)) = msg {
+                if let Some(Ok(msg)) = msg {
+                    if let Some(msg) = WSMessage::parse(msg) {
+                        match msg.cmd.as_ref() {
+                            "gotoSlide" => {
+                                let slide_index = msg.data["slideIndex"].as_u64().unwrap_or(0u64) as usize;
+                                let _ = slide_index_sender.send(slide_index).await;
+                            }
+                            _ => {}
+                        }
+                    }
+                } else {
+                    return;
+                }
+            }
+            slide_index = stats_updated_receiver.recv() => {
+                if let Ok(slide_index) = slide_index {
+                    let stats = match &live_poll.lock().unwrap().get_current_slide().slide_type {
+                        SlideType::MultipleChoice(answers) => {
+                            let max = *answers.answer_counts.iter().max().unwrap_or(&1usize);
+                            let percentages: Vec<f32> = answers.answer_counts.iter()
+                                .map(|count| (*count as f32 / max as f32 * 100f32).max(2f32))
+                                .collect();
+
+                            json!({
+                                "counts": answers.answer_counts,
+                                "percentages": percentages,
+                            })
+                        }
+                        _ => Value::Null
+                    };
+
+                    let _  = socket.send(WSMessage {
+                        cmd: SmartString::from("updateStats"),
+                        data: json!({
+                            "slideIndex": slide_index,
+                            "stats": stats,
+                        })
+                    }.into()).await;
                 } else {
                     return;
                 }
@@ -414,217 +493,3 @@ async fn handle_host_socket(mut socket: WebSocket, _live_poll: Arc<Mutex<LivePol
         };
     }
 }
-
-pub async fn post_stop_poll(
-    cookies: CookieJar,
-    Path(poll_id): Path<ShortID>,
-) -> Result<Response, AppError> {
-    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
-    session_id::assert_equal_ids(&session_id, &live_poll.lock().unwrap().host_session_id)?;
-
-    let exit_channel = live_poll.lock().unwrap().ch_exit_poll.clone();
-    let _ = exit_channel.send(()).await;
-
-    return Ok("Exited successfully".into_response());
-}
-
-/*pub async fn get_sse_slides(
-    Path(poll_id): Path<ShortID>,
-    cookies: CookieJar,
-) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
-    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
-    session_id::assert_equal_ids(&session_id, &live_poll.lock().unwrap().host_session_id)?;
-
-    let updates = live_poll.lock().unwrap().ch_question_state.clone();
-
-    let stream = WatchStream::new(updates)
-        .filter_map(move |state| match state {
-            QuestionAreaState::Empty => Some(
-                sse::Event::default()
-                    .event("update")
-                    .data(html! {}.into_string()),
-            ),
-            QuestionAreaState::Slide(slide_index) => {
-                let current_participant_count =
-                    live_poll.lock().unwrap().get_current_participant_count();
-                Some(
-                    sse::Event::default().event("update").data(
-                        live_poll.lock().unwrap().slides[slide_index]
-                            .render_host_view(poll_id, slide_index, current_participant_count)
-                            .into_string(),
-                    ),
-                )
-            }
-            QuestionAreaState::PollFinished => None,
-            QuestionAreaState::CloseSSE => Some(sse::Event::default().event("close").data("")),
-        })
-        .map(Ok);
-
-    return Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()));
-}*/
-
-/*pub async fn get_sse_statistics(
-    Path(poll_id): Path<ShortID>,
-    cookies: CookieJar,
-) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
-    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
-    session_id::assert_equal_ids(&session_id, &live_poll.lock().unwrap().host_session_id)?;
-
-    let ch_question_statistics = live_poll
-        .lock()
-        .unwrap()
-        .ch_question_statistics_recv
-        .clone();
-
-    let stream = WatchStream::new(ch_question_statistics)
-        .map(move |statistics| match statistics {
-            QuestionStatisticsState::Empty => sse::Event::default().event("update").data(""),
-            QuestionStatisticsState::Slide(slide_index) => {
-                sse::Event::default().event("update").data(
-                    live_poll.lock().unwrap().slides[slide_index]
-                        .render_statistics()
-                        .into_string(),
-                )
-            }
-            QuestionStatisticsState::CloseSSE => sse::Event::default().event("close").data(""),
-        })
-        .map(Ok);
-
-    return Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()));
-}
-
-pub async fn get_sse_leaderboard(
-    Path(poll_id): Path<ShortID>,
-    cookies: CookieJar,
-) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
-    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
-    session_id::assert_equal_ids(&session_id, &live_poll.lock().unwrap().host_session_id)?;
-
-    let update_channel = live_poll.lock().unwrap().ch_players_updated_recv.clone();
-
-    let stream = WatchStream::new(update_channel)
-        .map(move |_| {
-            let live_poll = live_poll.lock().unwrap();
-
-            html! {
-                ."mt-10 mb-4 flex gap-2 items-center" {
-                    ."size-5 text-amber-500" { (SvgIcon::Crown.render()) }
-                    ."text-xl font-medium text-slate-600" { "Leaderboard" }
-                }
-                ."mb-2 text-sm text-slate-600 tracking-tight" {
-                    (live_poll.players.len())
-                    " player" (if live_poll.players.len() != 1 { "s" } else { "" })
-                }
-                ."max-h-96 overflow-scroll" {
-                    @for (_player_index, player) in live_poll.players.iter().enumerate() {
-                        ."flex justify-between" {
-                            ."flex items-center text-slate-900 gap-1" {
-                                ."size-5" { (player.get_avatar_svg()) }
-                                (player.get_name())
-                            }
-                            ."text-slate-600 font-medium tracking-tight" { (0) }
-                        }
-                    }
-                }
-            }
-        })
-        .map(|html| {
-            sse::Event::default()
-                .event("update")
-                .data(html.into_string())
-        })
-        .map(Ok);
-
-    Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()))
-}*/
-
-pub async fn post_next_slide(
-    cookies: CookieJar,
-    Path(poll_id): Path<ShortID>,
-) -> Result<Response, AppError> {
-    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
-    session_id::assert_equal_ids(&session_id, &live_poll.lock().unwrap().host_session_id)?;
-
-    let next_question_send = live_poll.lock().unwrap().ch_next_question.clone();
-    let _ = next_question_send.send(()).await;
-
-    return Ok("Success".into_response());
-}
-
-pub async fn post_previous_slide(
-    cookies: CookieJar,
-    Path(poll_id): Path<ShortID>,
-) -> Result<Response, AppError> {
-    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
-    session_id::assert_equal_ids(&session_id, &live_poll.lock().unwrap().host_session_id)?;
-
-    let previous_question_send = live_poll.lock().unwrap().ch_previous_question.clone();
-    let _ = previous_question_send.send(()).await;
-
-    return Ok("Success".into_response());
-}
-
-pub async fn post_exit_poll(
-    Path(poll_id): Path<ShortID>,
-    cookies: CookieJar,
-) -> Result<Response, AppError> {
-    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
-    session_id::assert_equal_ids(&session_id, &live_poll.lock().unwrap().host_session_id)?;
-
-    let exit_poll_send = live_poll.lock().unwrap().ch_exit_poll.clone();
-    let _ = exit_poll_send.send(()).await;
-
-    tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
-
-    return Ok("Poll exited".into_response());
-}
-
-pub fn render_sse_loading_spinner() -> Markup {
-    html! {
-        ."h-64 flex items-center justify-center" {
-            ."size-4" { (SvgIcon::Spinner.render()) }
-        }
-    }
-}
-
-/*
-pub async fn get_sse_user_counter(
-    Path(poll_id): Path<ShortID>,
-    cookies: CookieJar,
-) -> Result<Sse<impl Stream<Item = Result<sse::Event, Infallible>>>, AppError> {
-    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
-    session_id::assert_equal_ids(&session_id, &live_poll.lock().unwrap().host_session_id)?;
-
-    let update_channel = live_poll.lock().unwrap().ch_players_updated_recv.clone();
-
-    let mut last_send_player_count = None;
-
-    let stream = WatchStream::new(update_channel)
-        .filter_map(move |_| {
-            let live_poll = live_poll.lock().unwrap();
-
-            if last_send_player_count.is_some_and(|count| count == live_poll.players.len()) {
-                None
-            } else {
-                last_send_player_count = Some(live_poll.players.len());
-                Some(html! { ."text-slate-600 text-lg" { (live_poll.players.len()) } })
-            }
-        })
-        .map(|html| {
-            sse::Event::default()
-                .event("update")
-                .data(html.into_string())
-        })
-        .map(Ok);
-
-    return Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()));
-}
-*/

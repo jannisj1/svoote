@@ -2,20 +2,16 @@ use crate::{
     app_error::AppError,
     config::{CUSTOM_PLAYER_NAME_LENGTH_LIMIT, LIVE_POLL_PARTICIPANT_LIMIT},
     html_page::{self, render_header},
-    illustrations::Illustrations,
     live_poll_store::{ShortID, LIVE_POLL_STORE},
     session_id,
-    slide::SlideType,
-    svg_icons::SvgIcon,
 };
 use axum::{
-    extract::{Form, Path, Query},
-    response::{sse, IntoResponse, Response, Sse},
+    extract::Query,
+    response::{IntoResponse, Response},
 };
 use axum_extra::extract::CookieJar;
 
-use core::iter::Iterator;
-use maud::{html, Markup, PreEscaped};
+use maud::{html, PreEscaped};
 use serde::Deserialize;
 use smartstring::{Compact, SmartString};
 use std::fmt::Write;
@@ -131,38 +127,41 @@ impl Player {
 
 #[derive(Deserialize)]
 pub struct PlayPageParams {
-    pub c: ShortID,
+    pub c: Option<ShortID>,
 }
 
 pub async fn get_play_page(
     Query(params): Query<PlayPageParams>,
     cookies: CookieJar,
 ) -> Result<Response, AppError> {
-    let live_poll = match LIVE_POLL_STORE.get(params.c) {
-        Some(live_poll) => live_poll,
-        None => {
-            return Ok(html_page::render_html_page(
-                "Svoote",
-                html! {
-                    (render_header(html! {}))
-                    (render_poll_finished())
-                },
-                true,
-            )
-            .into_response())
-        }
-    };
-
     let (session_id, cookies) = session_id::get_or_create_session_id(cookies);
+    let live_poll = params
+        .c
+        .map(|poll_id| LIVE_POLL_STORE.get(poll_id))
+        .flatten();
+
+    if live_poll.is_none() {
+        let html = html_page::render_html_page(
+            "Svoote",
+            html! {
+               (render_header(html! {}))
+               div { "TODO" }
+            },
+        );
+
+        return Ok((cookies, html).into_response());
+    }
+
+    let live_poll = live_poll.unwrap();
     let mut live_poll = live_poll.lock().unwrap();
 
     let html = html_page::render_html_page(
         "Svoote",
         match live_poll.get_or_create_player(&session_id) {
             Some(player_index) => {
-                let player = live_poll.get_player(player_index);
+                let _player = live_poll.get_player(player_index);
                 html! {
-                    (render_header(html! {
+                    /*(render_header(html! {
                         (render_name_avatar_button(live_poll.leaderboard_enabled, player.get_name(), player.get_avatar_svg()))
                         @if live_poll.leaderboard_enabled {
                             dialog #participant-dialog
@@ -214,10 +213,7 @@ pub async fn get_play_page(
                                 }
                             }
                         }
-                    }))
-                    div hx-ext="sse" sse-connect={ "/sse/play/" (params.c) } sse-close="close" {
-                        div sse-swap="update" { (crate::host::render_sse_loading_spinner()) }
-                    }
+                    }))*/
                 }
             }
             None => {
@@ -228,7 +224,6 @@ pub async fn get_play_page(
                 }
             }
         },
-        true,
     );
 
     return Ok((cookies, html).into_response());
@@ -263,7 +258,7 @@ pub async fn get_play_page(
 
     Ok(Sse::new(stream).keep_alive(sse::KeepAlive::default()))
 }*/
-
+/*
 #[derive(Deserialize)]
 pub struct PostMCAnswerForm {
     pub answer_idx: usize,
@@ -281,7 +276,7 @@ pub async fn post_mc_answer(
     let player_index = live_poll.get_player_index(&session_id)?;
     let start_time = live_poll.get_current_slide_start_time();
 
-    let score = if let SlideType::SingleChoice(mc_answers) =
+    let score = if let SlideType::MultipleChoice(mc_answers) =
         &mut live_poll.get_current_slide().slide_type
     {
         mc_answers.submit_answer(player_index, form.answer_idx, start_time)?
@@ -296,12 +291,12 @@ pub async fn post_mc_answer(
             .get_current_slide()
             .submit_score(player_index, score);
 
-        let _ = live_poll.ch_players_updated_send.send(());
+        //let _ = live_poll.ch_players_updated_send.send(());
     }
 
-    live_poll
-        .ch_question_statistics_send
-        .send_if_modified(|_stats| true);
+    /*live_poll
+    .ch_question_statistics_send
+    .send_if_modified(|_stats| true);*/
 
     return Ok(html! {
         ."text-slate-700" { "Your answer has been submitted." }
@@ -336,11 +331,11 @@ pub async fn post_free_text_answer(
             ));
         };
 
-    live_poll
-        .ch_question_statistics_send
-        .send_if_modified(|_stats| {
-            return true;
-        });
+    /*live_poll
+    .ch_question_statistics_send
+    .send_if_modified(|_stats| {
+        return true;
+    });*/
 
     return Ok(response.into_response());
 }
@@ -353,8 +348,8 @@ pub fn render_poll_finished() -> Markup {
             "Thank you for using svoote.com"
         }
     }
-}
-
+}*/
+/*
 fn render_name_avatar_button(
     leaderboard_enabled: bool,
     player_name: &SmartString<Compact>,
@@ -383,9 +378,9 @@ fn render_name_avatar_button(
             }
         }
     };
-}
+}*/
 
-#[derive(Deserialize)]
+/*#[derive(Deserialize)]
 pub struct NameAvatarParams {
     pub name: Option<SmartString<Compact>>,
     pub avatar: usize,
@@ -420,4 +415,4 @@ pub async fn post_name_avatar(
     return Ok(
         render_name_avatar_button(leaderboard_enabled, player_name, avatar_svg).into_response(),
     );
-}
+}*/

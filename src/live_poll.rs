@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tokio::select;
-use tokio::sync::{mpsc, oneshot, watch};
+use tokio::sync::{broadcast, mpsc, oneshot};
 use tokio::time::Instant;
 use uuid::Uuid;
 
@@ -18,15 +18,10 @@ pub struct LivePoll {
     pub players: Vec<Player>,
     pub current_slide_index: usize,
     pub current_item_start_time: tokio::time::Instant,
-    pub ch_start_signal: Option<oneshot::Sender<()>>,
-    pub ch_players_updated_send: watch::Sender<()>,
-    pub ch_players_updated_recv: watch::Receiver<()>,
-    pub ch_question_state: watch::Receiver<QuestionAreaState>,
-    pub ch_question_statistics_send: watch::Sender<QuestionStatisticsState>,
-    pub ch_question_statistics_recv: watch::Receiver<QuestionStatisticsState>,
-    pub ch_next_question: mpsc::Sender<()>,
-    pub ch_previous_question: mpsc::Sender<()>,
-    pub ch_exit_poll: mpsc::Sender<()>,
+    pub start_poll_channel_sender: Option<oneshot::Sender<()>>,
+    pub set_slide_index_channel_sender: mpsc::Sender<usize>,
+    pub stats_change_notification_channel_receiver: broadcast::Receiver<usize>,
+    pub exit_poll_channel_sender: mpsc::Sender<()>,
     pub leaderboard_enabled: bool,
     pub allow_custom_player_names: bool,
 }
@@ -38,15 +33,12 @@ impl LivePoll {
         leaderboard_enabled: bool,
         allow_custom_player_names: bool,
     ) -> Result<(ShortID, Arc<Mutex<Self>>), AppError> {
-        let (send_start_signal, recv_start_signal) = oneshot::channel::<()>();
-        let (sse_host_question_send, sse_host_question_recv) =
-            watch::channel(QuestionAreaState::Empty);
-        let (send_question_statistics, recv_question_statistics) =
-            watch::channel(QuestionStatisticsState::Empty);
-        let (send_players_updated, recv_players_updated) = watch::channel(());
-        let (send_next_question, mut recv_next_question) = mpsc::channel(4);
-        let (send_previous_question, mut recv_previous_question) = mpsc::channel(4);
-        let (send_exit_poll, mut recv_exit_poll) = mpsc::channel(4);
+        let (start_poll_channel_sender, start_poll_channel_receiver) = oneshot::channel::<()>();
+        let (set_slide_index_channel_sender, mut set_slide_index_channel_receiver) =
+            mpsc::channel(16);
+        let (stats_change_notification_channel_sender, stats_change_notification_channel_receiver) =
+            broadcast::channel(16);
+        let (exit_poll_channel_sender, mut exit_poll_channel_receiver) = mpsc::channel(16);
 
         let (poll_id, live_poll) = LIVE_POLL_STORE.insert(LivePoll {
             host_session_id,
@@ -55,15 +47,10 @@ impl LivePoll {
             players: Vec::new(),
             current_slide_index: 0usize,
             current_item_start_time: Instant::now(),
-            ch_start_signal: Some(send_start_signal),
-            ch_players_updated_send: send_players_updated,
-            ch_players_updated_recv: recv_players_updated,
-            ch_question_statistics_send: send_question_statistics,
-            ch_question_statistics_recv: recv_question_statistics,
-            ch_next_question: send_next_question,
-            ch_previous_question: send_previous_question,
-            ch_exit_poll: send_exit_poll,
-            ch_question_state: sse_host_question_recv,
+            start_poll_channel_sender: Some(start_poll_channel_sender),
+            set_slide_index_channel_sender,
+            stats_change_notification_channel_receiver,
+            exit_poll_channel_sender,
             leaderboard_enabled,
             allow_custom_player_names,
         })?;
@@ -75,36 +62,24 @@ impl LivePoll {
                 poll_id,
                 host_session_id,
             };
-            let _ = recv_start_signal.await;
-
-            let mut active_slide_index = 0usize;
+            let _ = start_poll_channel_receiver.await;
 
             loop {
-                {
-                    let mut live_poll = live_poll.lock().unwrap();
-
-                    live_poll.current_slide_index = active_slide_index;
-                    live_poll.current_item_start_time = Instant::now();
-
-                    let _ = live_poll
-                        .ch_question_statistics_send
-                        .send(QuestionStatisticsState::Slide(active_slide_index));
-                }
-
-                let _ = sse_host_question_send.send(QuestionAreaState::Slide(active_slide_index));
-
                 select! {
-                    _ = recv_next_question.recv() => {
-                        if active_slide_index + 1 < live_poll.lock().unwrap().get_slide_count() {
-                            active_slide_index += 1;
+                    slide_index = set_slide_index_channel_receiver.recv() => {
+                        if let Some(mut slide_index) = slide_index {
+                            let mut live_poll = live_poll.lock().unwrap();
+                            if slide_index >= live_poll.slides.len() {
+                                slide_index = 0;
+                            }
+
+                            live_poll.current_slide_index = slide_index;
+                            live_poll.current_item_start_time = Instant::now();
+
+                            let _ = stats_change_notification_channel_sender.send(slide_index);
                         }
                     }
-                    _ = recv_previous_question.recv() => {
-                        if active_slide_index > 0 {
-                            active_slide_index -= 1;
-                        }
-                    }
-                    _ = recv_exit_poll.recv() => {
+                    _ = exit_poll_channel_receiver.recv() => {
                         break;
                     }
                     _ = tokio::time::sleep(POLL_EXIT_TIMEOUT) => {
@@ -112,17 +87,6 @@ impl LivePoll {
                     }
                 };
             }
-
-            let _ = sse_host_question_send.send(QuestionAreaState::PollFinished);
-
-            let _ = tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-
-            let _ = sse_host_question_send.send(QuestionAreaState::CloseSSE);
-            let _ = live_poll
-                .lock()
-                .unwrap()
-                .ch_question_statistics_send
-                .send(QuestionStatisticsState::CloseSSE);
         });
 
         return Ok((poll_id, return_live_poll_handle));
@@ -148,7 +112,7 @@ impl LivePoll {
             item.add_player();
         }
 
-        let _ = self.ch_players_updated_send.send(());
+        //let _ = self.ch_players_updated_send.send(());
 
         return Some(new_player_idx);
     }
@@ -178,25 +142,6 @@ impl LivePoll {
     pub fn get_current_slide_start_time(&self) -> tokio::time::Instant {
         return self.current_item_start_time.clone();
     }
-
-    pub fn get_slide_count(&self) -> usize {
-        return self.slides.len();
-    }
-}
-
-#[derive(Clone)]
-pub enum QuestionAreaState {
-    Empty,
-    Slide(usize), // index of the current slide
-    PollFinished,
-    CloseSSE,
-}
-
-#[derive(Clone)]
-pub enum QuestionStatisticsState {
-    Empty,
-    Slide(usize), // index of the current slide
-    CloseSSE,
 }
 
 pub struct RmLivePollOnDrop {

@@ -13,7 +13,6 @@ pub async fn get_privacy_policy_page() -> Result<Response, AppError> {
                 src="https://app.enzuzo.com/scripts/privacy/e569e7fe-436d-11ef-9615-cb709ba43f2f"
             {}
         },
-        true,
     )
     .into_response());
 }
@@ -28,7 +27,6 @@ pub async fn get_terms_of_service_page() -> Result<Response, AppError> {
                 src="https://app.enzuzo.com/scripts/tos/e569e7fe-436d-11ef-9615-cb709ba43f2f"
             {}
         },
-        true,
     )
     .into_response());
 }
@@ -43,7 +41,6 @@ pub async fn get_cookie_policy_page() -> Result<Response, AppError> {
                 src="https://app.enzuzo.com/scripts/cookies/e569e7fe-436d-11ef-9615-cb709ba43f2f"
             {}
         },
-        true,
     )
     .into_response());
 }
@@ -58,7 +55,7 @@ pub async fn get_contact_page() -> Result<Response, AppError> {
                 ."mb-4" { "Jannis Jelten" br; "Zimmermannstrasse 16b" br; "37075 Göttingen" br; "Germany" }
                 ."" { "Contact us at:" br; "info@svoote.com" }
             }
-        }, true
+        }
     )
     .into_response());
 }

@@ -2,11 +2,7 @@ use maud::{html, Markup, DOCTYPE};
 
 use crate::{config::COLOR_PALETTE, static_file, svg_icons::SvgIcon};
 
-pub fn render_html_page(
-    title: &str,
-    main_content: maud::Markup,
-    container_main: bool,
-) -> maud::Markup {
+pub fn render_html_page(title: &str, main_content: maud::Markup) -> maud::Markup {
     html! {
         (DOCTYPE)
         html lang="en" {
@@ -22,7 +18,6 @@ pub fn render_html_page(
                 }
                 link rel="stylesheet" href=(static_file::get_path("bundle.css"));
                 script defer src=(static_file::get_path("app.js")) {}
-                script defer src=(static_file::get_path("cookies.js")) {}
                 script defer data-domain="svoote.com" src="https://plausible.io/js/script.js" {}
                 script {
                     "let colorPalette = ["
@@ -33,10 +28,7 @@ pub fn render_html_page(
                 }
             }
             body ."min-h-screen flex flex-col bg-white" {
-                main
-                    ."flex-1"
-                    ."px-6 lg:px-10 container mx-auto"[container_main]
-                {
+                main ."flex-1 mx-auto w-full max-w-screen-2xl" {
                     (main_content)
                 }
 
@@ -56,9 +48,6 @@ pub fn render_html_page(
                     a href="/cookie-policy" ."hover:underline" {
                         "Cookie policy"
                     }
-                    a href="#manage_cookies" ."hover:underline" {
-                        "Manage cookies"
-                    }
                     a href="/contact" ."hover:underline" {
                         "Contact"
                     }
@@ -70,7 +59,7 @@ pub fn render_html_page(
 
 pub fn render_header(top_right_content: Markup) -> Markup {
     return html! {
-        header . "mt-8 mb-12 flex justify-between" {
+        header . "mx-6 lg:mx-10 mt-8 mb-12 flex justify-between" {
             a href="/" ."flex items-baseline gap-2 text-slate-500" {
                 span ."text-3xl tracking-tighter font-medium" { "Svoote" }
                 ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }

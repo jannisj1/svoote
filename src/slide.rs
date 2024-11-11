@@ -3,9 +3,8 @@ use maud::{html, Markup};
 use smartstring::{Compact, SmartString};
 
 use crate::{
-    app_error::AppError, config::MAX_FREE_TEXT_ANSWERS, illustrations::Illustrations,
-    live_poll_store::ShortID, play::render_poll_finished, svg_icons::SvgIcon,
-    word_cloud::WordCloud,
+    app_error::AppError, config::MAX_FREE_TEXT_ANSWERS, live_poll_store::ShortID,
+    svg_icons::SvgIcon,
 };
 
 pub struct Slide {
@@ -16,9 +15,9 @@ pub struct Slide {
 
 pub enum SlideType {
     Undefined,
-    EntrySlide,
-    SingleChoice(MultipleChoiceLiveAnswers),
+    MultipleChoice(MultipleChoiceLiveAnswers),
     FreeText(FreeTextLiveAnswers),
+    EntrySlide,
     FinalSlide,
 }
 
@@ -30,44 +29,10 @@ pub struct MultipleChoiceLiveAnswers {
 
 pub struct FreeTextLiveAnswers {
     pub correct_answers: Vec<SmartString<Compact>>,
-    pub word_cloud: WordCloud,
     pub player_answers: Vec<ArrayVec<SmartString<Compact>, MAX_FREE_TEXT_ANSWERS>>,
 }
 
 impl Slide {
-    /*pub fn new(value: serde_json::Value) -> Option<Slide> {
-        let answers = match &item.answers {
-            crate::live_poll::Answers::SingleChoice(answers) => {
-                SlideType::SingleChoice(MultipleChoiceLiveAnswers {
-                    answer_counts: std::iter::repeat(0usize).take(answers.len()).collect(),
-                    answers: answers.clone(),
-                    player_answers: Vec::new(),
-                })
-            }
-            crate::live_poll::Answers::FreeText(_, _) => SlideType::FreeText(FreeTextLiveAnswers {
-                word_cloud: WordCloud::new(),
-                player_answers: Vec::new(),
-            }),
-            crate::live_poll::Answers::Untyped => {
-                return None;
-            }
-        };
-
-        return Some(Slide {
-            question: item.question.clone(),
-            slide_type: answers,
-            player_scores: Vec::new(),
-        });
-    }*/
-
-    pub fn is_entry_slide(&self) -> bool {
-        return matches!(self.slide_type, SlideType::EntrySlide);
-    }
-
-    pub fn is_final_slide(&self) -> bool {
-        return matches!(self.slide_type, SlideType::FinalSlide);
-    }
-
     pub fn add_player(&mut self) {
         self.player_scores.push(0usize);
 
@@ -75,7 +40,7 @@ impl Slide {
             SlideType::Undefined => {}
             SlideType::EntrySlide => {}
             SlideType::FinalSlide => {}
-            SlideType::SingleChoice(mc_answers) => {
+            SlideType::MultipleChoice(mc_answers) => {
                 mc_answers.player_answers.push(None);
             }
             SlideType::FreeText(ft_answer) => {
@@ -84,20 +49,12 @@ impl Slide {
         }
     }
 
-    pub fn render_statistics(&mut self) -> Markup {
+    /*pub fn render_statistics(&mut self) -> Markup {
         match &mut self.slide_type {
             SlideType::Undefined => return html! {},
             SlideType::EntrySlide => return html! {},
             SlideType::FinalSlide => return html! {},
-            SlideType::SingleChoice(mc_answers) => {
-                let mut max: usize = *mc_answers.answer_counts.iter().max().unwrap_or(&1usize);
-
-                if max == 0 {
-                    max = 1;
-                }
-
-                return html! {};
-            }
+            SlideType::MultipleChoice(_) => return html! {},
             SlideType::FreeText(ft_answers) => {
                 let (words, container_height) = ft_answers.word_cloud.render();
 
@@ -133,9 +90,9 @@ impl Slide {
                 return html;
             }
         }
-    }
+    }*/
 
-    pub fn render_participant_view(
+    /*pub fn render_participant_view(
         &self,
         poll_id: ShortID,
         slide_index: usize,
@@ -225,7 +182,7 @@ impl Slide {
                 }
             }
         };
-    }
+    }*/
 
     pub fn submit_score(&mut self, player_index: usize, score: usize) {
         self.player_scores[player_index] = score;
@@ -282,13 +239,12 @@ impl FreeTextLiveAnswers {
             ));
         }
 
-        self.word_cloud.insert(&answer);
         self.player_answers[player_index].push(answer);
 
         return Ok(());
     }
 
-    pub fn render_participant_form(&self, player_index: usize, poll_id: ShortID) -> Markup {
+    /*pub fn render_participant_form(&self, player_index: usize, poll_id: ShortID) -> Markup {
         let answers = &self.player_answers[player_index];
 
         return html! {
@@ -318,5 +274,5 @@ impl FreeTextLiveAnswers {
                 }
             }
         };
-    }
+    }*/
 }
