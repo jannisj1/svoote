@@ -83,7 +83,7 @@ document.addEventListener("alpine:init", () => {
           ((slideIndex % 3) - 1) * 105 +
           "%)" +
           "translateY(" +
-          (Math.floor(slideIndex / 3) * 110 - 100) +
+          (Math.floor(slideIndex / 3) * 110 - 90) +
           "%)" +
           "translateZ(-210px)"
         );

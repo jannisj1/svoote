@@ -41,8 +41,8 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
             div x-data="poll" {
                 div ."mx-16 mb-4 grid grid-cols-3 items-center" {
                     div ."flex items-center gap-2" {
-                        div x-data="{ open: false }" ."relative size-6" {
-                            button "@click"="open = !open" ."size-6 text-slate-400 hover:text-slate-600" { (SvgIcon::Settings.render()) }
+                        div x-data="{ open: false }" ."relative size-[1.4rem]" {
+                            button "@click"="open = !open" ."size-[1.4rem] text-slate-400 hover:text-slate-600" { (SvgIcon::Settings.render()) }
                             div x-show="open" x-cloak "@click.outside"="open = false" ."absolute left-0 top-8 w-64 h-fit z-20 p-4 text-left bg-white border rounded-lg shadow-lg" {
                                 ."mb-3 text-xl font-semibold text-slate-700" { "Options" }
                                 label ."flex items-center gap-2 text-slate-600 font-semibold" {
@@ -79,18 +79,19 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                             { (SvgIcon::Grid.render()) }
                         button "@click"="poll.slides.splice(poll.slides.length, 0, createSlide('undefined')); $nextTick(() => { gotoSlide(poll.slides.length - 1) });"
                             ":disabled"={ "poll.slides.length >= " (POLL_MAX_SLIDES) }
-                            ."size-6 text-slate-400 hover:text-slate-600 disabled:text-slate-400"
+                            ."-translate-x-1 size-6 text-slate-400 hover:text-slate-600 disabled:text-slate-400"
                             { (SvgIcon::Plus.render()) }
                     }
                     div {
                         div ."relative" {
                             template x-for="i in poll.slides.length" {
                                 button x-text="i"
-                                    ."absolute -top-3 left-1/2 w-fit text-sm text-slate-600 transition duration-500 ease-out"
-                                    ":class"="(i - 1 == poll.activeSlide ? 'font-bold ' : 'font-medium ')"
-                                    ":style"="`transform: translateX(${ ((i - 1) - poll.activeSlide) * 24 }px); opacity: ${ Math.abs((i - 1) - poll.activeSlide) > 4 ? 0 : Math.max(0, 12 - Math.abs((i - 1) - poll.activeSlide)) / 12 };`"
-                                    ":disabled"="Math.abs((i - 1) - poll.activeSlide) > 4"
-                                    "@click"="gotoSlide(i - 1)" {}
+                                    ."absolute -top-3 left-1/2 size-6 rounded-full text-sm font-mono transition-transform duration-500 ease-out disabled:opacity-0"
+                                    ":style"="`transform: translateX(${ ((i - 1) - poll.activeSlide) * 24 }px);`"
+                                    ":class"="(i - 1 == poll.activeSlide ? 'bg-slate-500 text-slate-50' : 'bg-white text-slate-500')"
+                                    ":disabled"="Math.abs((i - 1) - poll.activeSlide) > 6"
+                                    "@click"="gotoSlide(i - 1)"
+                                { }
                             }
                         }
                     }
@@ -107,10 +108,21 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                     div ."relative h-[36rem]" {
                         template x-for="(slide, slide_index) in poll.slides" {
                             div ."absolute inset-0 size-full px-16 py-10 border ring-0 ring-indigo-500 rounded transition-transform duration-500 ease-out transform-gpu"
-                                ":class"="slide_index == poll.activeSlide ? (gridView ? 'ring-4 shadow-xl' : 'shadow-xl') : 'cursor-pointer hover:shadow-xl hover:ring-4'"
+                                ":class"="slide_index == poll.activeSlide ? (gridView ? 'ring-4 shadow-xl' : 'pointer-events-none shadow-xl') : 'cursor-pointer hover:shadow-xl hover:ring-4'"
                                 "@click"="if (slide_index != poll.activeSlide) gotoSlide(slide_index); gridView = false;"
                                 ":style"="calculateSlideStyle(slide_index, poll.activeSlide, gridView)"
+                                x-data="{ showOptions: false }"
+                                "@contextmenu"="if (gridView) { showOptions = !showOptions; $event.preventDefault(); }"
+                                "@contextmenu.away"="if (gridView) { showOptions = false }"
+                                "@click.away"="if (gridView) { showOptions = false }"
                             {
+                                div x-show="showOptions && gridView" x-cloak
+                                    ."absolute size-full inset-0 z-30 flex items-center justify-center backdrop-blur"
+                                {
+                                    button "@click"="poll.slides.splice(slide_index, 1); if(poll.activeSlide == poll.slides.length) poll.activeSlide -= 1; $event.stopPropagation();"
+                                        ."size-40 p-10 rounded-full text-red-400 bg-slate-50 hover:bg-slate-100 shadow-2xl"
+                                        { (SvgIcon::Trash2.render()) }
+                                }
                                 input type="text" x-model="slide.question"
                                     "@input"="save"
                                     "@keyup.enter"="questionInputEnterEvent(slide_index, slide)"
@@ -243,16 +255,9 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                         span x-show="code === null" ."text-indigo-300 underline" { "svoote.com" }
                                     }
                                 }
+                                div x-show="gridView" x-cloak ."absolute size-full inset-0" {} // Stops elements from being clicked or focused during grid view
                             }
                         }
-                    }
-                }
-                div ."mt-4 flex justify-center gap-4" {
-                    button "@click"="poll.slides.splice(poll.activeSlide, 1); gotoSlide(poll.activeSlide - 1);" ":disabled"="poll.slides.length == 1"
-                        ."group px-2 py-1 flex items-center gap-1 text-slate-500 border border-slate-300 rounded-full hover:bg-slate-100 disabled:text-slate-300 disabled:bg-transparent"
-                    {
-                        ."size-4 text-red-400 group-disabled:text-slate-300" { (SvgIcon::Trash2.render()) }
-                        "Delete slide"
                     }
                 }
             }
