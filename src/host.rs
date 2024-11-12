@@ -107,20 +107,19 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                 div ."px-12 overflow-x-hidden overflow-y-scroll" {
                     div ."relative h-[36rem]" {
                         template x-for="(slide, slide_index) in poll.slides" {
-                            div ."absolute inset-0 size-full px-16 py-10 border ring-0 ring-indigo-500 rounded transition-transform duration-500 ease-out transform-gpu"
-                                ":class"="slide_index == poll.activeSlide ? (gridView ? 'ring-4 shadow-xl' : 'pointer-events-none shadow-xl') : 'cursor-pointer hover:shadow-xl hover:ring-4'"
+                            div ."absolute inset-0 size-full px-16 py-10 bg-white border rounded ring-0 ring-indigo-500 transition-transform duration-500 ease-out transform-gpu"
+                                ":class"="slide_index == poll.activeSlide ? (gridView ? 'ring-4 shadow-xl' : 'shadow-xl') : (gridView ? 'cursor-pointer hover:ring-4 hover:shadow-xl' : 'cursor-pointer')"
                                 "@click"="if (slide_index != poll.activeSlide) gotoSlide(slide_index); gridView = false;"
                                 ":style"="calculateSlideStyle(slide_index, poll.activeSlide, gridView)"
-                                x-data="{ showOptions: false }"
-                                "@contextmenu"="if (gridView) { showOptions = !showOptions; $event.preventDefault(); }"
-                                "@contextmenu.away"="if (gridView) { showOptions = false }"
-                                "@click.away"="if (gridView) { showOptions = false }"
                             {
-                                div x-show="showOptions && gridView" x-cloak
-                                    ."absolute size-full inset-0 z-30 flex items-center justify-center backdrop-blur"
+                                div x-show="gridView" x-cloak
+                                    ."absolute size-full top-6 right-8 z-30 flex items-start justify-end gap-6"
                                 {
+                                    button "@click"="$event.stopPropagation();"
+                                        ."size-28 p-5 rounded-full text-slate-400 bg-slate-50 hover:bg-slate-100 shadow-2xl"
+                                        { (SvgIcon::Move.render()) }
                                     button "@click"="poll.slides.splice(slide_index, 1); if(poll.activeSlide == poll.slides.length) poll.activeSlide -= 1; $event.stopPropagation();"
-                                        ."size-40 p-10 rounded-full text-red-400 bg-slate-50 hover:bg-slate-100 shadow-2xl"
+                                        ."size-28 p-5 rounded-full text-slate-400 bg-slate-50 hover:bg-slate-100 shadow-2xl"
                                         { (SvgIcon::Trash2.render()) }
                                 }
                                 input type="text" x-model="slide.question"
