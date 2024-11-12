@@ -40,37 +40,47 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
             (render_header(html! {}))
             div x-data="poll" {
                 div ."mx-16 mb-4 grid grid-cols-3 items-center" {
-                    div x-data="{ open: false }" ."relative" {
-                        button "@click"="open = !open" ."size-6 text-slate-400 hover:text-slate-600" { (SvgIcon::Settings.render()) }
-                        div x-show="open" x-cloak "@click.outside"="open = false" ."absolute left-0 top-8 w-64 h-fit z-20 p-4 text-left bg-white border rounded-lg shadow-lg" {
-                            ."mb-3 text-xl font-semibold text-slate-700" { "Options" }
-                            label ."flex items-center gap-2 text-slate-600 font-semibold" {
-                                input type="checkbox" x-model="poll.enableLeaderboard" ."size-4 accent-indigo-500";
-                                "Leaderboard"
-                            }
-                            ."ml-6 mb-3 text-slate-400 text-sm" { "Participants will receive points for submitting the correct answer. Faster responses get more points." }
-                            label ."flex items-center gap-2 text-slate-600 font-semibold" {
-                                input type="checkbox" x-model="poll.allowCustomNames" ."size-4 accent-indigo-500";
-                                "Custom names"
-                            }
-                            ."ml-6 mb-3 text-slate-400 text-sm" { "Allow participants to set a custom name." }
-                            hr ."mb-3";
-                            a download="poll.json" ":href"="'data:application/json;charset=utf-8,' + JSON.stringify(poll)"
-                                ."mb-2 flex gap-2 items-center text-slate-600"
-                            {
-                                ."size-4" { (SvgIcon::Save.render()) }
-                                "Save poll (.json)"
-                            }
-                            button ."mb-3 flex gap-2 items-center text-slate-600" {
-                                ."size-4" { (SvgIcon::Folder.render()) }
-                                "Load poll (.json)"
-                            }
-                            hr ."mb-3";
-                            button "@click"="reset()" ":disabled"="isLive" ."flex gap-2 items-center text-slate-600 disabled:text-slate-300" {
-                                ."size-4" { (SvgIcon::Refresh.render()) }
-                                "Reset slides and settings"
+                    div ."flex items-center gap-2" {
+                        div x-data="{ open: false }" ."relative size-6" {
+                            button "@click"="open = !open" ."size-6 text-slate-400 hover:text-slate-600" { (SvgIcon::Settings.render()) }
+                            div x-show="open" x-cloak "@click.outside"="open = false" ."absolute left-0 top-8 w-64 h-fit z-20 p-4 text-left bg-white border rounded-lg shadow-lg" {
+                                ."mb-3 text-xl font-semibold text-slate-700" { "Options" }
+                                label ."flex items-center gap-2 text-slate-600 font-semibold" {
+                                    input type="checkbox" x-model="poll.enableLeaderboard" ."size-4 accent-indigo-500";
+                                    "Leaderboard"
+                                }
+                                ."ml-6 mb-3 text-slate-400 text-sm" { "Participants will receive points for submitting the correct answer. Faster responses get more points." }
+                                label ."flex items-center gap-2 text-slate-600 font-semibold" {
+                                    input type="checkbox" x-model="poll.allowCustomNames" ."size-4 accent-indigo-500";
+                                    "Custom names"
+                                }
+                                ."ml-6 mb-3 text-slate-400 text-sm" { "Allow participants to set a custom name." }
+                                hr ."mb-3";
+                                a download="poll.json" ":href"="'data:application/json;charset=utf-8,' + JSON.stringify(poll)"
+                                    ."mb-2 flex gap-2 items-center text-slate-600"
+                                {
+                                    ."size-4" { (SvgIcon::Save.render()) }
+                                    "Save poll (.json)"
+                                }
+                                button ."mb-3 flex gap-2 items-center text-slate-600" {
+                                    ."size-4" { (SvgIcon::Folder.render()) }
+                                    "Load poll (.json)"
+                                }
+                                hr ."mb-3";
+                                button "@click"="reset()" ":disabled"="isLive" ."flex gap-2 items-center text-slate-600 disabled:text-slate-300" {
+                                    ."size-4" { (SvgIcon::Refresh.render()) }
+                                    "Reset slides and settings"
+                                }
                             }
                         }
+                        button "@click"="gridView = !gridView"
+                            ."size-6"
+                            ":class"="!gridView ? 'text-slate-400 hover:text-slate-600' : 'text-indigo-500'"
+                            { (SvgIcon::Grid.render()) }
+                        button "@click"="poll.slides.splice(poll.slides.length, 0, createSlide('undefined')); $nextTick(() => { gotoSlide(poll.slides.length - 1) });"
+                            ":disabled"={ "poll.slides.length >= " (POLL_MAX_SLIDES) }
+                            ."size-6 text-slate-400 hover:text-slate-600 disabled:text-slate-400"
+                            { (SvgIcon::Plus.render()) }
                     }
                     div {
                         div ."relative" {
@@ -93,13 +103,13 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                         }
                     }
                 }
-                div ."px-12 overflow-hidden" {
+                div ."px-12 overflow-x-hidden overflow-y-scroll" {
                     div ."relative h-[36rem]" {
                         template x-for="(slide, slide_index) in poll.slides" {
-                            div ."absolute inset-0 size-full px-16 py-10 border rounded transition duration-500 ease-out transform-gpu"
-                                ":class"="slide_index == poll.activeSlide ? 'shadow-xl' : 'cursor-pointer hover:bg-slate-100 hover:shadow-lg'"
-                                "@click"="if (slide_index != poll.activeSlide) gotoSlide(slide_index)"
-                                ":style"="'transform: perspective(100px) translateX(' + ((slide_index - poll.activeSlide) * 106) + '%) translateZ(' + (slide_index == poll.activeSlide ? '0' : '-10')  + 'px)'"
+                            div ."absolute inset-0 size-full px-16 py-10 border ring-0 ring-indigo-500 rounded transition-transform duration-500 ease-out transform-gpu"
+                                ":class"="slide_index == poll.activeSlide ? (gridView ? 'ring-4 shadow-xl' : 'shadow-xl') : 'cursor-pointer hover:shadow-xl hover:ring-4'"
+                                "@click"="if (slide_index != poll.activeSlide) gotoSlide(slide_index); gridView = false;"
+                                ":style"="calculateSlideStyle(slide_index, poll.activeSlide, gridView)"
                             {
                                 input type="text" x-model="slide.question"
                                     "@input"="save"
@@ -238,13 +248,6 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                     }
                 }
                 div ."mt-4 flex justify-center gap-4" {
-                    button "@click"="poll.slides.splice(poll.slides.length, 0, createSlide('undefined')); $nextTick(() => { gotoSlide(poll.slides.length - 1) });"
-                        ":disabled"={ "poll.slides.length >= " (POLL_MAX_SLIDES) }
-                        ."group px-2 py-1 flex items-center gap-1 text-slate-500 border border-slate-300 rounded-full hover:bg-slate-100 disabled:text-slate-300 disabled:bg-transparent"
-                    {
-                        ."size-4 text-slate-500 group-disabled:text-slate-300" { (SvgIcon::Plus.render()) }
-                        "Add slide"
-                    }
                     button "@click"="poll.slides.splice(poll.activeSlide, 1); gotoSlide(poll.activeSlide - 1);" ":disabled"="poll.slides.length == 1"
                         ."group px-2 py-1 flex items-center gap-1 text-slate-500 border border-slate-300 rounded-full hover:bg-slate-100 disabled:text-slate-300 disabled:bg-transparent"
                     {

@@ -32,6 +32,7 @@ function loadPollFromLocalStorage() {
 document.addEventListener("alpine:init", () => {
   Alpine.data("poll", () => ({
     poll: loadPollFromLocalStorage(),
+    gridView: false,
     isLive: false,
     code: null,
     qrCode: null,
@@ -62,6 +63,30 @@ document.addEventListener("alpine:init", () => {
         this.poll = createPoll();
         this.save();
       }
+    },
+
+    calculateSlideStyle(slideIndex, activeSlide, gridView) {
+      if (!gridView)
+        return (
+          "transform: perspective(100px)" +
+          "translateX(" +
+          (slideIndex - activeSlide) * 106 +
+          "%)" +
+          "translateZ(" +
+          (slideIndex == activeSlide ? "0" : "-10") +
+          "px)"
+        );
+      else
+        return (
+          "transform: perspective(100px)" +
+          "translateX(" +
+          ((slideIndex % 3) - 1) * 105 +
+          "%)" +
+          "translateY(" +
+          (Math.floor(slideIndex / 3) * 110 - 100) +
+          "%)" +
+          "translateZ(-210px)"
+        );
     },
 
     gotoSlide(slideIndex) {
