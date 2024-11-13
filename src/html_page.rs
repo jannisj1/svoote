@@ -59,10 +59,10 @@ pub fn render_html_page(title: &str, main_content: maud::Markup) -> maud::Markup
 
 pub fn render_header(top_right_content: Markup) -> Markup {
     return html! {
-        header . "mx-6 lg:mx-10 mt-8 mb-12 flex justify-between" {
-            a href="/" ."flex items-baseline gap-1.5 text-slate-700" {
-                span ."text-2xl tracking-tight font-medium" { "Svoote" }
-                ."size-4 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
+        header . "mx-4 sm:mx-14 mt-5 mb-6 flex justify-between" {
+            a href="/" ."flex items-baseline gap-1.5" {
+                span ."text-xl text-slate-500 tracking-tight font-medium" { "Svoote" }
+                ."size-4 translate-y-[0.1rem] text-slate-500" { (SvgIcon::Rss.render()) }
             }
             (top_right_content)
         }
