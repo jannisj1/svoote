@@ -39,10 +39,10 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
             @if poll_is_live { script { "document.pollAlreadyLive = true;" } }
             (render_header(html! {}))
             div x-data="poll" {
-                div ."mx-6 sm:mx-16 mb-4 grid grid-cols-3 items-center" {
+                div ."mx-4 sm:mx-16 grid grid-cols-3 items-center" {
                     div ."flex items-center gap-2" {
                         div x-data="{ open: false }" ."relative size-[1.4rem]" {
-                            button "@click"="open = !open" ":disabled"="isLive" ."size-[1.4rem] text-slate-400 hover:text-slate-600 disabled:text-slate-200" title="Settings" { (SvgIcon::Settings.render()) }
+                            button "@click"="open = !open" ":disabled"="isLive" ."size-[1.4rem] disabled:text-slate-300" title="Settings" { (SvgIcon::Settings.render()) }
                             div x-show="open" x-cloak "@click.outside"="open = false" ."absolute left-0 top-8 w-64 h-fit z-20 p-4 text-left bg-white border rounded-lg shadow-lg" {
                                 /*."mb-3 text-xl font-semibold text-slate-700" { "Options" }
                                 label ."flex items-center gap-2 text-slate-600 font-semibold" {
@@ -60,11 +60,11 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                     ."mb-2 flex gap-2 items-center text-slate-600"
                                 {
                                     ."size-4" { (SvgIcon::Save.render()) }
-                                    "Save poll (.json)"
+                                    "Save presentation (.json)"
                                 }
                                 button ."mb-3 flex gap-2 items-center text-slate-600" {
                                     ."size-4" { (SvgIcon::Folder.render()) }
-                                    "Load poll (.json)"
+                                    "Load presentation (.json)"
                                 }
                                 hr ."mb-3";
                                 button "@click"="reset()" ":disabled"="isLive" ."flex gap-2 items-center text-slate-600 disabled:text-slate-300" {
@@ -74,11 +74,11 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                             }
                         }
                         button "@click"="gridView = !gridView"
-                            ."size-6" ":class"="!gridView ? 'text-slate-400 hover:text-slate-600' : 'text-indigo-500'"
+                            ."size-6" ":class"="gridView && 'text-indigo-500'"
                             title="Grid view" { (SvgIcon::Grid.render()) }
                         button "@click"="poll.slides.splice(poll.slides.length, 0, createSlide('undefined')); $nextTick(() => { gotoSlide(poll.slides.length - 1) });"
                             ":disabled"={ "isLive || poll.slides.length >= " (POLL_MAX_SLIDES) }
-                            ."-translate-x-1 size-6 text-slate-400 hover:text-slate-600 disabled:text-slate-200"
+                            ."-translate-x-1 size-6 disabled:text-slate-300"
                             title="Add new slide" { (SvgIcon::Plus.render()) }
                     }
                     div {
@@ -87,7 +87,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                 button x-text="i"
                                     ."absolute -top-3 left-1/2 size-6 rounded-full text-sm font-mono transition-transform duration-500 ease-out disabled:opacity-0"
                                     ":style"="`transform: translateX(${ ((i - 1) - poll.activeSlide) * 24 }px);`"
-                                    ":class"="(i - 1 == poll.activeSlide ? 'bg-slate-500 text-slate-50' : 'bg-white text-slate-500')"
+                                    ":class"="(i - 1 == poll.activeSlide ? 'bg-slate-500 text-slate-50' : 'bg-white')"
                                     ":disabled"="Math.abs((i - 1) - poll.activeSlide) > 6"
                                     "@click"="gotoSlide(i - 1)" ":title"="`Go to slide ${i}`"
                                 { }
@@ -105,7 +105,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                             { ."size-3 bg-slate-50" {} }
                     }
                 }
-                div x-ref="outerSlideContainer" ."px-2 sm:px-12 overflow-x-hidden overflow-y-scroll" {
+                div x-ref="outerSlideContainer" ."px-2 py-4 sm:px-12 overflow-x-hidden overflow-y-scroll" {
                     div ."relative h-[36rem]" {
                         template x-for="(slide, slideIndex) in poll.slides" {
                             div
@@ -113,6 +113,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                 ":style"="calculateSlideStyle(slideIndex, poll.activeSlide, gridView)"
                                 "@click"="if (slideIndex != poll.activeSlide) gotoSlide(slideIndex); if (gridView) { gridView = false; $refs.outerSlideContainer.scrollTo({ top: 0, behavior: 'smooth' }); }"
                             {
+                                h1 x-show="gridView" x-cloak x-text="'Slide ' + (slideIndex + 1)" ."absolute text-5xl text-slate-500 -top-20 left-[45%]" {}
                                 button "@click"="isReordering = !isReordering; reorderedSlideIndex = slideIndex; $event.stopPropagation();"
                                     x-show="!isLive && gridView && (!isReordering || slideIndex == reorderedSlideIndex)" x-cloak
                                     ."absolute top-6 right-8 size-28 p-5 z-30 rounded-full text-slate-400 bg-slate-50 hover:bg-slate-100 shadow-2xl"
@@ -262,6 +263,16 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                             }
                         }
                     }
+                }
+            }
+            div ."mx-4 sm:mx-14 my-16" {
+                h1 ."mb-2 text-xl font-semibold " { "How do I use svoote.com?" }
+                ul ."ml-6 list-disc text-slate-500 space-y-1" {
+                    li { "Add slides by clicking the plus button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Plus.render()) } ") in the top left and fill the slides with your content." }
+                    li { "To remove slides or change the order of them, go to the grid view via the grid view button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Grid.render()) } ") in the top left." }
+                    li { "Start the poll by clicking the start button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Play.render()) } ") in the top right. A QR-Code will show up on the slides to let participants join your presentation." }
+                    li { "When you are finished with your presentation, you can stop it by clicking on the stop button ( " div ."inline-block size-3 bg-slate-500 translate-y-[0.1rem]" {} " ) in the top right." }
+                    li { "Your slides are saved locally in your browser. If you wish to transfer them to another device or store them for a longer time, click on the settings button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Settings.render()) } ") in the top left and then on 'Save presentation'. You can later import via 'Load presentation'." }
                 }
             }
         },

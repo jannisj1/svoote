@@ -71,18 +71,19 @@ document.addEventListener("alpine:init", () => {
 
     calculateSlideClasses(slideIndex, activeSlide, gridView) {
       let classes =
-        "absolute inset-0 size-full px-16 py-10 border rounded ring-0 ring-indigo-500 transition-transform duration-500 ease-out transform-gpu ";
+        "absolute inset-0 size-full px-16 py-10 border rounded transition-transform duration-500 ease-out transform-gpu ";
 
-      if (slideIndex == this.poll.activeSlide) {
-        if (gridView) classes += "ring-4 shadow-xl ";
-        else classes += "shadow-xl ";
+      if (gridView) {
+        classes +=
+          "cursor-pointer shadow-2xl hover:ring-indigo-500 hover:ring-4 ";
+
+        if (slideIndex == activeSlide) classes += "ring-4 ring-indigo-500 ";
+        else classes += "ring-2 ring-slate-300 ";
       } else {
-        if (gridView) classes += "cursor-pointer hover:ring-4 hover:shadow-xl ";
-        else classes += "cursor-pointer ";
-      }
+        classes += "shadow-lg ";
 
-      if (gridView) classes += "bg-slate-50 ";
-      else classes += "bg-white ";
+        if (slideIndex != activeSlide) classes += "cursor-pointer ";
+      }
 
       return classes;
     },
@@ -105,7 +106,7 @@ document.addEventListener("alpine:init", () => {
           ((slideIndex % 3) - 1) * 120 +
           "%)" +
           "translateY(" +
-          (Math.floor(slideIndex / 3) * 110 - 100) +
+          (Math.floor(slideIndex / 3) * 150 - 100) +
           "%)" +
           "translateZ(-240px)"
         );
