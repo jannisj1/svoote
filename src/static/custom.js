@@ -33,9 +33,10 @@ document.addEventListener("alpine:init", () => {
   Alpine.data("poll", () => ({
     poll: loadPollFromLocalStorage(),
     gridView: false,
+    isReordering: false,
+    reorderedSlideIndex: null,
     isLive: false,
     code: null,
-    qrCode: null,
     socket: null,
 
     init() {
@@ -62,7 +63,28 @@ document.addEventListener("alpine:init", () => {
       if (this.isLive == false) {
         this.poll = createPoll();
         this.save();
+        this.gridView = false;
+        this.isReordering = false;
+        this.reorderedSlideIndex = null;
       }
+    },
+
+    calculateSlideClasses(slideIndex, activeSlide, gridView) {
+      let classes =
+        "absolute inset-0 size-full px-16 py-10 border rounded ring-0 ring-indigo-500 transition-transform duration-500 ease-out transform-gpu ";
+
+      if (slideIndex == this.poll.activeSlide) {
+        if (gridView) classes += "ring-4 shadow-xl ";
+        else classes += "shadow-xl ";
+      } else {
+        if (gridView) classes += "cursor-pointer hover:ring-4 hover:shadow-xl ";
+        else classes += "cursor-pointer ";
+      }
+
+      if (gridView) classes += "bg-slate-50 ";
+      else classes += "bg-white ";
+
+      return classes;
     },
 
     calculateSlideStyle(slideIndex, activeSlide, gridView) {
@@ -80,12 +102,12 @@ document.addEventListener("alpine:init", () => {
         return (
           "transform: perspective(100px)" +
           "translateX(" +
-          ((slideIndex % 3) - 1) * 105 +
+          ((slideIndex % 3) - 1) * 120 +
           "%)" +
           "translateY(" +
-          (Math.floor(slideIndex / 3) * 110 - 90) +
+          (Math.floor(slideIndex / 3) * 110 - 100) +
           "%)" +
-          "translateZ(-210px)"
+          "translateZ(-240px)"
         );
     },
 
@@ -105,6 +127,13 @@ document.addEventListener("alpine:init", () => {
           }),
         );
       }
+    },
+
+    moveSlide(targetIndex, before) {
+      let temp = this.poll.slides.splice(this.reorderedSlideIndex, 1);
+      if (targetIndex > this.reorderedSlideIndex) targetIndex -= 1;
+      if (before) this.poll.slides.splice(targetIndex, 0, temp[0]);
+      else this.poll.slides.splice(targetIndex + 1, 0, temp[0]);
     },
 
     questionInputEnterEvent(slideIndex, slide) {
