@@ -59,6 +59,22 @@ document.addEventListener("alpine:init", () => {
       localStorage.setItem("poll", JSON.stringify(this.poll));
     },
 
+    importJsonFile(inputEvent) {
+      const file = inputEvent.target.files[0];
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.poll = JSON.parse(e.target.result);
+          this.save();
+        };
+        reader.onerror = (e) => {
+          console.error("Error while reading a poll json file: ", e);
+        };
+        reader.readAsText(file);
+      }
+    },
+
     reset() {
       if (this.isLive == false) {
         this.poll = createPoll();

@@ -62,9 +62,10 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                     ."size-4" { (SvgIcon::Save.render()) }
                                     "Save presentation (.json)"
                                 }
-                                button ."mb-3 flex gap-2 items-center text-slate-600" {
+                                label ."mb-3 flex gap-2 items-center text-slate-600 cursor-pointer" {
                                     ."size-4" { (SvgIcon::Folder.render()) }
                                     "Load presentation (.json)"
+                                    input type="file" accept=".json" "@change"="importJsonFile($event);" ."hidden";
                                 }
                                 hr ."mb-3";
                                 button "@click"="reset()" ":disabled"="isLive" ."flex gap-2 items-center text-slate-600 disabled:text-slate-300" {
