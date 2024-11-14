@@ -37,7 +37,11 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
         html! {
             script src=(static_file::get_path("qrcode.js")) {}
             @if poll_is_live { script { "document.pollAlreadyLive = true;" } }
-            (render_header(html! {}))
+            (render_header(html! {
+                a href="/p" ."text-slate-500" {
+                    "Join presentation →"
+                }
+            }))
             div x-data="poll" {
                 div ."mx-4 sm:mx-16 grid grid-cols-3 items-center" {
                     div ."flex items-center gap-2" {
@@ -271,9 +275,9 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                 ul ."ml-6 list-disc text-slate-500 space-y-1" {
                     li { "Add slides by clicking the plus button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Plus.render()) } ") in the top left and fill the slides with your content." }
                     li { "To remove slides or change the order of them, go to the grid view via the grid view button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Grid.render()) } ") in the top left." }
-                    li { "Start the poll by clicking the start button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Play.render()) } ") in the top right. A QR-Code will show up on the slides to let participants join your presentation." }
+                    li { "Start the interactive presentation by clicking the start button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Play.render()) } ") in the top right. A QR-Code will show up on the slides to let participants join your presentation." }
                     li { "When you are finished with your presentation, you can stop it by clicking on the stop button ( " div ."inline-block size-3 bg-slate-500 translate-y-[0.1rem]" {} " ) in the top right." }
-                    li { "Your slides are saved locally in your browser. If you wish to transfer them to another device or store them for a longer time, click on the settings button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Settings.render()) } ") in the top left and then on 'Save presentation'. You can later import via 'Load presentation'." }
+                    li { "Your slides are saved locally in your browser. If you wish to transfer them to another device or store them for a longer time, click on the settings button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Settings.render()) } ") in the top left and then on 'Save presentation'. You can later import the slides via 'Load presentation'." }
                 }
             }
         },
