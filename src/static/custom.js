@@ -128,6 +128,59 @@ document.addEventListener("alpine:init", () => {
         );
     },
 
+    renderWordCloud(container, stats) {
+      let rowIndex = 0;
+      let rowTopPx = 0;
+      let termIndex = 0;
+      let containerWidth = container.getBoundingClientRect().width;
+
+      while (true) {
+        let rowTerms = [];
+        while (termIndex < stats.terms.length) {
+          rowTerms.push({
+            term: stats.terms[termIndex],
+            element: container.children[termIndex + 1],
+          });
+
+          termIndex++;
+          if (rowTerms.length > rowIndex) break;
+        }
+
+        let rowHeightPx = 0;
+        let rowWidthPx = 0;
+        for (term of rowTerms) {
+          let termHeight = term.element.getBoundingClientRect().height;
+          if (termHeight > rowHeightPx) rowHeightPx = termHeight;
+
+          rowWidthPx += term.element.getBoundingClientRect().width;
+        }
+
+        rowWidthPx += (rowTerms.length - 1) * 16;
+
+        let leftOffset = containerWidth / 2 - rowWidthPx / 2;
+        for (term of rowTerms) {
+          term.element.style.top = `${rowTopPx + (rowHeightPx - term.element.getBoundingClientRect().height) / 2}px`;
+          term.element.style.left = `${leftOffset}px`;
+          leftOffset += term.element.getBoundingClientRect().width + 16;
+        }
+
+        if (termIndex == stats.terms.length) break;
+        rowIndex++;
+        rowTopPx += rowHeightPx;
+      }
+    },
+
+    getExampleTerms() {
+      return {
+        terms: [
+          { text: "Answer 1", count: 4 },
+          { text: "Answer 2", count: 2 },
+          { text: "Answer 3", count: 1 },
+        ],
+        totalCount: 7,
+      };
+    },
+
     gotoSlide(slideIndex) {
       slideIndex = Math.max(
         0,

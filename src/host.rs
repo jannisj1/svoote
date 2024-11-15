@@ -61,12 +61,12 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                 ."ml-6 mb-3 text-slate-400 text-sm" { "Allow participants to set a custom name." }
                                 hr ."mb-3";*/
                                 a download="poll.json" ":href"="'data:application/json;charset=utf-8,' + JSON.stringify(poll)"
-                                    ."mb-2 flex gap-2 items-center text-slate-600"
+                                    ."mb-2 flex gap-2 items-center text-slate-600 hover:text-slate-900"
                                 {
                                     ."size-4" { (SvgIcon::Save.render()) }
                                     "Save presentation (.json)"
                                 }
-                                label ."mb-3 flex gap-2 items-center text-slate-600 cursor-pointer" {
+                                label ."mb-3 flex gap-2 items-center text-slate-600 cursor-pointer hover:text-slate-900" {
                                     ."size-4" { (SvgIcon::Folder.render()) }
                                     "Load presentation (.json)"
                                     input type="file" accept=".json" "@change"="importJsonFile($event);" ."hidden";
@@ -151,7 +151,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                 ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) }
                                                 "Multiple choice"
                                             }
-                                            button "@click"="slide.type = 'ft'; save(); document.getElementById('question-input-' + slideIndex).focus();" ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
+                                            button "@click"="slide.type = 'ft'; slide.stats = getExampleTerms(); save(); document.getElementById('question-input-' + slideIndex).focus();" ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
                                                 ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                             {
                                                 ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
@@ -229,10 +229,18 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                     }
                                 }
                                 template x-if="slide.type == 'ft'" {
-                                    div {
+                                    div ."relative h-full" {
                                         div ."pl-2 flex gap-2 items-center text-slate-500" {
                                             div ."size-4 shrink-0" { (SvgIcon::Edit3.render()) }
                                             "Free text: Participants can submit their own answer."
+                                        }
+                                        div ."relative my-[2.5rem] h-[calc(90%-4rem)]" x-effect="$nextTick(() => { renderWordCloud($el, slide.stats); });" {
+                                            template x-for="term in slide.stats.terms" {
+                                                div ."absolute size-fit inset-0 font-bold"
+                                                    x-text="term.text"
+                                                    ":style"="`font-size: ${ 0.5 + 2.5 * term.count / slide.stats.totalCount }rem;`"
+                                                    {}
+                                            }
                                         }
                                         /*div ."mt-24 text-slate-500 text-center text-sm"  { "Correct answers:" }
                                         div ."mx-auto my-4 max-w-2xl flex justify-center flex-wrap gap-4" {
