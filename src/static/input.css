@@ -6,25 +6,11 @@
     display: none !important;
 }
 
-.word-cloud-object {
-    top: var(--top-rem-end);
-    font-size: var(--font-size-end);
-    color: var(--text-color-end);
-    animation-name: word-cloud-transition;
-    animation-duration: 0.5s;
-    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+.scrollbar-hidden::-webkit-scrollbar {
+    display: none;
 }
 
-@keyframes word-cloud-transition {
-    from {
-        top: var(--top-rem-start);
-        font-size: var(--font-size-start);
-        color: var(--text-color-start);
-    }
-
-    to {
-        top: var(--top-rem-end);
-        font-size: var(--font-size-end);
-        color: var(--text-color-end);
-    }
+.scrollbar-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }

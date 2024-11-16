@@ -110,7 +110,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                             { ."size-3 bg-slate-50" {} }
                     }
                 }
-                div x-ref="outerSlideContainer" ."px-2 py-4 sm:px-12 overflow-x-hidden overflow-y-scroll" {
+                div x-ref="outerSlideContainer" ."px-2 py-4 sm:px-12 overflow-x-hidden overflow-y-scroll scrollbar-hidden" {
                     div ."relative h-[36rem]" {
                         template x-for="(slide, slideIndex) in poll.slides" {
                             div
@@ -234,14 +234,17 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                             div ."size-4 shrink-0" { (SvgIcon::Edit3.render()) }
                                             "Free text: Participants can submit their own answer."
                                         }
-                                        div ."relative mx-auto my-[2.5rem] h-[calc(90%-4rem)] w-full max-w-2xl overflow-hidden" x-effect="$nextTick(() => { renderWordCloud($el, slide.stats); });"
-                                        "@resize.window"="$nextTick(() => { renderWordCloud($el, slide.stats); })"
-                                        "@leavegridview.window"="setTimeout(() => { renderWordCloud($el, slide.stats); }, 500);"
+                                        div ."relative mx-auto my-[2.5rem] h-[calc(90%-4rem)] w-full max-w-2xl"
+                                            x-effect="$nextTick(() => { renderWordCloud($el, slide.stats); });"
+                                            "@resize.window"="$nextTick(() => { renderWordCloud($el, slide.stats); })"
+                                            "@leavegridview.window"="setTimeout(() => { renderWordCloud($el, slide.stats); }, 500);"
                                         {
-                                            template x-for="term in slide.stats.terms" {
-                                                div ."absolute size-fit inset-0 font-bold leading-none whitespace-nowrap"
+                                            template x-for="(term, termIndex) in slide.stats.terms" {
+                                                div ."absolute size-fit inset-0 font-bold tracking-tight leading-none whitespace-nowrap"
                                                     x-text="term.text"
-                                                    ":style"="`font-size: ${ 0.5 + 2.5 * term.count / slide.stats.maxCount }rem;`"
+                                                    ":class"="['text-rose-600', 'text-cyan-600', 'text-lime-600', 'text-fuchsia-600', 'text-slate-600', 'text-teal-600'][termIndex % 6]"
+                                                    ":title"="`${term.text}: ${term.count}`"
+                                                    ":style"="`font-size: ${ 0.5 + 2.25 * term.count / slide.stats.maxCount }rem; opacity: ${0.7 + 0.3 * term.count / slide.stats.maxCount };`"
                                                     {}
                                             }
                                         }

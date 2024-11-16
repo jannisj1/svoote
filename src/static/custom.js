@@ -138,6 +138,7 @@ document.addEventListener("alpine:init", () => {
       let containerHeight = container.getBoundingClientRect().height;
       let containerWidth = container.getBoundingClientRect().width;
       const HORIZONTAL_GAP = 16;
+      const VERTICAL_GAP = 12;
 
       let sortedTerms = [];
       for (i = 0; i < stats.terms.length; i++) {
@@ -157,6 +158,7 @@ document.addEventListener("alpine:init", () => {
       for (termIndex = 0; termIndex < sortedTerms.length; termIndex++) {
         let term = sortedTerms[termIndex];
         let termFoundPlace = false;
+        term.element.classList.remove("invisible");
 
         for (rowIndex = 0; rowIndex < rows.length; rowIndex++) {
           let row = rows[rowIndex];
@@ -170,14 +172,17 @@ document.addEventListener("alpine:init", () => {
         }
 
         if (!termFoundPlace) {
-          if (rowHeightSum + term.height <= containerHeight) {
+          if (rowHeightSum + term.height + VERTICAL_GAP <= containerHeight) {
+            let height = term.height + VERTICAL_GAP;
             rows.push({
               terms: [term],
-              height: Math.max(term.height, 25),
+              height: height,
               width: term.width,
             });
 
-            rowHeightSum += term.height;
+            rowHeightSum += height;
+          } else {
+            term.element.classList.add("invisible");
           }
         }
       }
@@ -229,55 +234,6 @@ document.addEventListener("alpine:init", () => {
           { text: "liberal cookie policy", count: 2 },
           { text: "your responsibilities", count: 4 },
           { text: "enzuzo", count: 9 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
-          { text: "maga", count: 2 },
           { text: "maga", count: 2 },
           { text: "germany", count: 6 },
         ],
