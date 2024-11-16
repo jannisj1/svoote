@@ -129,44 +129,80 @@ document.addEventListener("alpine:init", () => {
     },
 
     renderWordCloud(container, stats) {
-      let rowIndex = 0;
-      let rowTopPx = 0;
-      let termIndex = 0;
+      if (container == null && stats == null) return;
+
+      if (this.gridView) {
+        return;
+      }
+
+      let containerHeight = container.getBoundingClientRect().height;
       let containerWidth = container.getBoundingClientRect().width;
+      const HORIZONTAL_GAP = 16;
 
-      while (true) {
-        let rowTerms = [];
-        while (termIndex < stats.terms.length) {
-          rowTerms.push({
-            term: stats.terms[termIndex],
-            element: container.children[termIndex + 1],
-          });
+      let sortedTerms = [];
+      for (i = 0; i < stats.terms.length; i++) {
+        let element = container.children[i + 1];
+        sortedTerms.push({
+          term: stats.terms[i],
+          element: element,
+          width: element.getBoundingClientRect().width,
+          height: element.getBoundingClientRect().height,
+        });
+      }
+      sortedTerms.sort((a, b) => b.term.count - a.term.count);
 
-          termIndex++;
-          if (rowTerms.length > rowIndex) break;
+      let rows = [];
+      let rowHeightSum = 0;
+
+      for (termIndex = 0; termIndex < sortedTerms.length; termIndex++) {
+        let term = sortedTerms[termIndex];
+        let termFoundPlace = false;
+
+        for (rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+          let row = rows[rowIndex];
+          if (row.width + term.width + HORIZONTAL_GAP < containerWidth) {
+            if (row.terms.length % 2 == 1) row.terms.push(term);
+            else row.terms.unshift(term);
+            row.width += term.width + HORIZONTAL_GAP;
+            termFoundPlace = true;
+            break;
+          }
         }
 
-        let rowHeightPx = 0;
-        let rowWidthPx = 0;
-        for (term of rowTerms) {
-          let termHeight = term.element.getBoundingClientRect().height;
-          if (termHeight > rowHeightPx) rowHeightPx = termHeight;
+        if (!termFoundPlace) {
+          if (rowHeightSum + term.height <= containerHeight) {
+            rows.push({
+              terms: [term],
+              height: Math.max(term.height, 25),
+              width: term.width,
+            });
 
-          rowWidthPx += term.element.getBoundingClientRect().width;
+            rowHeightSum += term.height;
+          }
         }
+      }
 
-        rowWidthPx += (rowTerms.length - 1) * 16;
+      let rowSequence = [];
+      let addBack = true;
+      for (i = 0; i < rows.length; i++) {
+        if (addBack) rowSequence.push(i);
+        else rowSequence.unshift(i);
+        addBack = !addBack;
+      }
 
-        let leftOffset = containerWidth / 2 - rowWidthPx / 2;
-        for (term of rowTerms) {
-          term.element.style.top = `${rowTopPx + (rowHeightPx - term.element.getBoundingClientRect().height) / 2}px`;
+      let top = (containerHeight - rowHeightSum) / 2;
+
+      for (i = 0; i < rows.length; i++) {
+        let row = rows[rowSequence[i]];
+
+        let leftOffset = containerWidth / 2 - row.width / 2;
+        for (term of row.terms) {
+          term.element.style.top = `${top + (row.height - term.height) / 2}px`;
           term.element.style.left = `${leftOffset}px`;
-          leftOffset += term.element.getBoundingClientRect().width + 16;
+          leftOffset += term.width + HORIZONTAL_GAP;
         }
 
-        if (termIndex == stats.terms.length) break;
-        rowIndex++;
-        rowTopPx += rowHeightPx;
+        top += row.height;
       }
     },
 
@@ -176,8 +212,77 @@ document.addEventListener("alpine:init", () => {
           { text: "Answer 1", count: 4 },
           { text: "Answer 2", count: 2 },
           { text: "Answer 3", count: 1 },
+          { text: "qr-code 3", count: 3 },
+          { text: "question", count: 15 },
+          { text: "free text", count: 9 },
+          { text: "own answer", count: 3 },
+          { text: "join presentation", count: 8 },
+          { text: "how do i use", count: 3 },
+          { text: "svoote.com", count: 20 },
+          { text: "grid view", count: 2 },
+          { text: "start poll", count: 2 },
+          { text: "add slides quickly", count: 1 },
+          { text: "finished presentation", count: 2 },
+          { text: "stop poll top right", count: 5 },
+          { text: "agreement", count: 4 },
+          { text: "terms of service", count: 1 },
+          { text: "liberal cookie policy", count: 2 },
+          { text: "your responsibilities", count: 4 },
+          { text: "enzuzo", count: 9 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "maga", count: 2 },
+          { text: "germany", count: 6 },
         ],
-        totalCount: 7,
+        totalCount: 108,
+        maxCount: 20,
       };
     },
 
@@ -201,7 +306,7 @@ document.addEventListener("alpine:init", () => {
 
     moveSlide(targetIndex, before) {
       let temp = this.poll.slides.splice(this.reorderedSlideIndex, 1);
-      if (targetIndex > this.reorderedSlideIndex) targetIndex -= 1;
+      if (targetIndex >= this.reorderedSlideIndex) targetIndex -= 1;
       if (before) this.poll.slides.splice(targetIndex, 0, temp[0]);
       else this.poll.slides.splice(targetIndex + 1, 0, temp[0]);
     },

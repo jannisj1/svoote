@@ -78,7 +78,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                 }
                             }
                         }
-                        button "@click"="gridView = !gridView"
+                        button "@click"="gridView = !gridView; if (!gridView) $dispatch('leavegridview');"
                             ."size-6" ":class"="gridView && 'text-indigo-500'"
                             title="Grid view" { (SvgIcon::Grid.render()) }
                         button "@click"="poll.slides.splice(poll.slides.length, 0, createSlide('undefined')); $nextTick(() => { gotoSlide(poll.slides.length - 1) });"
@@ -116,14 +116,14 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                             div
                                 ":class"="calculateSlideClasses(slideIndex, poll.activeSlide, gridView)"
                                 ":style"="calculateSlideStyle(slideIndex, poll.activeSlide, gridView)"
-                                "@click"="if (slideIndex != poll.activeSlide) gotoSlide(slideIndex); if (gridView) { gridView = false; $refs.outerSlideContainer.scrollTo({ top: 0, behavior: 'smooth' }); }"
+                                "@click"="if (slideIndex != poll.activeSlide) gotoSlide(slideIndex); if (gridView) { gridView = false; $refs.outerSlideContainer.scrollTo({ top: 0, behavior: 'smooth' }); $dispatch('leavegridview'); }"
                             {
                                 h1 x-show="gridView" x-cloak x-text="'Slide ' + (slideIndex + 1)" ."absolute text-5xl text-slate-500 -top-20 left-[45%]" {}
                                 button "@click"="isReordering = !isReordering; reorderedSlideIndex = slideIndex; $event.stopPropagation();"
                                     x-show="!isLive && gridView && (!isReordering || slideIndex == reorderedSlideIndex)" x-cloak
                                     ."absolute top-6 right-8 size-28 p-5 z-30 rounded-full text-slate-400 bg-slate-50 hover:bg-slate-100 shadow-2xl"
                                     { (SvgIcon::Move.render()) }
-                                button "@click"="poll.slides.splice(slideIndex, 1); if(poll.activeSlide == poll.slides.length) poll.activeSlide -= 1; $event.stopPropagation();"
+                                button "@click"="poll.slides.splice(slideIndex, 1); gotoSlide(poll.activeSlide); $event.stopPropagation();"
                                     x-show="!isLive && gridView && !isReordering" x-cloak
                                     ."absolute top-6 right-44 z-30 size-28 p-5 rounded-full text-slate-400 bg-slate-50 hover:bg-slate-100 shadow-2xl"
                                     { (SvgIcon::Trash2.render()) }
@@ -234,11 +234,14 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                             div ."size-4 shrink-0" { (SvgIcon::Edit3.render()) }
                                             "Free text: Participants can submit their own answer."
                                         }
-                                        div ."relative my-[2.5rem] h-[calc(90%-4rem)]" x-effect="$nextTick(() => { renderWordCloud($el, slide.stats); });" {
+                                        div ."relative mx-auto my-[2.5rem] h-[calc(90%-4rem)] w-full max-w-2xl overflow-hidden" x-effect="$nextTick(() => { renderWordCloud($el, slide.stats); });"
+                                        "@resize.window"="$nextTick(() => { renderWordCloud($el, slide.stats); })"
+                                        "@leavegridview.window"="setTimeout(() => { renderWordCloud($el, slide.stats); }, 500);"
+                                        {
                                             template x-for="term in slide.stats.terms" {
-                                                div ."absolute size-fit inset-0 font-bold"
+                                                div ."absolute size-fit inset-0 font-bold leading-none whitespace-nowrap"
                                                     x-text="term.text"
-                                                    ":style"="`font-size: ${ 0.5 + 2.5 * term.count / slide.stats.totalCount }rem;`"
+                                                    ":style"="`font-size: ${ 0.5 + 2.5 * term.count / slide.stats.maxCount }rem;`"
                                                     {}
                                             }
                                         }
