@@ -20,6 +20,7 @@ pub struct LivePoll {
     pub current_item_start_time: tokio::time::Instant,
     pub start_poll_channel_sender: Option<oneshot::Sender<()>>,
     pub set_slide_index_channel_sender: mpsc::Sender<usize>,
+    pub slide_change_notification_channel_receiver: broadcast::Receiver<usize>,
     pub stats_change_notification_channel_receiver: broadcast::Receiver<usize>,
     pub exit_poll_channel_sender: mpsc::Sender<()>,
     pub leaderboard_enabled: bool,
@@ -36,6 +37,8 @@ impl LivePoll {
         let (start_poll_channel_sender, start_poll_channel_receiver) = oneshot::channel::<()>();
         let (set_slide_index_channel_sender, mut set_slide_index_channel_receiver) =
             mpsc::channel(16);
+        let (slide_change_notification_channel_sender, slide_change_notification_channel_receiver) =
+            broadcast::channel(16);
         let (stats_change_notification_channel_sender, stats_change_notification_channel_receiver) =
             broadcast::channel(16);
         let (exit_poll_channel_sender, mut exit_poll_channel_receiver) = mpsc::channel(16);
@@ -49,6 +52,7 @@ impl LivePoll {
             current_item_start_time: Instant::now(),
             start_poll_channel_sender: Some(start_poll_channel_sender),
             set_slide_index_channel_sender,
+            slide_change_notification_channel_receiver,
             stats_change_notification_channel_receiver,
             exit_poll_channel_sender,
             leaderboard_enabled,
@@ -76,6 +80,7 @@ impl LivePoll {
                             live_poll.current_slide_index = slide_index;
                             live_poll.current_item_start_time = Instant::now();
 
+                            let _ = slide_change_notification_channel_sender.send(slide_index);
                             let _ = stats_change_notification_channel_sender.send(slide_index);
                         }
                     }

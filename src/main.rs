@@ -15,6 +15,7 @@ mod session_id;
 mod slide;
 mod static_file;
 mod svg_icons;
+mod wsmessage;
 
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
@@ -42,6 +43,7 @@ fn main() {
             .route("/start_poll", post(host::post_start_poll))
             .route("/stop_poll/:poll_id", post(host::post_stop_poll))
             .route("/ws/host/:poll_id", get(host::host_socket))
+            .route("/ws/p/:poll_id", get(play::play_socket))
             //.route("/about", get(about_page::get_about_page))
             /*.route("/submit_mc_answer/:poll_id", post(play::post_mc_answer))
             .route(

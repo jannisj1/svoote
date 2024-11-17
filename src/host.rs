@@ -10,7 +10,6 @@ use axum::{
 
 use axum_extra::extract::CookieJar;
 use maud::html;
-use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use smartstring::{Compact, SmartString};
 use tokio::select;
@@ -25,6 +24,7 @@ use crate::{
     slide::{FreeTextLiveAnswers, MultipleChoiceLiveAnswers, Slide, SlideType},
     static_file,
     svg_icons::SvgIcon,
+    wsmessage::WSMessage,
 };
 
 pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
@@ -240,11 +240,11 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                             "@leavegridview.window"="setTimeout(() => { renderWordCloud($el, slide.stats); }, 500);"
                                         {
                                             template x-for="(term, termIndex) in slide.stats.terms" {
-                                                div ."absolute size-fit inset-0 font-bold tracking-tight leading-none whitespace-nowrap"
+                                                div ."absolute size-fit inset-0 font-bold leading-none whitespace-nowrap"
                                                     x-text="term.text"
                                                     ":class"="['text-rose-600', 'text-cyan-600', 'text-lime-600', 'text-fuchsia-600', 'text-slate-600', 'text-teal-600'][termIndex % 6]"
                                                     ":title"="`${term.text}: ${term.count}`"
-                                                    ":style"="`font-size: ${ 0.5 + 2.25 * term.count / slide.stats.maxCount }rem; opacity: ${0.7 + 0.3 * term.count / slide.stats.maxCount };`"
+                                                    ":style"="`font-size: ${ 0.5 + 2.25 * term.count / slide.stats.maxCount }rem; opacity: ${0.7 + 0.3 * term.count / slide.stats.maxCount }; letter-spacing: ${0.02 - 0.06 * (term.count / slide.stats.maxCount) }em; font-weight: ${500 + 300 * (term.count / slide.stats.maxCount) };`"
                                                     {}
                                             }
                                         }
@@ -443,30 +443,6 @@ pub async fn host_socket(
     session_id::assert_equal_ids(&session_id, &live_poll.lock().unwrap().host_session_id)?;
 
     return Ok(ws.on_upgrade(|socket| handle_host_socket(socket, live_poll)));
-}
-
-#[derive(Deserialize, Serialize)]
-struct WSMessage {
-    pub cmd: SmartString<Compact>,
-    pub data: Value,
-}
-
-impl Into<Message> for WSMessage {
-    fn into(self) -> Message {
-        return Message::Text(serde_json::to_string(&self).unwrap());
-    }
-}
-
-impl WSMessage {
-    fn parse(message: Message) -> Option<Self> {
-        if let Ok(text) = message.into_text() {
-            if let Ok(msg) = serde_json::from_str::<WSMessage>(&text) {
-                return Some(msg);
-            }
-        }
-
-        return None;
-    }
 }
 
 async fn handle_host_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll>>) {

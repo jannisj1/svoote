@@ -344,4 +344,28 @@ document.addEventListener("alpine:init", () => {
       }
     },
   }));
+
+  Alpine.data("participant", () => ({
+    currentSlide: null,
+    slideIndex: null,
+    socket: null,
+
+    init() {
+      const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws/p/${document.code}`;
+
+      this.socket = new ReconnectingWebSocket(wsUrl);
+      this.socket.onopen = (_e) => {};
+      this.socket.onmessage = (e) => {
+        let msg = JSON.parse(e.data);
+
+        switch (msg.cmd) {
+          case "updateSlide":
+            console.log(msg);
+            this.currentSlide = msg.data.slide;
+            this.slideIndex = msg.data.slideIndex;
+            break;
+        }
+      };
+    },
+  }));
 });

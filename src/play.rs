@@ -2,19 +2,30 @@ use crate::{
     app_error::AppError,
     config::{CUSTOM_PLAYER_NAME_LENGTH_LIMIT, LIVE_POLL_PARTICIPANT_LIMIT},
     html_page::{self, render_header},
+    live_poll::LivePoll,
     live_poll_store::{ShortID, LIVE_POLL_STORE},
     session_id,
+    slide::{Slide, SlideType},
+    wsmessage::WSMessage,
 };
 use axum::{
-    extract::Query,
+    extract::{
+        ws::{Message, WebSocket},
+        Path, Query, WebSocketUpgrade,
+    },
     response::{IntoResponse, Response},
 };
 use axum_extra::extract::CookieJar;
 
 use maud::{html, PreEscaped};
 use serde::Deserialize;
+use serde_json::{json, Value};
 use smartstring::{Compact, SmartString};
-use std::fmt::Write;
+use std::{
+    fmt::Write,
+    sync::{Arc, Mutex},
+};
+use tokio::select;
 
 #[derive(Deserialize)]
 pub struct PlayPageParams {
@@ -68,63 +79,24 @@ pub async fn get_play_page(
             Some(player_index) => {
                 let _player = live_poll.get_player(player_index);
                 html! {
-                    /*(render_header(html! {
-                        (render_name_avatar_button(live_poll.leaderboard_enabled, player.get_name(), player.get_avatar_svg()))
-                        @if live_poll.leaderboard_enabled {
-                            dialog #participant-dialog
-                            {
-                                ."max-w-64 p-4 bg-slate-700 rounded-lg" {
-                                    ."mb-2 flex justify-end" {
-                                        button
-                                            onclick="document.getElementById('participant-dialog').close()"
-                                            ."size-5 text-red-500"
-                                        { (SvgIcon::X.render()) }
-                                    }
-                                    form
-                                        hx-post={ "/name_avatar/" (params.c) }
-                                        hx-target="#name-avatar-button"
-                                        hx-swap="outerHTML"
-                                        "hx-on::after-request"="document.getElementById('participant-dialog').close()"
-                                            //onsubmit="submitParticipantNameDialog(event)"
-                                        ."flex flex-col"
-                                    {
-                                        label
-                                            for="input-txt-participant-modal-name"
-                                            ."mb-1 text-slate-300"
-                                        { "Name" }
-                                        input type="text"
-                                            ."mb-1 px-4 py-1.5 flex-1 text-slate-700 bg-slate-100 rounded-lg"
-                                            #input-txt-participant-modal-name
-                                            name="name"
-                                            maxlength=(CUSTOM_PLAYER_NAME_LENGTH_LIMIT)
-                                            placeholder=(player.get_generated_name())
-                                            value=(player.get_custom_name().as_ref().unwrap_or(&SmartString::new()))
-                                            disabled[!live_poll.allow_custom_player_names];
-                                        @if !live_poll.allow_custom_player_names {
-                                            ."text-slate-300 text-sm" { "The host has turned off custom names." }
-                                        }
-                                        ."mb-4" {}
-                                        ."mb-2 text-slate-300" { "Avatar" }
-                                        ."mb-6 flex justify-around flex-wrap gap-4" {
-                                            @for (i, avatar) in AVATARS.iter().enumerate() {
-                                                label {
-                                                    input type="radio" name="avatar" value=(i) checked[player.get_avatar_index() == i] ."peer hidden";
-                                                    ."size-9 p-0.5 ring-slate-100 rounded peer-checked:ring-2" { (PreEscaped(avatar.1)) }
-                                                }
-                                            }
-                                        }
-                                        ."flex justify-end" {
-                                            button type="submit" ."bg-slate-100 px-4 py-2 text-slate-800 rounded hover:bg-slate-300" { "Submit" }
-                                        }
-                                    }
-                                }
-                            }
+                    (render_header(html!{}))
+                    script { "document.code = " (poll_id.unwrap_or(0)) ";" }
+                    div x-data="participant" {
+                        template x-if="currentSlide == null" {
+                            div { "Welcome" }
                         }
-                    }))*/
+                        template x-if="currentSlide.slideType == 'mc'" {
+                            div { "Multiple choice" }
+                        }
+                        template x-if="currentSlide.slideType == 'ft'" {
+                            div { "Free text" }
+                        }
+                    }
                 }
             }
             None => {
                 html! {
+                    (render_header(html!{}))
                     ."my-36 text-center text-slate-500" {
                         "The participant limit for this poll was reached (" (LIVE_POLL_PARTICIPANT_LIMIT) " participants)."
                     }
@@ -403,3 +375,102 @@ pub async fn post_name_avatar(
         render_name_avatar_button(leaderboard_enabled, player_name, avatar_svg).into_response(),
     );
 }*/
+
+pub async fn play_socket(
+    ws: WebSocketUpgrade,
+    Path(poll_id): Path<ShortID>,
+    cookies: CookieJar,
+) -> Result<Response, AppError> {
+    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
+    //session_id::assert_equal_ids(&session_id, &live_poll.lock().unwrap().host_session_id)?;
+
+    return Ok(ws.on_upgrade(|socket| handle_play_socket(socket, live_poll)));
+}
+
+async fn handle_play_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll>>) {
+    let (mut _stats_updated_receiver, mut slide_index_change_receiver) = {
+        let live_poll = live_poll.lock().unwrap();
+
+        (
+            live_poll
+                .stats_change_notification_channel_receiver
+                .resubscribe(),
+            live_poll
+                .slide_change_notification_channel_receiver
+                .resubscribe(),
+        )
+    };
+
+    let msg = {
+        let mut live_poll = live_poll.lock().unwrap();
+        let current_slide_index = live_poll.current_slide_index;
+        let slide = live_poll.get_current_slide();
+        create_slide_ws_message(current_slide_index, slide).into()
+    };
+    let _ = socket.send(msg).await;
+
+    loop {
+        select! {
+            msg = socket.recv() => {
+                if let Some(Ok(_msg)) = msg {
+                /*if let Some(msg) = WSMessage::parse(msg) {
+                        match msg.cmd.as_ref() {
+                            "gotoSlide" => {
+                                let slide_index = msg.data["slideIndex"].as_u64().unwrap_or(0u64) as usize;
+                                let _ = slide_index_sender.send(slide_index).await;
+                            }
+                            _ => {}
+                        }
+                    }*/
+                } else {
+                    return;
+                }
+            }
+            slide_index = slide_index_change_receiver.recv() => {
+                if let Ok(slide_index) = slide_index {
+                    let msg = {
+                        let mut live_poll = live_poll.lock().unwrap();
+                        let slide = live_poll.get_current_slide();
+                        create_slide_ws_message(slide_index, slide).into()
+                    };
+                    let _  = socket.send(msg).await;
+                } else {
+                    return;
+                }
+            }
+            _ = tokio::time::sleep(tokio::time::Duration::from_secs(15)) => {
+                if socket.send(Message::Ping(Vec::new())).await.is_err() {
+                    return;
+                }
+            }
+        };
+    }
+}
+
+fn create_slide_ws_message(slide_index: usize, slide: &Slide) -> WSMessage {
+    let slide_json = match &slide.slide_type {
+        SlideType::MultipleChoice(answers) => {
+            json!({
+                "slideType": "mc",
+                "question": slide.question,
+                "answers": answers.answers.iter().map(|(answer_text, _is_correct)| json!({ "text": answer_text })).collect::<Vec<Value>>(),
+            })
+        }
+        SlideType::FreeText(_answers) => {
+            json!({
+                "slideType": "ft",
+                "question": slide.question,
+            })
+        }
+        _ => Value::Null,
+    };
+
+    return WSMessage {
+        cmd: SmartString::from("updateSlide"),
+        data: json!({
+            "slideIndex": slide_index,
+            "slide": slide_json,
+        }),
+    };
+}
