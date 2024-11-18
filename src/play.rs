@@ -2,10 +2,12 @@ use crate::{
     app_error::AppError,
     config::{CUSTOM_PLAYER_NAME_LENGTH_LIMIT, LIVE_POLL_PARTICIPANT_LIMIT},
     html_page::{self, render_header},
+    illustrations::Illustrations,
     live_poll::LivePoll,
     live_poll_store::{ShortID, LIVE_POLL_STORE},
     session_id,
     slide::{Slide, SlideType},
+    svg_icons::SvgIcon,
     wsmessage::WSMessage,
 };
 use axum::{
@@ -29,13 +31,14 @@ use tokio::select;
 
 #[derive(Deserialize)]
 pub struct PlayPageParams {
-    pub c: Option<String>,
+    pub c: Option<SmartString<Compact>>,
 }
 
 pub async fn get_play_page(
     Query(params): Query<PlayPageParams>,
     cookies: CookieJar,
 ) -> Result<Response, AppError> {
+    let poll_id_str = params.c.clone().unwrap_or(SmartString::new());
     let poll_id: Option<ShortID> = params.c.map(|poll_id| poll_id.parse().ok()).flatten();
 
     let (session_id, cookies) = session_id::get_or_create_session_id(cookies);
@@ -47,21 +50,22 @@ pub async fn get_play_page(
         let html = html_page::render_html_page(
             "Svoote",
             html! {
-                (render_header(html! {}))
-                div ."flex justify-center" {
-                    form ."max-w-sm mx-4 mt-12 md:mt-24 px-8 py-10 border rounded-lg" {
-                        label for="code" ."text-2xl text-slate-600 font-bold tracking-tight" { "Join now" }
-                        input #"code" name="c" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="Code"
-                            ."mt-6 mb-2 px-3 py-1.5 w-full text-lg text-slate-800 border-2 border-slate-800 focus:border-indigo-500 rounded-lg outline-none";
-                        @match poll_id {
-                            Some(c) => {
-                                div ."mb-6 text-xs text-red-400" { "No poll with code " (c) " found." }
-                            }
-                            None => {
-                                div ."mb-6 text-xs text-slate-500" { "Enter the 4-digit code you see in front." }
-                            }
-                        };
-                        button type="submit" ."w-full py-1.5 text-center text-lg text-slate-50 font-bold bg-indigo-500 rounded-lg" { "Join" }
+                div ."my-24 mx-4 sm:mx-14" {
+                    form ."max-w-64 mx-auto" {
+                        div ."flex items-baseline justify-center gap-1.5 mb-8 text-3xl font-semibold tracking-tight" {
+                            "Svoote" ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
+                        }
+                        div ."mb-2 text-center text-sm text-slate-500" { "Enter the 4-digit code you see in front." }
+                        input name="c" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="Code" value=(poll_id_str)
+                            ."w-full px-3 py-1.5 w-40 text-slate-700 text-lg font-medium border-2 border-slate-500 focus:border-slate-700 rounded-lg outline-none";
+                        @if let Some(c) = poll_id { div ."mt-1 text-sm text-red-500" { "No poll with code " (c) " found." } }
+                        button type="submit" ."w-full mt-6 py-1.5 text-center text-lg text-white font-bold bg-slate-700 hover:bg-slate-500 rounded-lg" { "Join" }
+                    }
+                    hr ."my-12 max-w-64 mx-auto border-slate-700";
+                    div ."max-w-64 mx-auto" {
+                        div ."mb-4" { (Illustrations::TeamCollaboration.render()) }
+                        h1 ."mb-5 text-2xl text-center font-bold tracking-tight" { "Want to create your own polls?" }
+                        a href="/" ."block w-fit mx-auto px-4 py-1 text-indigo-600 font-bold tracking-tight border rounded-full shadow hover:bg-slate-100" { "Start now →"}
                     }
                 }
             },
