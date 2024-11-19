@@ -50,9 +50,9 @@ pub async fn get_play_page(
         let html = html_page::render_html_page(
             "Svoote",
             html! {
-                div ."my-24 mx-4 sm:mx-14" {
-                    form ."max-w-64 mx-auto" {
-                        div ."flex items-baseline justify-center gap-1.5 mb-8 text-3xl font-semibold tracking-tight" {
+                div ."my-16 mx-4 sm:mx-14" {
+                    form ."w-full max-w-64 mx-auto" {
+                        div ."flex items-baseline justify-center gap-2 mb-8 text-3xl font-semibold tracking-tight" {
                             "Svoote" ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
                         }
                         div ."mb-2 text-center text-sm text-slate-500" { "Enter the 4-digit code you see in front." }
@@ -61,7 +61,7 @@ pub async fn get_play_page(
                         @if let Some(c) = poll_id { div ."mt-1 text-sm text-red-500" { "No poll with code " (c) " found." } }
                         button type="submit" ."w-full mt-6 py-1.5 text-center text-lg text-white font-bold bg-slate-700 hover:bg-slate-500 rounded-lg" { "Join" }
                     }
-                    hr ."my-12 max-w-64 mx-auto border-slate-700";
+                    hr ."my-16 max-w-64 mx-auto border-slate-700";
                     div ."max-w-64 mx-auto" {
                         div ."mb-4" { (Illustrations::TeamCollaboration.render()) }
                         h1 ."mb-5 text-2xl text-center font-bold tracking-tight" { "Want to create your own polls?" }
@@ -83,17 +83,38 @@ pub async fn get_play_page(
             Some(player_index) => {
                 let _player = live_poll.get_player(player_index);
                 html! {
-                    (render_header(html!{}))
                     script { "document.code = " (poll_id.unwrap_or(0)) ";" }
                     div x-data="participant" {
-                        template x-if="currentSlide == null" {
-                            div { "Welcome" }
-                        }
-                        template x-if="currentSlide.slideType == 'mc'" {
-                            div { "Multiple choice" }
-                        }
-                        template x-if="currentSlide.slideType == 'ft'" {
-                            div { "Free text" }
+                        div ."my-16 mx-4 sm:mx-14" {
+                            div ."w-full max-w-80 mx-auto" {
+                                div ."flex items-baseline justify-center gap-2 mb-8 text-3xl font-semibold tracking-tight" {
+                                    "Svoote" ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
+                                }
+                                template x-if="currentSlide.slideType == 'null'" { div {} }
+                                template x-if="currentSlide.slideType == 'mc'" {
+                                    div x-data="{ selectedAnswer: '' }" {
+                                        h1 x-text="currentSlide.question" ."mb-5 text-slate-700 font-medium leading-5" {}
+                                        template x-for="(answer, answerIndex) in currentSlide.answers" {
+                                            label ."w-full mb-4 px-3 py-1.5 flex gap-2 items-center ring-[1.5px] ring-slate-500 has-[:checked]:ring-indigo-500 has-[:checked]:ring-2 rounded-lg" {
+                                                input type="radio" x-model="selectedAnswer" ":value"="answerIndex" ."accent-indigo-500";
+                                                div ."text-slate-700 font-medium" x-text="answer.text" {}
+                                            }
+                                        }
+                                        button "@click"="submitMCAnswer(selectedAnswer)" ."w-full mt-6 py-1.5 text-center text-lg text-white font-bold bg-slate-700 hover:bg-slate-500 rounded-lg" { "Submit" }
+                                    }
+
+                                }
+                                template x-if="currentSlide.slideType == 'ft'" {
+                                    div ."mb-2 text-center text-sm text-slate-500" { "Enter the 4-digit code you see in front." }
+                                    input name="c" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="Code" value=(poll_id_str)
+                                        ."w-full px-3 py-1.5 w-40 text-slate-700 text-lg font-medium border-2 border-slate-500 focus:border-slate-700 rounded-lg outline-none";
+                                    div { "Free text" }
+                                }
+                            }
+                            //hr ."my-16 max-w-64 mx-auto border-slate-700";
+                            div ."max-w-64 mx-auto" {
+                                //a href="/" ."block w-fit mx-auto px-4 py-1 text-indigo-600 font-bold tracking-tight border rounded-full shadow hover:bg-slate-100" { "Start now →"}
+                            }
                         }
                     }
                 }
@@ -417,16 +438,17 @@ async fn handle_play_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll
     loop {
         select! {
             msg = socket.recv() => {
-                if let Some(Ok(_msg)) = msg {
-                /*if let Some(msg) = WSMessage::parse(msg) {
+                if let Some(Ok(msg)) = msg {
+                    if let Some(msg) = WSMessage::parse(msg) {
                         match msg.cmd.as_ref() {
-                            "gotoSlide" => {
-                                let slide_index = msg.data["slideIndex"].as_u64().unwrap_or(0u64) as usize;
-                                let _ = slide_index_sender.send(slide_index).await;
+                            "submitMCAnswer" => {
+                                let answer_index = msg.data["answerIndex"].as_u64().unwrap_or(0u64) as usize;
+                                info!("Answer: {}", answer_index);
+                                //let _ = slide_index_sender.send(slide_index).await;
                             }
                             _ => {}
                         }
-                    }*/
+                    }
                 } else {
                     return;
                 }
@@ -467,7 +489,11 @@ fn create_slide_ws_message(slide_index: usize, slide: &Slide) -> WSMessage {
                 "question": slide.question,
             })
         }
-        _ => Value::Null,
+        _ => {
+            json!({
+                "slideType": "empty",
+            })
+        }
     };
 
     return WSMessage {

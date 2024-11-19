@@ -346,7 +346,9 @@ document.addEventListener("alpine:init", () => {
   }));
 
   Alpine.data("participant", () => ({
-    currentSlide: null,
+    currentSlide: {
+      slideType: "empty",
+    },
     slideIndex: null,
     socket: null,
 
@@ -366,6 +368,15 @@ document.addEventListener("alpine:init", () => {
             break;
         }
       };
+    },
+
+    submitMCAnswer(answerIndex) {
+      this.socket.send(
+        JSON.stringify({
+          cmd: "submitMCAnswer",
+          data: { answerIndex: answerIndex },
+        }),
+      );
     },
   }));
 });
