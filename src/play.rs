@@ -87,17 +87,17 @@ pub async fn get_play_page(
                     div x-data="participant" {
                         div ."my-16 mx-4 sm:mx-14" {
                             div ."w-full max-w-80 mx-auto" {
-                                div ."flex items-baseline justify-center gap-2 mb-8 text-3xl font-semibold tracking-tight" {
+                                div ."flex items-baseline justify-center gap-2 mb-12 text-3xl font-semibold tracking-tight" {
                                     "Svoote" ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
                                 }
                                 template x-if="currentSlide.slideType == 'null'" { div {} }
                                 template x-if="currentSlide.slideType == 'mc'" {
                                     div x-data="{ selectedAnswer: '' }" {
-                                        h1 x-text="currentSlide.question" ."mb-5 text-slate-700 font-medium leading-5" {}
+                                        h1 x-text="currentSlide.question" ."mb-8 text-xl text-slate-800 font-medium tracking-tight leading-5" {}
                                         template x-for="(answer, answerIndex) in currentSlide.answers" {
-                                            label ."w-full mb-4 px-3 py-1.5 flex gap-2 items-center ring-[1.5px] ring-slate-500 has-[:checked]:ring-indigo-500 has-[:checked]:ring-2 rounded-lg" {
-                                                input type="radio" x-model="selectedAnswer" ":value"="answerIndex" ."accent-indigo-500";
-                                                div ."text-slate-700 font-medium" x-text="answer.text" {}
+                                            label ."w-full mb-5 px-4 py-2 flex gap-4 items-center ring-[3px] ring-slate-500 has-[:checked]:ring-4 has-[:checked]:ring-indigo-500 rounded-lg" {
+                                                input type="radio" x-model="selectedAnswer" ":value"="answerIndex" ."accent-indigo-500 size-[1.2rem]";
+                                                div ."text-slate-800 text-lg font-medium" x-text="answer.text" {}
                                             }
                                         }
                                         button "@click"="submitMCAnswer(selectedAnswer)" ."w-full mt-6 py-1.5 text-center text-lg text-white font-bold bg-slate-700 hover:bg-slate-500 rounded-lg" { "Submit" }

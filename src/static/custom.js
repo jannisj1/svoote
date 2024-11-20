@@ -371,10 +371,11 @@ document.addEventListener("alpine:init", () => {
     },
 
     submitMCAnswer(answerIndex) {
+      console.log(answerIndex);
       this.socket.send(
         JSON.stringify({
           cmd: "submitMCAnswer",
-          data: { answerIndex: answerIndex },
+          data: { answerIndex: Number(answerIndex) },
         }),
       );
     },

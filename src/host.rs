@@ -222,7 +222,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                                 ."absolute w-full text-slate-600 text-center font-medium -translate-y-7" {}
                                                         }
                                                     }
-                                                    div x-text="answer.text" ."h-12 mt-3 text-slate-600 text-sm text-center break-words" {}
+                                                    div x-text="answer.text" ."h-10 my-2 text-slate-600 text-sm text-center break-words overflow-hidden" {}
                                                 }
                                             }
                                         }
