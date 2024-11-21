@@ -128,8 +128,9 @@ document.addEventListener("alpine:init", () => {
         );
     },
 
-    renderWordCloud(container, stats) {
+    renderWordCloud(container, stats, slideIndex, activeSlide) {
       if (container == null && stats == null) return;
+      if (slideIndex !== activeSlide) return;
 
       if (this.gridView) {
         return;
@@ -214,28 +215,19 @@ document.addEventListener("alpine:init", () => {
     getExampleTerms() {
       return {
         terms: [
-          { text: "Answer 1", count: 4 },
-          { text: "Answer 2", count: 2 },
+          { text: "Answer 1", count: 2 },
+          { text: "Answer 2", count: 1 },
           { text: "Answer 3", count: 1 },
-          { text: "qr-code 3", count: 3 },
+          { text: "qr-code", count: 3 },
           { text: "question", count: 15 },
           { text: "free text", count: 9 },
-          { text: "own answer", count: 3 },
           { text: "join presentation", count: 8 },
-          { text: "how do i use", count: 3 },
           { text: "svoote.com", count: 20 },
-          { text: "grid view", count: 2 },
-          { text: "start poll", count: 2 },
-          { text: "add slides quickly", count: 1 },
-          { text: "finished presentation", count: 2 },
-          { text: "stop poll top right", count: 5 },
-          { text: "agreement", count: 4 },
-          { text: "terms of service", count: 1 },
-          { text: "liberal cookie policy", count: 2 },
-          { text: "your responsibilities", count: 4 },
-          { text: "enzuzo", count: 9 },
-          { text: "maga", count: 2 },
-          { text: "germany", count: 6 },
+          { text: "interaction", count: 4 },
+          { text: "privacy", count: 1 },
+          { text: "live polling", count: 4 },
+          { text: "multiple choice", count: 3 },
+          { text: "free text", count: 2 },
         ],
         totalCount: 108,
         maxCount: 20,
@@ -249,6 +241,8 @@ document.addEventListener("alpine:init", () => {
       );
       this.poll.activeSlide = slideIndex;
       this.save();
+
+      window.dispatchEvent(new Event("slidechange"));
 
       if (this.isLive) {
         this.socket.send(
@@ -370,14 +364,15 @@ document.addEventListener("alpine:init", () => {
       };
     },
 
-    submitMCAnswer(answerIndex) {
-      console.log(answerIndex);
-      this.socket.send(
-        JSON.stringify({
-          cmd: "submitMCAnswer",
-          data: { answerIndex: Number(answerIndex) },
+    async submitMCAnswer(answerIndex, poll_id) {
+      let res = await fetch("/submit_mc_answer/" + poll_id, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          answer_index: answerIndex,
+          slide_index: this.slideIndex,
         }),
-      );
+      });
     },
   }));
 });

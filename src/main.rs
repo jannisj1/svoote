@@ -45,8 +45,8 @@ fn main() {
             .route("/ws/host/:poll_id", get(host::host_socket))
             .route("/ws/p/:poll_id", get(play::play_socket))
             //.route("/about", get(about_page::get_about_page))
-            /*.route("/submit_mc_answer/:poll_id", post(play::post_mc_answer))
-            .route(
+            .route("/submit_mc_answer/:poll_id", post(play::post_mc_answer))
+            /*.route(
                 "/submit_free_text_answer/:poll_id",
                 post(play::post_free_text_answer),
             )*/

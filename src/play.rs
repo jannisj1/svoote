@@ -16,6 +16,7 @@ use axum::{
         Path, Query, WebSocketUpgrade,
     },
     response::{IntoResponse, Response},
+    Form,
 };
 use axum_extra::extract::CookieJar;
 
@@ -100,7 +101,7 @@ pub async fn get_play_page(
                                                 div ."text-slate-800 text-lg font-medium" x-text="answer.text" {}
                                             }
                                         }
-                                        button "@click"="submitMCAnswer(selectedAnswer)" ."w-full mt-6 py-1.5 text-center text-lg text-white font-bold bg-slate-700 hover:bg-slate-500 rounded-lg" { "Submit" }
+                                        button "@click"={ "submitMCAnswer(selectedAnswer, " (poll_id_str) ")" } ."w-full mt-6 py-1.5 text-center text-lg text-white font-bold bg-slate-700 hover:bg-slate-500 rounded-lg" { "Submit" }
                                     }
 
                                 }
@@ -242,10 +243,10 @@ impl Player {
     }
 }
 
-/*
 #[derive(Deserialize)]
 pub struct PostMCAnswerForm {
-    pub answer_idx: usize,
+    pub slide_index: usize,
+    pub answer_index: usize,
 }
 
 pub async fn post_mc_answer(
@@ -257,38 +258,39 @@ pub async fn post_mc_answer(
     let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
 
     let mut live_poll = live_poll.lock().unwrap();
+    if form.slide_index >= live_poll.slides.len() {
+        return Err(AppError::BadRequest(
+            "slide_index out of bounds".to_string(),
+        ));
+    }
+
     let player_index = live_poll.get_player_index(&session_id)?;
     let start_time = live_poll.get_current_slide_start_time();
 
     let score = if let SlideType::MultipleChoice(mc_answers) =
-        &mut live_poll.get_current_slide().slide_type
+        &mut live_poll.slides[form.slide_index].slide_type
     {
-        mc_answers.submit_answer(player_index, form.answer_idx, start_time)?
+        mc_answers.submit_answer(player_index, form.answer_index, start_time)?
     } else {
         return Err(AppError::BadRequest(
             "This is not a multiple choice item".to_string(),
         ));
     };
 
-    if score != 0 {
+    if score > 0 {
         live_poll
             .get_current_slide()
             .submit_score(player_index, score);
-
-        //let _ = live_poll.ch_players_updated_send.send(());
     }
 
-    /*live_poll
-    .ch_question_statistics_send
-    .send_if_modified(|_stats| true);*/
+    let _ = live_poll
+        .stats_change_notification_channel_sender
+        .send(form.slide_index);
 
-    return Ok(html! {
-        ."text-slate-700" { "Your answer has been submitted." }
-        script { (PreEscaped(r#"document.querySelectorAll('input[type="radio"]').forEach((e) => { e.disabled = true });"#)) }
-    }
-    .into_response());
+    return Ok(html! {}.into_response());
 }
 
+/*
 #[derive(Deserialize)]
 pub struct PostFreeTextAnswerForm {
     pub free_text_answer: SmartString<Compact>,
@@ -404,27 +406,21 @@ pub async fn post_name_avatar(
 pub async fn play_socket(
     ws: WebSocketUpgrade,
     Path(poll_id): Path<ShortID>,
-    cookies: CookieJar,
+    //cookies: CookieJar,
 ) -> Result<Response, AppError> {
     let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
-    //session_id::assert_equal_ids(&session_id, &live_poll.lock().unwrap().host_session_id)?;
+    //let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
 
-    return Ok(ws.on_upgrade(|socket| handle_play_socket(socket, live_poll)));
+    return Ok(ws.on_upgrade(move |socket| handle_play_socket(socket, live_poll)));
 }
 
 async fn handle_play_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll>>) {
-    let (mut _stats_updated_receiver, mut slide_index_change_receiver) = {
+    let mut slide_index_change_receiver = {
         let live_poll = live_poll.lock().unwrap();
 
-        (
-            live_poll
-                .stats_change_notification_channel_receiver
-                .resubscribe(),
-            live_poll
-                .slide_change_notification_channel_receiver
-                .resubscribe(),
-        )
+        live_poll
+            .slide_change_notification_channel_receiver
+            .resubscribe()
     };
 
     let msg = {
@@ -439,16 +435,7 @@ async fn handle_play_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll
         select! {
             msg = socket.recv() => {
                 if let Some(Ok(msg)) = msg {
-                    if let Some(msg) = WSMessage::parse(msg) {
-                        match msg.cmd.as_ref() {
-                            "submitMCAnswer" => {
-                                let answer_index = msg.data["answerIndex"].as_u64().unwrap_or(0u64) as usize;
-                                info!("Answer: {}", answer_index);
-                                //let _ = slide_index_sender.send(slide_index).await;
-                            }
-                            _ => {}
-                        }
-                    }
+                    if let Some(_msg) = WSMessage::parse(msg) { }
                 } else {
                     return;
                 }

@@ -235,9 +235,11 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                             "Free text: Participants can submit their own answer."
                                         }
                                         div ."relative mx-auto my-[2.5rem] h-[calc(90%-4rem)] w-full max-w-2xl"
-                                            x-effect="$nextTick(() => { renderWordCloud($el, slide.stats); });"
-                                            "@resize.window"="$nextTick(() => { renderWordCloud($el, slide.stats); })"
-                                            "@leavegridview.window"="setTimeout(() => { renderWordCloud($el, slide.stats); }, 500);"
+                                            x-init="$nextTick(() => { renderWordCloud($el, slide.stats, 0, 0); });"
+                                            x-effect="$nextTick(() => { renderWordCloud($el, slide.stats, slideIndex, poll.activeSlide); });"
+                                            "@resize.window"="$nextTick(() => { renderWordCloud($el, slide.stats, slideIndex, poll.activeSlide); })"
+                                            "@leavegridview.window"="setTimeout(() => { renderWordCloud($el, slide.stats, slideIndex, poll.activeSlide); }, 500);"
+                                            "@slidechange.window"="setTimeout(() => { renderWordCloud($el, slide.stats, slideIndex, poll.activeSlide); }, 500);"
                                         {
                                             template x-for="(term, termIndex) in slide.stats.terms" {
                                                 div ."absolute size-fit inset-0 font-bold leading-none whitespace-nowrap"

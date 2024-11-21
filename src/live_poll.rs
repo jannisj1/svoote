@@ -21,6 +21,7 @@ pub struct LivePoll {
     pub start_poll_channel_sender: Option<oneshot::Sender<()>>,
     pub set_slide_index_channel_sender: mpsc::Sender<usize>,
     pub slide_change_notification_channel_receiver: broadcast::Receiver<usize>,
+    pub stats_change_notification_channel_sender: broadcast::Sender<usize>,
     pub stats_change_notification_channel_receiver: broadcast::Receiver<usize>,
     pub exit_poll_channel_sender: mpsc::Sender<()>,
     pub leaderboard_enabled: bool,
@@ -53,6 +54,8 @@ impl LivePoll {
             start_poll_channel_sender: Some(start_poll_channel_sender),
             set_slide_index_channel_sender,
             slide_change_notification_channel_receiver,
+            stats_change_notification_channel_sender: stats_change_notification_channel_sender
+                .clone(),
             stats_change_notification_channel_receiver,
             exit_poll_channel_sender,
             leaderboard_enabled,
