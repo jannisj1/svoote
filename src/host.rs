@@ -151,8 +151,9 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                 ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) }
                                                 "Multiple choice"
                                             }
-                                            button "@click"="slide.type = 'ft'; slide.stats = getExampleTerms(); save(); document.getElementById('question-input-' + slideIndex).focus();" ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
+                                            button "@click"="slide.type = 'ft'; save(); document.getElementById('question-input-' + slideIndex).focus();"
                                                 ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
+                                                ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
                                             {
                                                 ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
                                                 "Free text"
@@ -207,9 +208,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                             ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                             ":id"="'add-mc-answer-' + slideIndex"
                                             x-show="!isLive"
-                                        {
-                                            "Add answer"
-                                        }
+                                            { "Add answer" }
                                         div ."absolute w-full left-0 bottom-0 flex items-start justify-center gap-4" {
                                             template x-for="(answer, answer_index) in slide.mcAnswers" {
                                                 div ."w-28" {
@@ -241,7 +240,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                             "@leavegridview.window"="setTimeout(() => { renderWordCloud($el, slide.stats, slideIndex, poll.activeSlide); }, 500);"
                                             "@slidechange.window"="setTimeout(() => { renderWordCloud($el, slide.stats, slideIndex, poll.activeSlide); }, 500);"
                                         {
-                                            template x-for="(term, termIndex) in slide.stats.terms" {
+                                            template x-for="(term, termIndex) in (slide.stats !== null ? slide.stats.terms : [])" {
                                                 div ."absolute size-fit inset-0 font-bold leading-none whitespace-nowrap"
                                                     x-text="term.text"
                                                     ":class"="['text-rose-600', 'text-cyan-600', 'text-lime-600', 'text-fuchsia-600', 'text-slate-600', 'text-teal-600'][termIndex % 6]"
@@ -250,6 +249,9 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                     {}
                                             }
                                         }
+                                        div x-show="(slide.stats !== null ? slide.stats.terms : []).length == 0"
+                                            ."absolute size-full inset-0 flex items-center justify-center text-slate-500 text-sm"
+                                            { "The submitted answers will show up here in a word cloud." }
                                         /*div ."mt-24 text-slate-500 text-center text-sm"  { "Correct answers:" }
                                         div ."mx-auto my-4 max-w-2xl flex justify-center flex-wrap gap-4" {
                                             template x-for="(answer, answer_index) in slide.ftAnswers" {

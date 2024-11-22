@@ -51,7 +51,7 @@ pub async fn get_play_page(
         let html = html_page::render_html_page(
             "Svoote",
             html! {
-                div ."my-16 mx-4 sm:mx-14" {
+                div ."mt-8 mb-16 mx-4 sm:mx-14" {
                     form ."w-full max-w-64 mx-auto" {
                         div ."flex items-baseline justify-center gap-2 mb-8 text-3xl font-semibold tracking-tight" {
                             "Svoote" ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
@@ -66,7 +66,7 @@ pub async fn get_play_page(
                     div ."max-w-64 mx-auto" {
                         div ."mb-4" { (Illustrations::TeamCollaboration.render()) }
                         h1 ."mb-5 text-2xl text-center font-bold tracking-tight" { "Want to create your own polls?" }
-                        a href="/" ."block w-fit mx-auto px-4 py-1 text-indigo-600 font-bold tracking-tight border rounded-full shadow hover:bg-slate-100" { "Start now →"}
+                        a href="/" ."block w-fit mx-auto text-indigo-600 underline font-semibold hover:text-indigo-800" { "Start now →"}
                     }
                 }
             },
@@ -86,24 +86,29 @@ pub async fn get_play_page(
                 html! {
                     script { "document.code = " (poll_id.unwrap_or(0)) ";" }
                     div x-data="participant" {
-                        div ."my-16 mx-4 sm:mx-14" {
+                        div ."mt-8 mb-16 mx-4 sm:mx-14" {
                             div ."w-full max-w-80 mx-auto" {
                                 div ."flex items-baseline justify-center gap-2 mb-12 text-3xl font-semibold tracking-tight" {
                                     "Svoote" ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
                                 }
                                 template x-if="currentSlide.slideType == 'null'" { div {} }
                                 template x-if="currentSlide.slideType == 'mc'" {
-                                    div x-data="{ selectedAnswer: '' }" {
-                                        h1 x-text="currentSlide.question" ."mb-8 text-xl text-slate-800 font-medium tracking-tight leading-5" {}
+                                    div {
+                                        h1 x-text="currentSlide.question" ."mb-8 text-xl text-slate-600 font-medium" {}
                                         template x-for="(answer, answerIndex) in currentSlide.answers" {
-                                            label ."w-full mb-5 px-4 py-2 flex gap-4 items-center ring-[3px] ring-slate-500 has-[:checked]:ring-4 has-[:checked]:ring-indigo-500 rounded-lg" {
-                                                input type="radio" x-model="selectedAnswer" ":value"="answerIndex" ."accent-indigo-500 size-[1.2rem]";
-                                                div ."text-slate-800 text-lg font-medium" x-text="answer.text" {}
+                                            label ."w-full mb-5 px-4 py-2 flex gap-4 items-center ring-[2.5px] ring-slate-500 has-[:checked]:ring-4 has-[:checked]:ring-indigo-500 rounded-lg" {
+                                                input type="radio" x-model="currentSlide.selectedAnswer" ":disabled"="currentSlide.submitted" ":value"="answerIndex" ."accent-indigo-500 size-[1.2rem]";
+                                                div ."text-slate-600 text-lg font-medium" x-text="answer.text" {}
                                             }
                                         }
-                                        button "@click"={ "submitMCAnswer(selectedAnswer, " (poll_id_str) ")" } ."w-full mt-6 py-1.5 text-center text-lg text-white font-bold bg-slate-700 hover:bg-slate-500 rounded-lg" { "Submit" }
+                                        button x-show="!currentSlide.submitted"
+                                            ":disabled"="currentSlide.selectedAnswer === ''"
+                                            "@click"={ "submitMCAnswer(currentSlide.selectedAnswer, " (poll_id_str) ")" }
+                                            ."w-full mt-6 py-1.5 text-center text-lg text-white font-bold bg-slate-700 rounded-lg hover:bg-slate-500 disabled:bg-slate-500" { "Submit" }
+                                        div x-show="currentSlide.submitted"
+                                            ."mt-6 text-slate-500 text-sm text-center"
+                                            { "Your answer has been submitted" }
                                     }
-
                                 }
                                 template x-if="currentSlide.slideType == 'ft'" {
                                     div ."mb-2 text-center text-sm text-slate-500" { "Enter the 4-digit code you see in front." }
@@ -406,15 +411,20 @@ pub async fn post_name_avatar(
 pub async fn play_socket(
     ws: WebSocketUpgrade,
     Path(poll_id): Path<ShortID>,
-    //cookies: CookieJar,
+    cookies: CookieJar,
 ) -> Result<Response, AppError> {
     let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
-    //let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
+    let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
+    let player_index = live_poll.lock().unwrap().get_player_index(&session_id)?;
 
-    return Ok(ws.on_upgrade(move |socket| handle_play_socket(socket, live_poll)));
+    return Ok(ws.on_upgrade(move |socket| handle_play_socket(socket, live_poll, player_index)));
 }
 
-async fn handle_play_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll>>) {
+async fn handle_play_socket(
+    mut socket: WebSocket,
+    live_poll: Arc<Mutex<LivePoll>>,
+    player_index: usize,
+) {
     let mut slide_index_change_receiver = {
         let live_poll = live_poll.lock().unwrap();
 
@@ -427,7 +437,7 @@ async fn handle_play_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll
         let mut live_poll = live_poll.lock().unwrap();
         let current_slide_index = live_poll.current_slide_index;
         let slide = live_poll.get_current_slide();
-        create_slide_ws_message(current_slide_index, slide).into()
+        create_slide_ws_message(current_slide_index, slide, player_index).into()
     };
     let _ = socket.send(msg).await;
 
@@ -445,7 +455,7 @@ async fn handle_play_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll
                     let msg = {
                         let mut live_poll = live_poll.lock().unwrap();
                         let slide = live_poll.get_current_slide();
-                        create_slide_ws_message(slide_index, slide).into()
+                        create_slide_ws_message(slide_index, slide, player_index).into()
                     };
                     let _  = socket.send(msg).await;
                 } else {
@@ -461,13 +471,15 @@ async fn handle_play_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll
     }
 }
 
-fn create_slide_ws_message(slide_index: usize, slide: &Slide) -> WSMessage {
+fn create_slide_ws_message(slide_index: usize, slide: &Slide, player_index: usize) -> WSMessage {
     let slide_json = match &slide.slide_type {
         SlideType::MultipleChoice(answers) => {
             json!({
                 "slideType": "mc",
                 "question": slide.question,
                 "answers": answers.answers.iter().map(|(answer_text, _is_correct)| json!({ "text": answer_text })).collect::<Vec<Value>>(),
+                "submitted": answers.player_answers[player_index].is_some(),
+                "selectedAnswer": answers.player_answers[player_index].map(|answer_index| answer_index.to_string()).unwrap_or(String::new()),
             })
         }
         SlideType::FreeText(_answers) => {

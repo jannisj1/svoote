@@ -129,7 +129,7 @@ document.addEventListener("alpine:init", () => {
     },
 
     renderWordCloud(container, stats, slideIndex, activeSlide) {
-      if (container == null && stats == null) return;
+      if (container == null || stats == null) return;
       if (slideIndex !== activeSlide) return;
 
       if (this.gridView) {
@@ -212,25 +212,16 @@ document.addEventListener("alpine:init", () => {
       }
     },
 
-    getExampleTerms() {
+    getPlaceholderTerms() {
       return {
         terms: [
-          { text: "Answer 1", count: 2 },
-          { text: "Answer 2", count: 1 },
-          { text: "Answer 3", count: 1 },
-          { text: "qr-code", count: 3 },
-          { text: "question", count: 15 },
-          { text: "free text", count: 9 },
-          { text: "join presentation", count: 8 },
-          { text: "svoote.com", count: 20 },
-          { text: "interaction", count: 4 },
-          { text: "privacy", count: 1 },
-          { text: "live polling", count: 4 },
-          { text: "multiple choice", count: 3 },
+          { text: "word cloud", count: 5 },
+          { text: "svoote", count: 5 },
           { text: "free text", count: 2 },
+          { text: "live", count: 2 },
         ],
-        totalCount: 108,
-        maxCount: 20,
+        totalCount: 19,
+        maxCount: 10,
       };
     },
 
@@ -313,7 +304,15 @@ document.addEventListener("alpine:init", () => {
         this.code = null;
         this.isLive = false;
         this.socket.close();
+        this.clearStatistics();
       }
+    },
+
+    clearStatistics() {
+      this.poll.slides.forEach((slide) => {
+        slide.stats = null;
+      });
+      this.save();
     },
   }));
 
@@ -373,6 +372,8 @@ document.addEventListener("alpine:init", () => {
           slide_index: this.slideIndex,
         }),
       });
+
+      if (res.ok) this.currentSlide.submitted = true;
     },
   }));
 });
