@@ -1,12 +1,14 @@
 use crate::{
     app_error::AppError,
-    config::{CUSTOM_PLAYER_NAME_LENGTH_LIMIT, LIVE_POLL_PARTICIPANT_LIMIT},
+    config::{
+        CUSTOM_PLAYER_NAME_LENGTH_LIMIT, FREE_TEXT_MAX_CHAR_LENGTH, LIVE_POLL_PARTICIPANT_LIMIT,
+    },
     html_page::{self, render_header},
     illustrations::Illustrations,
     live_poll::LivePoll,
     live_poll_store::{ShortID, LIVE_POLL_STORE},
     session_id,
-    slide::{Slide, SlideType},
+    slide::{Slide, SlideType, WordCloudTerm},
     svg_icons::SvgIcon,
     wsmessage::WSMessage,
 };
@@ -51,9 +53,9 @@ pub async fn get_play_page(
         let html = html_page::render_html_page(
             "Svoote",
             html! {
-                div ."mt-8 mb-16 mx-4 sm:mx-14" {
+                div ."mt-6 mb-16 mx-4 sm:mx-14" {
                     form ."w-full max-w-64 mx-auto" {
-                        div ."flex items-baseline justify-center gap-2 mb-8 text-3xl font-semibold tracking-tight" {
+                        div ."flex items-baseline justify-center gap-2 mb-12 text-3xl font-semibold tracking-tight" {
                             "Svoote" ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
                         }
                         div ."mb-2 text-center text-sm text-slate-500" { "Enter the 4-digit code you see in front." }
@@ -86,35 +88,51 @@ pub async fn get_play_page(
                 html! {
                     script { "document.code = " (poll_id.unwrap_or(0)) ";" }
                     div x-data="participant" {
-                        div ."mt-8 mb-16 mx-4 sm:mx-14" {
+                        div ."mt-6 mb-16 mx-4 sm:mx-14" {
                             div ."w-full max-w-80 mx-auto" {
-                                div ."flex items-baseline justify-center gap-2 mb-12 text-3xl font-semibold tracking-tight" {
+                                div ."mb-10 flex items-baseline justify-center gap-2 text-3xl font-semibold tracking-tight" {
                                     "Svoote" ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
                                 }
                                 template x-if="currentSlide.slideType == 'null'" { div {} }
                                 template x-if="currentSlide.slideType == 'mc'" {
                                     div {
-                                        h1 x-text="currentSlide.question" ."mb-8 text-xl text-slate-600 font-medium" {}
+                                        h1 x-text="currentSlide.question" ."mb-6 text-xl text-slate-700 font-medium" {}
                                         template x-for="(answer, answerIndex) in currentSlide.answers" {
                                             label ."w-full mb-5 px-4 py-2 flex gap-4 items-center ring-[2.5px] ring-slate-500 has-[:checked]:ring-4 has-[:checked]:ring-indigo-500 rounded-lg" {
                                                 input type="radio" x-model="currentSlide.selectedAnswer" ":disabled"="currentSlide.submitted" ":value"="answerIndex" ."accent-indigo-500 size-[1.2rem]";
-                                                div ."text-slate-600 text-lg font-medium" x-text="answer.text" {}
+                                                div ."text-slate-700 text-lg font-medium" x-text="answer.text" {}
                                             }
                                         }
-                                        button x-show="!currentSlide.submitted"
-                                            ":disabled"="currentSlide.selectedAnswer === ''"
-                                            "@click"={ "submitMCAnswer(currentSlide.selectedAnswer, " (poll_id_str) ")" }
-                                            ."w-full mt-6 py-1.5 text-center text-lg text-white font-bold bg-slate-700 rounded-lg hover:bg-slate-500 disabled:bg-slate-500" { "Submit" }
-                                        div x-show="currentSlide.submitted"
-                                            ."mt-6 text-slate-500 text-sm text-center"
-                                            { "Your answer has been submitted" }
+                                        div ."relative mt-8 h-12" {
+                                            button x-show="!currentSlide.submitted"
+                                                ":disabled"="currentSlide.selectedAnswer === ''"
+                                                "@click"={ "submitMCAnswer(" (poll_id_str) ")" }
+                                                ."absolute size-full inset-0 flex items-center justify-center text-lg text-white font-bold bg-slate-700 rounded-lg hover:bg-slate-600 disabled:bg-slate-500" { "Submit" }
+                                            div x-show="currentSlide.submitted"
+                                                ."absolute size-full inset-0 flex items-center justify-center text-slate-500 text-sm"
+                                                { "Your answer has been submitted" }
+                                        }
                                     }
                                 }
                                 template x-if="currentSlide.slideType == 'ft'" {
-                                    div ."mb-2 text-center text-sm text-slate-500" { "Enter the 4-digit code you see in front." }
-                                    input name="c" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="Code" value=(poll_id_str)
-                                        ."w-full px-3 py-1.5 w-40 text-slate-700 text-lg font-medium border-2 border-slate-500 focus:border-slate-700 rounded-lg outline-none";
-                                    div { "Free text" }
+                                    div {
+                                        h1 x-text="currentSlide.question" ."mb-6 text-xl text-slate-700 font-medium" {}
+                                        input type="text"
+                                            x-model="currentSlide.selectedAnswer"
+                                            "@keyup.enter"="$refs.ftSubmitButton.click()"
+                                            ":disabled"="currentSlide.submitted"
+                                            ."w-full px-4 py-2 text-slate-700 text-lg font-medium ring-[2.5px] ring-slate-500 rounded-lg";
+                                        div ."relative mt-8 h-12" {
+                                        button x-show="!currentSlide.submitted"
+                                            x-ref="ftSubmitButton"
+                                            ":disabled"="currentSlide.selectedAnswer === ''"
+                                            "@click"={ "submitFTAnswer(" (poll_id_str) ")" }
+                                            ."absolute size-full inset-0 flex items-center justify-center text-lg text-white font-bold bg-slate-700 rounded-lg hover:bg-slate-600 disabled:bg-slate-500" { "Submit" }
+                                        div x-show="currentSlide.submitted"
+                                            ."absolute size-full inset-0 flex items-center justify-center text-slate-500 text-sm"
+                                            { "Your answer has been submitted" }
+                                        }
+                                    }
                                 }
                             }
                             //hr ."my-16 max-w-64 mx-auto border-slate-700";
@@ -295,42 +313,75 @@ pub async fn post_mc_answer(
     return Ok(html! {}.into_response());
 }
 
-/*
 #[derive(Deserialize)]
 pub struct PostFreeTextAnswerForm {
-    pub free_text_answer: SmartString<Compact>,
+    pub answer: SmartString<Compact>,
+    pub slide_index: usize,
 }
 
-pub async fn post_free_text_answer(
+pub async fn post_ft_answer(
     Path(poll_id): Path<ShortID>,
     cookies: CookieJar,
-    Form(form_data): Form<PostFreeTextAnswerForm>,
+    Form(form): Form<PostFreeTextAnswerForm>,
 ) -> Result<Response, AppError> {
     let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
     let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
 
     let mut live_poll = live_poll.lock().unwrap();
     let player_index = live_poll.get_player_index(&session_id)?;
+    if form.slide_index >= live_poll.slides.len() {
+        return Err(AppError::BadRequest(
+            "slide_index out of bounds".to_string(),
+        ));
+    }
 
-    let response =
-        if let SlideType::FreeText(ft_answers) = &mut live_poll.get_current_slide().slide_type {
-            ft_answers.submit_answer(player_index, form_data.free_text_answer)?;
-            ft_answers.render_participant_form(player_index, poll_id)
-        } else {
+    if let SlideType::FreeText(ft_answers) = &mut live_poll.slides[form.slide_index].slide_type {
+        if ft_answers.player_answers[player_index].is_some() {
             return Err(AppError::BadRequest(
-                "This is not a free text item".to_string(),
+                "Already submitted an answer".to_string(),
             ));
-        };
+        }
 
-    /*live_poll
-    .ch_question_statistics_send
-    .send_if_modified(|_stats| {
-        return true;
-    });*/
+        let trimmed_answer = form
+            .answer
+            .trim()
+            .to_lowercase()
+            .chars()
+            .take(FREE_TEXT_MAX_CHAR_LENGTH)
+            .collect::<SmartString<Compact>>();
 
-    return Ok(response.into_response());
+        ft_answers.player_answers[player_index] = Some(form.answer);
+
+        let term_index = ft_answers
+            .word_cloud_terms
+            .iter()
+            .position(|term| term.text == trimmed_answer);
+
+        if let Some(term_index) = term_index {
+            ft_answers.word_cloud_terms[term_index].count += 1;
+            if ft_answers.max_term_count < ft_answers.word_cloud_terms[term_index].count {
+                ft_answers.max_term_count = ft_answers.word_cloud_terms[term_index].count;
+            }
+        } else {
+            ft_answers.word_cloud_terms.push(WordCloudTerm {
+                text: trimmed_answer,
+                count: 1,
+            });
+        }
+    } else {
+        return Err(AppError::BadRequest(
+            "This is not a free text item".to_string(),
+        ));
+    };
+
+    let _ = live_poll
+        .stats_change_notification_channel_sender
+        .send(form.slide_index);
+
+    return Ok("Answer submitted".into_response());
 }
 
+/*
 pub fn render_poll_finished() -> Markup {
     html! {
         ."mx-auto mt-12 mb-6 w-24 md:w-32" { (Illustrations::InLove.render()) }
@@ -482,10 +533,12 @@ fn create_slide_ws_message(slide_index: usize, slide: &Slide, player_index: usiz
                 "selectedAnswer": answers.player_answers[player_index].map(|answer_index| answer_index.to_string()).unwrap_or(String::new()),
             })
         }
-        SlideType::FreeText(_answers) => {
+        SlideType::FreeText(answers) => {
             json!({
                 "slideType": "ft",
                 "question": slide.question,
+                "selectedAnswer": answers.player_answers[player_index].as_ref().unwrap_or(&SmartString::new()),
+                "submitted": answers.player_answers[player_index].is_some(),
             })
         }
         _ => {

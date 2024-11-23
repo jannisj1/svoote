@@ -1,4 +1,5 @@
 pub const MAX_FREE_TEXT_ANSWERS: usize = 3;
+pub const FREE_TEXT_MAX_CHAR_LENGTH: usize = 32;
 pub const LIVE_POLL_PARTICIPANT_LIMIT: usize = 100usize;
 
 pub const COLOR_PALETTE: &[&'static str] = &[

@@ -1,7 +1,7 @@
-use arrayvec::ArrayVec;
+use serde::Serialize;
 use smartstring::{Compact, SmartString};
 
-use crate::{app_error::AppError, config::MAX_FREE_TEXT_ANSWERS};
+use crate::app_error::AppError;
 
 pub struct Slide {
     pub question: String,
@@ -25,7 +25,15 @@ pub struct MultipleChoiceLiveAnswers {
 
 pub struct FreeTextLiveAnswers {
     pub correct_answers: Vec<SmartString<Compact>>,
-    pub player_answers: Vec<ArrayVec<SmartString<Compact>, MAX_FREE_TEXT_ANSWERS>>,
+    pub player_answers: Vec<Option<SmartString<Compact>>>,
+    pub word_cloud_terms: Vec<WordCloudTerm>,
+    pub max_term_count: usize,
+}
+
+#[derive(Serialize)]
+pub struct WordCloudTerm {
+    pub text: SmartString<Compact>,
+    pub count: usize,
 }
 
 impl Slide {
@@ -40,7 +48,7 @@ impl Slide {
                 mc_answers.player_answers.push(None);
             }
             SlideType::FreeText(ft_answer) => {
-                ft_answer.player_answers.push(ArrayVec::new());
+                ft_answer.player_answers.push(None);
             }
         }
     }
@@ -86,54 +94,4 @@ impl MultipleChoiceLiveAnswers {
 
         return Ok(0usize);
     }
-}
-
-impl FreeTextLiveAnswers {
-    pub fn submit_answer(
-        &mut self,
-        player_index: usize,
-        answer: SmartString<Compact>,
-    ) -> Result<(), AppError> {
-        if self.player_answers[player_index].len() >= MAX_FREE_TEXT_ANSWERS {
-            return Err(AppError::BadRequest(
-                "Already submitted the maximum number of free text answers ({})".to_string(),
-            ));
-        }
-
-        self.player_answers[player_index].push(answer);
-
-        return Ok(());
-    }
-
-    /*pub fn render_participant_form(&self, player_index: usize, poll_id: ShortID) -> Markup {
-        let answers = &self.player_answers[player_index];
-
-        return html! {
-            form #free-text-form ."flex flex-col items-center" {
-                ."w-full mb-2" {
-                    @for (i, answer) in answers.iter().enumerate() {
-                        ."mb-2 text-lg text-slate-700" {
-                            (i + 1) ". " (answer)
-                        }
-                    }
-                }
-                @if answers.len() < MAX_FREE_TEXT_ANSWERS {
-                    input type="text" name="free_text_answer" autofocus
-                        ."w-full mb-4 text-lg px-2 py-1 border-2 border-slate-500 rounded-lg outline-none hover:border-indigo-600 focus:border-indigo-600 transition"
-                        placeholder="Answer";
-                    button
-                        hx-post={ "/submit_free_text_answer/" (poll_id) }
-                        hx-target="#free-text-form"
-                        hx-swap="outerHTML"
-                        ."relative group px-4 py-2 text-slate-100 tracking-wide font-semibold bg-slate-700 rounded-md hover:bg-slate-800 transition"
-                    {
-                        ."group-[.htmx-request]:opacity-0" { "Submit answer" }
-                        ."absolute inset-0 size-full hidden group-[.htmx-request]:flex items-center justify-center" {
-                            ."size-4" { (SvgIcon::Spinner.render()) }
-                        }
-                    }
-                }
-            }
-        };
-    }*/
 }

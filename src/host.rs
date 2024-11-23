@@ -234,18 +234,17 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                             "Free text: Participants can submit their own answer."
                                         }
                                         div ."relative mx-auto my-[2.5rem] h-[calc(90%-4rem)] w-full max-w-2xl"
-                                            x-init="$nextTick(() => { renderWordCloud($el, slide.stats, 0, 0); });"
-                                            x-effect="$nextTick(() => { renderWordCloud($el, slide.stats, slideIndex, poll.activeSlide); });"
-                                            "@resize.window"="$nextTick(() => { renderWordCloud($el, slide.stats, slideIndex, poll.activeSlide); })"
-                                            "@leavegridview.window"="setTimeout(() => { renderWordCloud($el, slide.stats, slideIndex, poll.activeSlide); }, 500);"
-                                            "@slidechange.window"="setTimeout(() => { renderWordCloud($el, slide.stats, slideIndex, poll.activeSlide); }, 500);"
+                                            ":id"="`word-cloud-${slideIndex}`"
+                                            "@resize.window"="$nextTick(() => { renderWordCloud(slideIndex); })"
+                                            "@leavegridview.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
+                                            "@slidechange.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
                                         {
                                             template x-for="(term, termIndex) in (slide.stats !== null ? slide.stats.terms : [])" {
                                                 div ."absolute size-fit inset-0 font-bold leading-none whitespace-nowrap"
                                                     x-text="term.text"
-                                                    ":class"="['text-rose-600', 'text-cyan-600', 'text-lime-600', 'text-fuchsia-600', 'text-slate-600', 'text-teal-600'][termIndex % 6]"
+                                                    ":class"="['text-rose-500', 'text-cyan-500', 'text-lime-500', 'text-fuchsia-500', 'text-slate-500', 'text-teal-500'][termIndex % 6]"
                                                     ":title"="`${term.text}: ${term.count}`"
-                                                    ":style"="`font-size: ${ 0.5 + 2.25 * term.count / slide.stats.maxCount }rem; opacity: ${0.7 + 0.3 * term.count / slide.stats.maxCount }; letter-spacing: ${0.02 - 0.06 * (term.count / slide.stats.maxCount) }em; font-weight: ${500 + 300 * (term.count / slide.stats.maxCount) };`"
+                                                    ":style"="`transition: all 0.5s ease-out; font-size: ${ 0.5 + 2.25 * term.count / slide.stats.maxCount }rem; opacity: ${0.7 + 0.3 * term.count / slide.stats.maxCount }; letter-spacing: ${0.02 - 0.06 * (term.count / slide.stats.maxCount) }em; font-weight: ${500 + 300 * (term.count / slide.stats.maxCount) };`"
                                                     {}
                                             }
                                         }
@@ -392,6 +391,8 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
                             slide_type: SlideType::FreeText(FreeTextLiveAnswers {
                                 correct_answers: answers,
                                 player_answers: Vec::new(),
+                                word_cloud_terms: Vec::new(),
+                                max_term_count: 1usize,
                             }),
                             player_scores: Vec::new(),
                         });
@@ -490,6 +491,12 @@ async fn handle_host_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll
                             json!({
                                 "counts": answers.answer_counts,
                                 "percentages": percentages,
+                            })
+                        }
+                        SlideType::FreeText(answers) => {
+                            json!({
+                                "terms": answers.word_cloud_terms,
+                                "maxCount": answers.max_term_count,
                             })
                         }
                         _ => Value::Null

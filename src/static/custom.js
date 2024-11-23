@@ -128,17 +128,20 @@ document.addEventListener("alpine:init", () => {
         );
     },
 
-    renderWordCloud(container, stats, slideIndex, activeSlide) {
-      if (container == null || stats == null) return;
-      if (slideIndex !== activeSlide) return;
-
-      if (this.gridView) {
+    renderWordCloud(slideIndex) {
+      let container = document.getElementById("word-cloud-" + slideIndex);
+      if (
+        container == null ||
+        this.poll.slides[slideIndex].stats == null ||
+        this.gridView
+      )
         return;
-      }
+
+      let stats = this.poll.slides[slideIndex].stats;
 
       let containerHeight = container.getBoundingClientRect().height;
       let containerWidth = container.getBoundingClientRect().width;
-      const HORIZONTAL_GAP = 16;
+      const HORIZONTAL_GAP = 24;
       const VERTICAL_GAP = 12;
 
       let sortedTerms = [];
@@ -287,8 +290,9 @@ document.addEventListener("alpine:init", () => {
 
           switch (msg.cmd) {
             case "updateStats":
-              console.log(msg);
+              console.log(msg.data.stats);
               this.poll.slides[msg.data.slideIndex].stats = msg.data.stats;
+              this.$nextTick(() => this.renderWordCloud(msg.data.slideIndex));
               break;
           }
         };
@@ -363,12 +367,25 @@ document.addEventListener("alpine:init", () => {
       };
     },
 
-    async submitMCAnswer(answerIndex, poll_id) {
+    async submitMCAnswer(poll_id) {
       let res = await fetch("/submit_mc_answer/" + poll_id, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
-          answer_index: answerIndex,
+          answer_index: this.currentSlide.selectedAnswer,
+          slide_index: this.slideIndex,
+        }),
+      });
+
+      if (res.ok) this.currentSlide.submitted = true;
+    },
+
+    async submitFTAnswer(poll_id) {
+      let res = await fetch("/submit_ft_answer/" + poll_id, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          answer: this.currentSlide.selectedAnswer,
           slide_index: this.slideIndex,
         }),
       });
