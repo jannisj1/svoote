@@ -50,6 +50,10 @@ document.addEventListener("alpine:init", () => {
         }
       });
 
+      this.poll.slides.forEach((slide) => {
+        slide.stats = null;
+      });
+
       if (document.pollAlreadyLive === true) {
         this.startPoll();
       }
@@ -87,7 +91,7 @@ document.addEventListener("alpine:init", () => {
 
     calculateSlideClasses(slideIndex, activeSlide, gridView) {
       let classes =
-        "absolute inset-0 size-full px-16 py-10 border rounded transition-transform duration-500 ease-out transform-gpu ";
+        "absolute inset-0 size-full px-14 py-10 flex gap-14 border rounded transition-transform duration-500 ease-out transform-gpu ";
 
       if (gridView) {
         classes +=
@@ -126,6 +130,18 @@ document.addEventListener("alpine:init", () => {
           "%)" +
           "translateZ(-240px)"
         );
+    },
+
+    calculateWCTermStyle(term, maxCount) {
+      return `
+        transition: all 0.5s ease-out;
+        font-size: ${0.5 + (2.25 * term.count) / maxCount}rem;
+        opacity: ${0.7 + (0.3 * term.count) / maxCount};
+        letter-spacing: ${0.02 - 0.04 * (term.count / maxCount)}em;
+        font-weight: ${500 + 300 * (term.count / maxCount)};
+        top: ${term.top != null ? term.top : 0}px;
+        left: ${term.left != null ? term.left : 0}px;
+      `;
     },
 
     renderWordCloud(slideIndex) {
@@ -206,8 +222,8 @@ document.addEventListener("alpine:init", () => {
 
         let leftOffset = containerWidth / 2 - row.width / 2;
         for (term of row.terms) {
-          term.element.style.top = `${top + (row.height - term.height) / 2}px`;
-          term.element.style.left = `${leftOffset}px`;
+          term.term.top = top + (row.height - term.height) / 2;
+          term.term.left = leftOffset;
           leftOffset += term.width + HORIZONTAL_GAP;
         }
 
@@ -290,9 +306,9 @@ document.addEventListener("alpine:init", () => {
 
           switch (msg.cmd) {
             case "updateStats":
-              console.log(msg.data.stats);
               this.poll.slides[msg.data.slideIndex].stats = msg.data.stats;
               this.$nextTick(() => this.renderWordCloud(msg.data.slideIndex));
+              setTimeout(() => this.renderWordCloud(msg.data.slideIndex), 500);
               break;
           }
         };

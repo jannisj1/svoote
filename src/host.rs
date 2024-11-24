@@ -118,167 +118,170 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                 ":style"="calculateSlideStyle(slideIndex, poll.activeSlide, gridView)"
                                 "@click"="if (slideIndex != poll.activeSlide) gotoSlide(slideIndex); if (gridView) { gridView = false; $refs.outerSlideContainer.scrollTo({ top: 0, behavior: 'smooth' }); $dispatch('leavegridview'); }"
                             {
-                                h1 x-show="gridView" x-cloak x-text="'Slide ' + (slideIndex + 1)" ."absolute text-5xl text-slate-500 -top-20 left-[45%]" {}
-                                button "@click"="isReordering = !isReordering; reorderedSlideIndex = slideIndex; $event.stopPropagation();"
-                                    x-show="!isLive && gridView && (!isReordering || slideIndex == reorderedSlideIndex)" x-cloak
-                                    ."absolute top-6 right-8 size-28 p-5 z-30 rounded-full text-slate-400 bg-slate-50 hover:bg-slate-100 shadow-2xl"
-                                    { (SvgIcon::Move.render()) }
-                                button "@click"="poll.slides.splice(slideIndex, 1); gotoSlide(poll.activeSlide); $event.stopPropagation();"
-                                    x-show="!isLive && gridView && !isReordering" x-cloak
-                                    ."absolute top-6 right-44 z-30 size-28 p-5 rounded-full text-slate-400 bg-slate-50 hover:bg-slate-100 shadow-2xl"
-                                    { (SvgIcon::Trash2.render()) }
-                                button x-show="gridView && isReordering && slideIndex % 3 == 0" x-cloak ."absolute h-full w-[14%] top-0 -left-[17%] z-40 rounded-lg bg-red-200 hover:bg-red-300"
-                                    "@click"="$event.stopPropagation(); moveSlide(slideIndex, true); isReordering = false;"
-                                { }
-                                button x-show="gridView && isReordering" x-cloak ."absolute h-full w-[14%] top-0 -right-[17%] z-40 rounded-lg bg-red-200 hover:bg-red-300"
-                                    "@click"="$event.stopPropagation(); moveSlide(slideIndex, false); isReordering = false;"
-                                { }
-                                input type="text" x-model="slide.question"
-                                    "@input"="save" "@keyup.enter"="questionInputEnterEvent(slideIndex, slide)"
-                                    ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
-                                    ":disabled"="isLive"
-                                    placeholder="Question"
-                                    ."w-full mb-3 px-1 py-0.5 text-xl text-slate-800 bg-transparent";
-                                template x-if="slide.type == 'undefined'" {
-                                    div {
-                                        ."mb-2 text-slate-500 tracking-tight text-center" {
-                                            "Choose item type:"
-                                        }
-                                        ."flex justify-center gap-4" {
-                                            button "@click"="slide.type = 'mc'; slide.mcAnswers.push({ text: '', isCorrect: false }, { text: '', isCorrect: false }); save(); document.getElementById('question-input-' + slideIndex).focus();" ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
-                                                ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
-                                            {
-                                                ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) }
-                                                "Multiple choice"
+                                div ."flex-1 flex flex-col" {
+                                    h1 x-show="gridView" x-cloak x-text="'Slide ' + (slideIndex + 1)" ."absolute text-5xl text-slate-500 -top-20 left-[45%]" {}
+                                    button "@click"="isReordering = !isReordering; reorderedSlideIndex = slideIndex; $event.stopPropagation();"
+                                        x-show="!isLive && gridView && (!isReordering || slideIndex == reorderedSlideIndex)" x-cloak
+                                        ."absolute top-6 right-8 size-28 p-5 z-30 rounded-full text-slate-400 bg-slate-50 hover:bg-slate-100 shadow-2xl"
+                                        { (SvgIcon::Move.render()) }
+                                    button "@click"="poll.slides.splice(slideIndex, 1); gotoSlide(poll.activeSlide); $event.stopPropagation();"
+                                        x-show="!isLive && gridView && !isReordering" x-cloak
+                                        ."absolute top-6 right-44 z-30 size-28 p-5 rounded-full text-slate-400 bg-slate-50 hover:bg-slate-100 shadow-2xl"
+                                        { (SvgIcon::Trash2.render()) }
+                                    button x-show="gridView && isReordering && slideIndex % 3 == 0" x-cloak ."absolute h-full w-[14%] top-0 -left-[17%] z-40 rounded-lg bg-red-200 hover:bg-red-300"
+                                        "@click"="$event.stopPropagation(); moveSlide(slideIndex, true); isReordering = false;"
+                                    { }
+                                    button x-show="gridView && isReordering" x-cloak ."absolute h-full w-[14%] top-0 -right-[17%] z-40 rounded-lg bg-red-200 hover:bg-red-300"
+                                        "@click"="$event.stopPropagation(); moveSlide(slideIndex, false); isReordering = false;"
+                                    { }
+                                    span x-init="$el.innerText = slide.question"
+                                        "@input"="slide.question = $el.innerText; save();"
+                                        "@keydown.enter"="if (!$event.shiftKey) { $event.preventDefault(); questionInputEnterEvent(slideIndex, slide); }"
+                                        ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
+                                        ":contenteditable"="!isLive"
+                                        ."block mb-3 px-1 py-0.5 text-xl text-slate-800 bg-transparent" {}
+                                    template x-if="slide.type == 'undefined'" {
+                                        div {
+                                            ."mb-2 text-slate-500 tracking-tight text-center" {
+                                                "Choose item type:"
                                             }
-                                            button "@click"="slide.type = 'ft'; save(); document.getElementById('question-input-' + slideIndex).focus();"
-                                                ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
-                                                ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
-                                            {
-                                                ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
-                                                "Free text"
-                                            }
-                                        }
-                                    }
-                                }
-                                /*template x-if="slide.type == 'firstSlide'" {
-                                    div ."h-full flex justify-center items-center gap-20" {
-                                        div ."p-4" {
-                                            div ."mb-1 text-sm text-slate-500 text-center" {
-                                                "Enter on "
-                                                a x-show="code !== null" ."text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
-                                                span x-show="code === null" ."text-indigo-300 underline" { "svoote.com" }
-                                            }
-                                            div x-text="code !== null ? code : '0000'" ":class"="isLive ? 'text-slate-700' : 'text-slate-300'" ."mb-6 text-3xl text-center tracking-wider font-bold" {}
-                                            div ."relative w-32 flex justify-center" {
-                                                div #"qrcode" ":class"="isLive || 'blur-sm'" x-effect="renderQRCode($el, code)" {}
-                                                div x-show="!isLive" ."absolute size-full inset-0 flex justify-center items-center" { }
-                                            }
-                                        }
-                                        div ."w-[25rem]" {
-                                            (Illustrations::TeamCollaboration.render())
-                                        }
-                                    }
-                                }
-                                template x-if="slide.type == 'lastSlide'" {
-                                    div ."h-full flex flex-col justify-center" {
-                                        ."mx-auto w-24" { (Illustrations::InLove.render()) }
-                                        ."mt-8 text-slate-500 text-center text-sm" { "This poll has no more items. Thank you for using svoote.com" }
-                                    }
-                                }*/
-                                template x-if="slide.type == 'mc'" {
-                                    div ."relative h-full" {
-                                        template x-for="(answer, answer_index) in slide.mcAnswers" {
-                                            div ."mb-1.5 flex items-center gap-2" {
-                                                div x-text="incrementChar('A', answer_index)" ."ml-2 text-sm text-slate-400" {}
-                                                input type="text" x-model="answer.text" "@input"="save()"
-                                                    "@keyup.enter"="let next = $el.parentElement.nextSibling; if (next.tagName == 'DIV') next.children[1].focus(); else next.click();"
+                                            ."flex justify-center gap-4" {
+                                                button "@click"="slide.type = 'mc'; slide.mcAnswers.push({ text: '', isCorrect: false }, { text: '', isCorrect: false }); save(); document.getElementById('question-input-' + slideIndex).focus();" ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
                                                     ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
-                                                    ":id"="(answer_index == 0) && 's-' + slideIndex + '-mc-answer-0'"
-                                                    ":disabled"="isLive"
-                                                    ."w-full px-1 py-0.5 text-slate-700 bg-transparent";
-                                                //button x-show="!isLive" "@click"="answer.isCorrect = !answer.isCorrect; save()" ":class"="answer.isCorrect ? 'text-green-600' : 'text-slate-300 hover:text-green-600'" ."size-6" { (SvgIcon::CheckSquare.render()) }
-                                                button x-show="!isLive" "@click"="slide.mcAnswers.splice(answer_index, 1); save();" ."size-6 text-slate-300 hover:text-slate-500" { (SvgIcon::Trash2.render()) }
+                                                {
+                                                    ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) }
+                                                    "Multiple choice"
+                                                }
+                                                button "@click"="slide.type = 'ft'; save(); document.getElementById('question-input-' + slideIndex).focus();"
+                                                    ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
+                                                    ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
+                                                {
+                                                    ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
+                                                    "Free text"
+                                                }
                                             }
                                         }
-                                        button
-                                            "@click"={"if (slide.mcAnswers.length < " (POLL_MAX_MC_ANSWERS) ") { slide.mcAnswers.push({ text: '', isCorrect: false }); save(); $nextTick(() => $el.previousSibling.children[1].focus()); }" }
-                                            ":class"={ "(slide.mcAnswers.length >= " (POLL_MAX_MC_ANSWERS) ") && 'hidden'" }
-                                            ."ml-6 text-slate-700 underline"
-                                            ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
-                                            ":id"="'add-mc-answer-' + slideIndex"
-                                            x-show="!isLive"
-                                            { "Add answer" }
-                                        div ."absolute w-full left-0 bottom-0 flex items-start justify-center gap-4" {
+                                    }
+                                    /*template x-if="slide.type == 'firstSlide'" {
+                                        div ."h-full flex justify-center items-center gap-20" {
+                                            div ."p-4" {
+                                                div ."mb-1 text-sm text-slate-500 text-center" {
+                                                    "Enter on "
+                                                    a x-show="code !== null" ."text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
+                                                    span x-show="code === null" ."text-indigo-300 underline" { "svoote.com" }
+                                                }
+                                                div x-text="code !== null ? code : '0000'" ":class"="isLive ? 'text-slate-700' : 'text-slate-300'" ."mb-6 text-3xl text-center tracking-wider font-bold" {}
+                                                div ."relative w-32 flex justify-center" {
+                                                    div #"qrcode" ":class"="isLive || 'blur-sm'" x-effect="renderQRCode($el, code)" {}
+                                                    div x-show="!isLive" ."absolute size-full inset-0 flex justify-center items-center" { }
+                                                }
+                                            }
+                                            div ."w-[25rem]" {
+                                                (Illustrations::TeamCollaboration.render())
+                                            }
+                                        }
+                                    }
+                                    template x-if="slide.type == 'lastSlide'" {
+                                        div ."h-full flex flex-col justify-center" {
+                                            ."mx-auto w-24" { (Illustrations::InLove.render()) }
+                                            ."mt-8 text-slate-500 text-center text-sm" { "This poll has no more items. Thank you for using svoote.com" }
+                                        }
+                                    }*/
+                                    template x-if="slide.type == 'mc'" {
+                                        div ."relative h-full" {
                                             template x-for="(answer, answer_index) in slide.mcAnswers" {
-                                                div ."w-28" {
-                                                    div ."h-40 flex flex-col justify-end items-center" {
-                                                        div ":class"="colorPalette[answer_index % colorPalette.length]"
-                                                            ":style"="`height: ${ Math.max(2, slide.stats !== null ? slide.stats.percentages[answer_index] : 2) }%;`"
-                                                            ."w-16 transition-all duration-300 relative shadow-lg"
-                                                        {
-                                                            div x-text="`${ slide.stats !== null ? slide.stats.counts[answer_index] : 0 }`"
-                                                                ."absolute w-full text-slate-600 text-center font-medium -translate-y-7" {}
-                                                        }
-                                                    }
-                                                    div x-text="answer.text" ."h-10 my-2 text-slate-600 text-sm text-center break-words overflow-hidden" {}
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                template x-if="slide.type == 'ft'" {
-                                    div ."relative h-full" {
-                                        div ."pl-2 flex gap-2 items-center text-slate-500" {
-                                            div ."size-4 shrink-0" { (SvgIcon::Edit3.render()) }
-                                            "Free text: Participants can submit their own answer."
-                                        }
-                                        div ."relative mx-auto my-[2.5rem] h-[calc(90%-4rem)] w-full max-w-2xl"
-                                            ":id"="`word-cloud-${slideIndex}`"
-                                            "@resize.window"="$nextTick(() => { renderWordCloud(slideIndex); })"
-                                            "@leavegridview.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
-                                            "@slidechange.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
-                                        {
-                                            template x-for="(term, termIndex) in (slide.stats !== null ? slide.stats.terms : [])" {
-                                                div ."absolute size-fit inset-0 font-bold leading-none whitespace-nowrap"
-                                                    x-text="term.text"
-                                                    ":class"="['text-rose-500', 'text-cyan-500', 'text-lime-500', 'text-fuchsia-500', 'text-slate-500', 'text-teal-500'][termIndex % 6]"
-                                                    ":title"="`${term.text}: ${term.count}`"
-                                                    ":style"="`transition: all 0.5s ease-out; font-size: ${ 0.5 + 2.25 * term.count / slide.stats.maxCount }rem; opacity: ${0.7 + 0.3 * term.count / slide.stats.maxCount }; letter-spacing: ${0.02 - 0.06 * (term.count / slide.stats.maxCount) }em; font-weight: ${500 + 300 * (term.count / slide.stats.maxCount) };`"
-                                                    {}
-                                            }
-                                        }
-                                        div x-show="(slide.stats !== null ? slide.stats.terms : []).length == 0"
-                                            ."absolute size-full inset-0 flex items-center justify-center text-slate-500 text-sm"
-                                            { "The submitted answers will show up here in a word cloud." }
-                                        /*div ."mt-24 text-slate-500 text-center text-sm"  { "Correct answers:" }
-                                        div ."mx-auto my-4 max-w-2xl flex justify-center flex-wrap gap-4" {
-                                            template x-for="(answer, answer_index) in slide.ftAnswers" {
-                                                div ."flex items-center gap-1" {
-                                                    span x-init="$el.innerText = answer.text" "@input"="answer.text = $el.innerText; save();" contenteditable
-                                                        ."block w-fit min-w-16 px-3 py-0.5 bg-slate-100 text-slate-500 rounded-full outline-none"
+                                                div ."mb-1.5 flex items-center gap-2" {
+                                                    div x-text="incrementChar('A', answer_index)" ."ml-2 text-sm text-slate-400" {}
+                                                    input type="text" x-model="answer.text" "@input"="save()"
+                                                        "@keydown.enter"="let next = $el.parentElement.nextSibling; if (next.tagName == 'DIV') next.children[1].focus(); else next.click();"
                                                         ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
-                                                        ":id"="(answer_index == 0) && 's-' + slideIndex + '-ft-answer-0'"
-                                                        "@keydown.enter.prevent"="let next = $el.parentElement.nextSibling; if (next.tagName == 'DIV') next.children[0].focus(); else next.click();" {}
-                                                    button "@click"="slide.ftAnswers.splice(answer_index, 1); save();" ."size-4 text-slate-300" { (SvgIcon::X.render()) }
+                                                        ":id"="(answer_index == 0) && 's-' + slideIndex + '-mc-answer-0'"
+                                                        ":disabled"="isLive"
+                                                        ."w-full px-1 py-0.5 text-slate-700 bg-transparent";
+                                                    //button x-show="!isLive" "@click"="answer.isCorrect = !answer.isCorrect; save()" ":class"="answer.isCorrect ? 'text-green-600' : 'text-slate-300 hover:text-green-600'" ."size-6" { (SvgIcon::CheckSquare.render()) }
+                                                    button x-show="!isLive" "@click"="slide.mcAnswers.splice(answer_index, 1); save();" ."size-6 text-slate-300 hover:text-slate-500" { (SvgIcon::Trash2.render()) }
                                                 }
                                             }
-                                            button "@click"="slide.ftAnswers.push({ text: '' }); save(); $nextTick(() => $el.previousSibling.children[0].focus());"
-                                                ":id"="'add-ft-answer-' + slideIndex"
-                                                ."size-7 p-0.5 text-slate-300 border rounded-full"
-                                            { (SvgIcon::Plus.render()) }
+                                            button
+                                                "@click"={"if (slide.mcAnswers.length < " (POLL_MAX_MC_ANSWERS) ") { slide.mcAnswers.push({ text: '', isCorrect: false }); save(); $nextTick(() => $el.previousSibling.children[1].focus()); }" }
+                                                ":class"={ "(slide.mcAnswers.length >= " (POLL_MAX_MC_ANSWERS) ") && 'hidden'" }
+                                                ."ml-6 text-slate-700 underline"
+                                                ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
+                                                ":id"="'add-mc-answer-' + slideIndex"
+                                                x-show="!isLive"
+                                                { "Add answer" }
+                                            div ."absolute w-full left-0 bottom-0 flex items-start justify-center gap-4" {
+                                                template x-for="(answer, answer_index) in slide.mcAnswers" {
+                                                    div ."w-28" {
+                                                        div ."h-40 flex flex-col justify-end items-center" {
+                                                            div ":class"="colorPalette[answer_index % colorPalette.length]"
+                                                                ":style"="`height: ${ Math.max(2, slide.stats !== null ? slide.stats.percentages[answer_index] : 2) }%;`"
+                                                                ."w-16 transition-all duration-300 relative shadow-lg"
+                                                            {
+                                                                div x-text="`${ slide.stats !== null ? slide.stats.counts[answer_index] : 0 }`"
+                                                                    ."absolute w-full text-slate-600 text-center font-medium -translate-y-7" {}
+                                                            }
+                                                        }
+                                                        div x-text="answer.text" ."h-10 my-2 text-slate-600 text-sm text-center break-words overflow-hidden" {}
+                                                    }
+                                                }
+                                            }
                                         }
-                                        div ."text-slate-500 text-center text-sm"  { "If the leaderboard is enabled, Participants can receive points for submitting the correct answer." }
-                                        */
+                                    }
+                                    template x-if="slide.type == 'ft'" {
+                                        div ."relative flex-1" {
+                                            div ."relative mx-auto my-[2.5rem] h-[calc(90%-4rem)] w-full max-w-2xl"
+                                                ":id"="`word-cloud-${slideIndex}`"
+                                                "@resize.window"="$nextTick(() => { renderWordCloud(slideIndex); })"
+                                                "@leavegridview.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
+                                        //"@slidechange.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
+                                            {
+                                                template x-for="(term, termIndex) in (slide.stats !== null ? slide.stats.terms : [])" {
+                                                    div ."absolute size-fit inset-1/2 leading-none whitespace-nowrap"
+                                                        x-text="term.text"
+                                                        ":class"="['text-rose-500', 'text-cyan-500', 'text-lime-500', 'text-fuchsia-500', 'text-slate-500', 'text-teal-500'][termIndex % 6]"
+                                                        ":title"="`${term.text}: ${term.count}`"
+                                                        ":style"="calculateWCTermStyle(term, slide.stats.maxCount)"
+                                                        {}
+                                                }
+                                            }
+                                            div x-show="(slide.stats !== null ? slide.stats.terms : []).length == 0"
+                                                ."absolute size-full inset-0 flex items-center justify-center gap-2 text-slate-500 text-sm"
+                                            {
+                                                div ."size-4 shrink-0" { (SvgIcon::Edit3.render()) }
+                                                "Free text: Participants can submit their own answer."
+                                            }
+                                            /*div ."mt-24 text-slate-500 text-center text-sm"  { "Correct answers:" }
+                                            div ."mx-auto my-4 max-w-2xl flex justify-center flex-wrap gap-4" {
+                                                template x-for="(answer, answer_index) in slide.ftAnswers" {
+                                                    div ."flex items-center gap-1" {
+                                                        span x-init="$el.innerText = answer.text" "@input"="answer.text = $el.innerText; save();" contenteditable
+                                                            ."block w-fit min-w-16 px-3 py-0.5 bg-slate-100 text-slate-500 rounded-full outline-none"
+                                                            ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
+                                                            ":id"="(answer_index == 0) && 's-' + slideIndex + '-ft-answer-0'"
+                                                            "@keydown.enter.prevent"="let next = $el.parentElement.nextSibling; if (next.tagName == 'DIV') next.children[0].focus(); else next.click();" {}
+                                                        button "@click"="slide.ftAnswers.splice(answer_index, 1); save();" ."size-4 text-slate-300" { (SvgIcon::X.render()) }
+                                                    }
+                                                }
+                                                button "@click"="slide.ftAnswers.push({ text: '' }); save(); $nextTick(() => $el.previousSibling.children[0].focus());"
+                                                    ":id"="'add-ft-answer-' + slideIndex"
+                                                    ."size-7 p-0.5 text-slate-300 border rounded-full"
+                                                { (SvgIcon::Plus.render()) }
+                                            }
+                                            div ."text-slate-500 text-center text-sm"  { "If the leaderboard is enabled, Participants can receive points for submitting the correct answer." }
+                                            */
+                                        }
                                     }
                                 }
-                                div x-show="isLive" x-cloak ."absolute right-8 top-10 flex flex-col items-center" {
-                                    div x-data="qrCode" x-effect="render($el, code)" ."mb-4 w-24" {}
-                                    div x-text="code !== null ? code : ''" ."text-2xl text-slate-600 tracking-wide font-bold" {}
-                                    div ."text-xs text-slate-500 text-center" {
-                                        "Go to "
-                                        a x-show="code !== null" ."text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
-                                        span x-show="code === null" ."text-indigo-300 underline" { "svoote.com" }
+                                div ."w-24" {
+                                    div x-show="isLive" x-cloak ."flex flex-col items-center" {
+                                        div x-data="qrCode" x-effect="render($el, code)" ."mb-4 w-24" {}
+                                        div x-text="code !== null ? code : ''" ."text-2xl text-slate-600 tracking-wide font-bold" {}
+                                        div ."text-xs text-slate-500 text-center" {
+                                            "Go to "
+                                            a x-show="code !== null" ."text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
+                                            span x-show="code === null" ."text-indigo-300 underline" { "svoote.com" }
+                                        }
                                     }
                                 }
                                 div x-show="gridView" x-cloak ."absolute size-full inset-0" {} // Stops elements from being clicked or focused during grid view

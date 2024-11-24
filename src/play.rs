@@ -58,15 +58,14 @@ pub async fn get_play_page(
                         div ."flex items-baseline justify-center gap-2 mb-12 text-3xl font-semibold tracking-tight" {
                             "Svoote" ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
                         }
-                        div ."mb-2 text-center text-sm text-slate-500" { "Enter the 4-digit code you see in front." }
+                        div ."mb-3 text-center text-sm text-slate-500" { "Enter the 4-digit code you see in front." }
                         input name="c" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="Code" value=(poll_id_str)
-                            ."w-full px-3 py-1.5 w-40 text-slate-700 text-lg font-medium border-2 border-slate-500 focus:border-slate-700 rounded-lg outline-none";
-                        @if let Some(c) = poll_id { div ."mt-1 text-sm text-red-500" { "No poll with code " (c) " found." } }
-                        button type="submit" ."w-full mt-6 py-1.5 text-center text-lg text-white font-bold bg-slate-700 hover:bg-slate-500 rounded-lg" { "Join" }
+                            ."block w-full px-3 py-1.5 w-40 text-slate-700 text-lg font-medium ring-2 ring-slate-500 focus:ring-indigo-500 focus:ring-4 rounded-lg outline-none";
+                        @if let Some(c) = poll_id { div ."mt-2 text-sm text-red-500" { "No poll with code " (c) " found." } }
+                        button type="submit" ."w-full h-10 mt-6 flex items-center justify-center text-white font-bold bg-slate-700 hover:bg-slate-500 rounded-lg" { "Join" }
                     }
-                    hr ."my-16 max-w-64 mx-auto border-slate-700";
-                    div ."max-w-64 mx-auto" {
-                        div ."mb-4" { (Illustrations::TeamCollaboration.render()) }
+                    div ."mt-32 max-w-64 mx-auto" {
+                        div ."mb-4 mx-auto max-w-56" { (Illustrations::TeamCollaboration.render()) }
                         h1 ."mb-5 text-2xl text-center font-bold tracking-tight" { "Want to create your own polls?" }
                         a href="/" ."block w-fit mx-auto text-indigo-600 underline font-semibold hover:text-indigo-800" { "Start now →"}
                     }
@@ -89,25 +88,25 @@ pub async fn get_play_page(
                     script { "document.code = " (poll_id.unwrap_or(0)) ";" }
                     div x-data="participant" {
                         div ."mt-6 mb-16 mx-4 sm:mx-14" {
-                            div ."w-full max-w-80 mx-auto" {
+                            div ."w-full max-w-64 min-h-64 mx-auto" {
                                 div ."mb-10 flex items-baseline justify-center gap-2 text-3xl font-semibold tracking-tight" {
                                     "Svoote" ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
                                 }
                                 template x-if="currentSlide.slideType == 'null'" { div {} }
                                 template x-if="currentSlide.slideType == 'mc'" {
                                     div {
-                                        h1 x-text="currentSlide.question" ."mb-6 text-xl text-slate-700 font-medium" {}
+                                        h1 x-text="currentSlide.question" ."mb-3 text-slate-700 font-medium" {}
                                         template x-for="(answer, answerIndex) in currentSlide.answers" {
-                                            label ."w-full mb-5 px-4 py-2 flex gap-4 items-center ring-[2.5px] ring-slate-500 has-[:checked]:ring-4 has-[:checked]:ring-indigo-500 rounded-lg" {
-                                                input type="radio" x-model="currentSlide.selectedAnswer" ":disabled"="currentSlide.submitted" ":value"="answerIndex" ."accent-indigo-500 size-[1.2rem]";
-                                                div ."text-slate-700 text-lg font-medium" x-text="answer.text" {}
+                                            label ."w-full mb-4 px-3 py-1.5 flex gap-2 items-center ring-2 ring-slate-500 has-[:checked]:ring-4 has-[:checked]:ring-indigo-500 rounded-lg" {
+                                                input type="radio" x-model="currentSlide.selectedAnswer" ":disabled"="currentSlide.submitted" ":value"="answerIndex" ."accent-indigo-500";
+                                                div ."text-slate-700 font-medium" x-text="answer.text" {}
                                             }
                                         }
-                                        div ."relative mt-8 h-12" {
+                                        div ."relative mt-8 h-10" {
                                             button x-show="!currentSlide.submitted"
                                                 ":disabled"="currentSlide.selectedAnswer === ''"
                                                 "@click"={ "submitMCAnswer(" (poll_id_str) ")" }
-                                                ."absolute size-full inset-0 flex items-center justify-center text-lg text-white font-bold bg-slate-700 rounded-lg hover:bg-slate-600 disabled:bg-slate-500" { "Submit" }
+                                                ."absolute size-full inset-0 flex items-center justify-center text-white font-bold bg-slate-700 rounded-lg hover:bg-slate-600 disabled:bg-slate-500" { "Submit" }
                                             div x-show="currentSlide.submitted"
                                                 ."absolute size-full inset-0 flex items-center justify-center text-slate-500 text-sm"
                                                 { "Your answer has been submitted" }
@@ -116,18 +115,18 @@ pub async fn get_play_page(
                                 }
                                 template x-if="currentSlide.slideType == 'ft'" {
                                     div {
-                                        h1 x-text="currentSlide.question" ."mb-6 text-xl text-slate-700 font-medium" {}
+                                        h1 x-text="currentSlide.question" ."mb-3 text-slate-700 font-medium" {}
                                         input type="text"
                                             x-model="currentSlide.selectedAnswer"
                                             "@keyup.enter"="$refs.ftSubmitButton.click()"
                                             ":disabled"="currentSlide.submitted"
-                                            ."w-full px-4 py-2 text-slate-700 text-lg font-medium ring-[2.5px] ring-slate-500 rounded-lg";
-                                        div ."relative mt-8 h-12" {
+                                            ."w-full px-4 py-2 text-slate-700 font-medium ring-2 ring-slate-500 rounded-lg focus:ring-indigo-500";
+                                        div ."relative mt-8 h-10" {
                                         button x-show="!currentSlide.submitted"
                                             x-ref="ftSubmitButton"
                                             ":disabled"="currentSlide.selectedAnswer === ''"
                                             "@click"={ "submitFTAnswer(" (poll_id_str) ")" }
-                                            ."absolute size-full inset-0 flex items-center justify-center text-lg text-white font-bold bg-slate-700 rounded-lg hover:bg-slate-600 disabled:bg-slate-500" { "Submit" }
+                                            ."absolute size-full inset-0 flex items-center justify-center text-white font-bold bg-slate-700 rounded-lg hover:bg-slate-600 disabled:bg-slate-500" { "Submit" }
                                         div x-show="currentSlide.submitted"
                                             ."absolute size-full inset-0 flex items-center justify-center text-slate-500 text-sm"
                                             { "Your answer has been submitted" }
@@ -135,9 +134,10 @@ pub async fn get_play_page(
                                     }
                                 }
                             }
-                            //hr ."my-16 max-w-64 mx-auto border-slate-700";
-                            div ."max-w-64 mx-auto" {
-                                //a href="/" ."block w-fit mx-auto px-4 py-1 text-indigo-600 font-bold tracking-tight border rounded-full shadow hover:bg-slate-100" { "Start now →"}
+                            div ."mt-32 max-w-64 mx-auto" {
+                                div ."mb-4 mx-auto max-w-56" { (Illustrations::TeamCollaboration.render()) }
+                                h1 ."mb-5 text-2xl text-center font-bold tracking-tight" { "Want to create your own polls?" }
+                                a href="/" ."block w-fit mx-auto text-indigo-600 underline font-semibold hover:text-indigo-800" { "Start now →"}
                             }
                         }
                     }
@@ -381,16 +381,6 @@ pub async fn post_ft_answer(
     return Ok("Answer submitted".into_response());
 }
 
-/*
-pub fn render_poll_finished() -> Markup {
-    html! {
-        ."mx-auto mt-12 mb-6 w-24 md:w-32" { (Illustrations::InLove.render()) }
-        ."text-center text-sm text-slate-500" {
-            "This poll is finished." br;
-            "Thank you for using svoote.com"
-        }
-    }
-}*/
 /*
 fn render_name_avatar_button(
     leaderboard_enabled: bool,
