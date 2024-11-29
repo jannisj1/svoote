@@ -134,12 +134,6 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                     button x-show="gridView && isReordering" x-cloak ."absolute h-full w-[14%] top-0 -right-[17%] z-40 rounded-lg bg-red-200 hover:bg-red-300"
                                         "@click"="$event.stopPropagation(); moveSlide(slideIndex, false); isReordering = false;"
                                     { }
-                                    span x-init="$el.innerText = slide.question"
-                                        "@input"="slide.question = $el.innerText; save();"
-                                        "@keydown.enter"="if (!$event.shiftKey) { $event.preventDefault(); questionInputEnterEvent(slideIndex, slide); }"
-                                        ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
-                                        ":contenteditable"="!isLive"
-                                        ."block mb-3 px-1 py-0.5 text-xl text-slate-800 bg-transparent" {}
                                     template x-if="slide.type == 'undefined'" {
                                         div {
                                             ."mb-2 text-slate-500 tracking-tight text-center" {
@@ -162,44 +156,34 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                             }
                                         }
                                     }
-                                    /*template x-if="slide.type == 'firstSlide'" {
-                                        div ."h-full flex justify-center items-center gap-20" {
-                                            div ."p-4" {
-                                                div ."mb-1 text-sm text-slate-500 text-center" {
-                                                    "Enter on "
-                                                    a x-show="code !== null" ."text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
-                                                    span x-show="code === null" ."text-indigo-300 underline" { "svoote.com" }
-                                                }
-                                                div x-text="code !== null ? code : '0000'" ":class"="isLive ? 'text-slate-700' : 'text-slate-300'" ."mb-6 text-3xl text-center tracking-wider font-bold" {}
-                                                div ."relative w-32 flex justify-center" {
-                                                    div #"qrcode" ":class"="isLive || 'blur-sm'" x-effect="renderQRCode($el, code)" {}
-                                                    div x-show="!isLive" ."absolute size-full inset-0 flex justify-center items-center" { }
-                                                }
-                                            }
-                                            div ."w-[25rem]" {
-                                                (Illustrations::TeamCollaboration.render())
-                                            }
-                                        }
-                                    }
-                                    template x-if="slide.type == 'lastSlide'" {
-                                        div ."h-full flex flex-col justify-center" {
-                                            ."mx-auto w-24" { (Illustrations::InLove.render()) }
-                                            ."mt-8 text-slate-500 text-center text-sm" { "This poll has no more items. Thank you for using svoote.com" }
-                                        }
-                                    }*/
                                     template x-if="slide.type == 'mc'" {
                                         div ."relative h-full" {
-                                            template x-for="(answer, answer_index) in slide.mcAnswers" {
-                                                div ."mb-1.5 flex items-center gap-2" {
-                                                    div x-text="incrementChar('A', answer_index)" ."ml-2 text-sm text-slate-400" {}
-                                                    input type="text" x-model="answer.text" "@input"="save()"
-                                                        "@keydown.enter"="let next = $el.parentElement.nextSibling; if (next.tagName == 'DIV') next.children[1].focus(); else next.click();"
-                                                        ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
-                                                        ":id"="(answer_index == 0) && 's-' + slideIndex + '-mc-answer-0'"
-                                                        ":disabled"="isLive"
-                                                        ."w-full px-1 py-0.5 text-slate-700 bg-transparent";
-                                                    //button x-show="!isLive" "@click"="answer.isCorrect = !answer.isCorrect; save()" ":class"="answer.isCorrect ? 'text-green-600' : 'text-slate-300 hover:text-green-600'" ."size-6" { (SvgIcon::CheckSquare.render()) }
-                                                    button x-show="!isLive" "@click"="slide.mcAnswers.splice(answer_index, 1); save();" ."size-6 text-slate-300 hover:text-slate-500" { (SvgIcon::Trash2.render()) }
+                                            div ."flex gap-4" {
+                                                div ."flex-1" {
+                                                    span x-init="$el.innerText = slide.question"
+                                                        "@input"="slide.question = $el.innerText; save();"
+                                                        "@keydown.enter"="if (!$event.shiftKey) { $event.preventDefault(); questionInputEnterEvent(slideIndex, slide); }"
+                                                        ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
+                                                        ":contenteditable"="!isLive"
+                                                        ."block mb-3 px-1 py-0.5 text-xl text-slate-800 bg-transparent" {}
+                                                    template x-for="(answer, answer_index) in slide.mcAnswers" {
+                                                        div ."mb-1.5 flex items-center gap-2" {
+                                                            div x-text="incrementChar('A', answer_index)" ."ml-2 text-sm text-slate-400" {}
+                                                            input type="text" x-model="answer.text" "@input"="save()"
+                                                                "@keydown.enter"="let next = $el.parentElement.nextSibling; if (next.tagName == 'DIV') next.children[1].focus(); else next.click();"
+                                                                ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
+                                                                ":id"="(answer_index == 0) && 's-' + slideIndex + '-mc-answer-0'"
+                                                                ":disabled"="isLive"
+                                                                ."w-full px-1 py-0.5 text-slate-700 bg-transparent";
+                                                            //button x-show="!isLive" "@click"="answer.isCorrect = !answer.isCorrect; save()" ":class"="answer.isCorrect ? 'text-green-600' : 'text-slate-300 hover:text-green-600'" ."size-6" { (SvgIcon::CheckSquare.render()) }
+                                                            button x-show="!isLive" "@click"="slide.mcAnswers.splice(answer_index, 1); save();" ."size-6 text-slate-300 hover:text-slate-500" { (SvgIcon::Trash2.render()) }
+                                                        }
+                                                    }
+                                                }
+                                                div x-show="isLive" x-cloak ."translate-x-4 flex flex-col items-center" {
+                                                    div x-data="qrCode" x-effect="render($el, code)" ."mb-3 w-24" {}
+                                                    div x-text="code !== null ? code : ''" ."text-xl text-slate-600 tracking-wide font-bold" {}
+                                                    a x-show="code !== null" ."text-center text-xs text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
                                                 }
                                             }
                                             button
@@ -229,12 +213,27 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                         }
                                     }
                                     template x-if="slide.type == 'ft'" {
-                                        div ."relative flex-1" {
-                                            div ."relative mx-auto my-[2.5rem] h-[calc(90%-4rem)] w-full max-w-2xl"
+                                        div ."h-full flex flex-col" {
+                                            div ."flex gap-4" {
+                                                div ."flex-1" {
+                                                    span x-init="$el.innerText = slide.question"
+                                                        "@input"="slide.question = $el.innerText; save();"
+                                                        "@keydown.enter"="if (!$event.shiftKey) { $event.preventDefault(); questionInputEnterEvent(slideIndex, slide); }"
+                                                        ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
+                                                        ":contenteditable"="!isLive"
+                                                        ."block mb-3 px-1 py-0.5 text-xl text-slate-800 bg-transparent" {}
+                                                }
+                                                div x-show="isLive" x-cloak ."translate-x-4 flex flex-col items-center" {
+                                                    div x-data="qrCode" x-effect="render($el, code)" ."mb-3 w-24" {}
+                                                    div x-text="code !== null ? code : ''" ."text-xl text-slate-600 tracking-wide font-bold" {}
+                                                    a x-show="code !== null" ."text-center text-xs text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
+                                                }
+                                            }
+                                            div ."relative flex-1 mx-auto mt-8 w-full max-w-2xl"
                                                 ":id"="`word-cloud-${slideIndex}`"
                                                 "@resize.window"="$nextTick(() => { renderWordCloud(slideIndex); })"
                                                 "@leavegridview.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
-                                        //"@slidechange.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
+                                                "@slidechange.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
                                             {
                                                 template x-for="(term, termIndex) in (slide.stats !== null ? slide.stats.terms : [])" {
                                                     div ."absolute size-fit inset-1/2 leading-none whitespace-nowrap"
@@ -273,32 +272,30 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                         }
                                     }
                                 }
-                                div ."w-24" {
-                                    div x-show="isLive" x-cloak ."flex flex-col items-center" {
-                                        div x-data="qrCode" x-effect="render($el, code)" ."mb-4 w-24" {}
-                                        div x-text="code !== null ? code : ''" ."text-2xl text-slate-600 tracking-wide font-bold" {}
-                                        div ."text-xs text-slate-500 text-center" {
-                                            "Go to "
-                                            a x-show="code !== null" ."text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
-                                            span x-show="code === null" ."text-indigo-300 underline" { "svoote.com" }
-                                        }
-                                    }
-                                }
                                 div x-show="gridView" x-cloak ."absolute size-full inset-0" {} // Stops elements from being clicked or focused during grid view
                             }
                         }
                     }
                 }
             }
-            div ."mx-4 sm:mx-14 my-16" {
-                h1 ."mb-2 text-xl font-semibold " { "How do I use svoote.com?" }
-                ul ."ml-6 list-disc text-slate-500 space-y-1" {
-                    li { "Add slides by clicking the plus button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Plus.render()) } ") in the top left and fill the slides with your content." }
-                    li { "To remove slides or change the order of them, go to the grid view via the grid view button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Grid.render()) } ") in the top left." }
-                    li { "Start the interactive presentation by clicking the start button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Play.render()) } ") in the top right. A QR-Code will show up on the slides to let participants join your presentation." }
-                    li { "When you are finished with your presentation, you can stop it by clicking on the stop button ( " div ."inline-block size-3 bg-slate-500 translate-y-[0.1rem]" {} " ) in the top right." }
-                    li { "Your slides are saved locally in your browser. If you wish to transfer them to another device or store them for a longer time, click on the settings button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Settings.render()) } ") in the top left and then on 'Save presentation'. You can later import the slides via 'Load presentation'." }
+            button onclick="document.getElementById('help-dialog').showModal();"
+                ."mt-6 mx-auto px-4 py-1 flex items-center gap-1.5 text-slate-500 border rounded-full hover:bg-slate-100"
+                { div ."size-5" { (SvgIcon::Help.render()) } "How to use Svoote?" }
+            dialog #"help-dialog" ."fixed inset-0" {
+                div ."max-w-96 px-8 py-6 rounded-lg" {
+                    form method="dialog" ."flex justify-end" { button ."size-6 text-red-500" { (SvgIcon::X.render()) } }
+                    h1 ."mb-6 text-xl text-slate-500 font-semibold" { "Help" }
+                    ul ."ml-6 list-disc text-slate-500 space-y-1" {
+                        li { "Add slides by clicking the plus button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Plus.render()) } ") in the top left and fill the slides with your content." }
+                        li { "To remove slides or change the order of them, go to the grid view via the grid view button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Grid.render()) } ") in the top left." }
+                        li { "Start the interactive presentation by clicking the start button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Play.render()) } ") in the top right. A QR-Code will show up on the slides to let participants join your presentation." }
+                        li { "When you are finished with your presentation, you can stop it by clicking on the stop button ( " div ."inline-block size-3 bg-slate-500 translate-y-[0.1rem]" {} " ) in the top right." }
+                        li { "Your slides are saved locally in your browser. If you wish to transfer them to another device or store them for a longer time, click on the settings button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Settings.render()) } ") in the top left and then on 'Save presentation'. You can later import the slides via 'Load presentation'." }
+                    }
                 }
+            }
+            div ."my-24" {
+                a href="/about" ."text-center text-sm text-slate-500 underline" { "Features, pricing and mission →" }
             }
         },
     );
@@ -326,20 +323,6 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
                 match item["type"].as_str().ok_or(AppError::BadRequest(
                     "type field needs to be a string".to_string(),
                 ))? {
-                    "firstSlide" => {
-                        slides.push(Slide {
-                            question: String::new(),
-                            slide_type: SlideType::EntrySlide,
-                            player_scores: Vec::new(),
-                        });
-                    }
-                    "lastSlide" => {
-                        slides.push(Slide {
-                            question: String::new(),
-                            slide_type: SlideType::FinalSlide,
-                            player_scores: Vec::new(),
-                        });
-                    }
                     "mc" => {
                         let answers: Vec<(String, bool)> = item["mcAnswers"]
                             .as_array()

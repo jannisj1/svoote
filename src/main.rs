@@ -44,11 +44,11 @@ fn main() {
             .route("/stop_poll/:poll_id", post(host::post_stop_poll))
             .route("/ws/host/:poll_id", get(host::host_socket))
             .route("/ws/p/:poll_id", get(play::play_socket))
-            //.route("/about", get(about_page::get_about_page))
             .route("/submit_mc_answer/:poll_id", post(play::post_mc_answer))
             .route("/submit_ft_answer/:poll_id", post(play::post_ft_answer))
             //.route("/name_avatar/:poll_id", post(play::post_name_avatar))
             .route("/static/:file_name", get(static_file::http_get_static_file))
+            .route("/about", get(about_page::get_about_page))
             .route("/data-privacy", get(compliance::get_privacy_policy_page))
             .route(
                 "/terms-of-service",
@@ -64,5 +64,5 @@ fn main() {
 }
 
 async fn get_fallback() -> Response {
-    AppError::NotFound.into_response()
+    return AppError::NotFound.into_response();
 }

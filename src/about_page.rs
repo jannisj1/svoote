@@ -1,119 +1,15 @@
-/*use std::sync::OnceLock;
-
 use crate::{
     app_error::AppError,
-    config::COLOR_PALETTE,
-    html_page,
-    live_poll_store::{ShortID, LIVE_POLL_STORE},
-    slide::{FreeTextLiveAnswers, MultipleChoiceLiveAnswers, Slide, SlideType},
+    html_page::{self, render_header},
     svg_icons::SvgIcon,
-    word_cloud::WordCloud,
 };
-use axum::{
-    extract::Query,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Response};
 use maud::{html, Markup};
-use serde::Deserialize;
 
-#[derive(Deserialize)]
-pub struct GetStartPageParams {
-    pub poll_id: Option<String>,
-}
-
-pub async fn get_about_page(
-    Query(params): Query<GetStartPageParams>,
-) -> Result<Response, AppError> {
-    let poll_id_str = params.poll_id.unwrap_or(String::new());
-
-    if let Ok(poll_id) = poll_id_str.parse::<ShortID>() {
-        if let Some(_) = LIVE_POLL_STORE.get(poll_id) {
-            return Ok(Redirect::to(&format!("/p?c={}", poll_id)).into_response());
-        }
-    }
-
+pub async fn get_about_page() -> Result<Response, AppError> {
     return Ok(html_page::render_html_page("Svoote - About", html! {
-        ."container mx-auto px-4" {
-            form ."mt-28 mb-48 block flex flex-col items-center" {
-                ."mb-4 text-slate-700 text-sm" {
-                    "Join a poll by entering the code in front:"
-                }
-
-                ."flex justify-center items-center gap-3" {
-                    input
-                        type="text"
-                        name="poll_id"
-                        value=(poll_id_str)
-                        pattern="[0-9]*"
-                        inputmode="numeric"
-                        maxlength="6"
-                        placeholder="Code"
-                        ."w-32 px-6 py-2 text-slate-700 text-lg border-2 rounded-lg outline-none transition"
-                        ."border-slate-300 focus:border-slate-500"[poll_id_str.is_empty()]
-                        ."border-red-300 focus:border-red-500"[!poll_id_str.is_empty()];
-                    button #join-btn
-                        aria-label="Join poll"
-                        ."relative group p-1 bg-slate-700 rounded-full hover:bg-slate-900 transition"
-                        onclick="document.getElementById('join-btn').classList.add('htmx-request');"
-                    {
-                        ."block group-[.htmx-request]:hidden size-8 text-slate-100" { (SvgIcon::ArrowRight.render()) }
-                        ."hidden size-8 group-[.htmx-request]:flex justify-center items-center" {
-                            ."size-4" { (SvgIcon::Spinner.render()) }
-                        }
-                    }
-                }
-            }
-
-            ."mb-8 text-center text-slate-800 text-6xl font-medium" {
-                "Modern live polling"
-            }
-
-            ."mb-16 text-center text-slate-700 text-xl leading-8" {
-                "Powerful and simple modern live polling. Free for up to 100 live users." br;
-                "No login needed. No credit card required."
-            }
-
-            ."w-fit mb-24 mx-auto px-6 py-4 flex flex-col items-center bg-slate-700 rounded-xl shadow-lg" {
-                ."mb-3 text-slate-300 text-sm" {
-                    "Want to create your own poll?"
-                }
-                a
-                    ."px-6 py-2 flex items-center gap-2 text-slate-900 bg-slate-50 rounded-md hover:bg-slate-300 transition"
-                    href="/poll"
-                {
-                    "Start now"
-                    ."size-4 shrink-0" { (SvgIcon::ArrowRight.render()) }
-                }
-            }
-        }
-
-        #features ."my-64" {
-            (render_section("Features", "Get feedback from your audience in real time.", html! {
-                ."grid lg:grid-cols-2 gap-16" {
-                    ."p-6 bg-white rounded-lg" {
-                        ."mb-7 text-2xl text-slate-700 font-medium tracking-tight flex justify-center items-center gap-2" {
-                            ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) }
-                            "Multiple choice"
-                        }
-                        div #"demo-mc-container" hx-get="/about/demo_mc" hx-trigger="demoTick" hx-include="find input" {
-                            (render_mc_demo(0))
-                        }
-                    }
-                    ."p-6 bg-white rounded-lg h-[38em] lg:h-full" {
-                        ."mb-7 text-2xl text-slate-700 font-medium tracking-tight flex justify-center items-center gap-2" {
-                            ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
-                            "Free text"
-                        }
-                        div #"demo-ft-container" hx-get="/about/demo_ft" hx-trigger="demoTick" hx-include="find input" {
-                            (render_ft_demo(0))
-                        }
-                    }
-                }
-            }))
-        }
-        script { "initStartPageDemoAnimations()" }
-
-        #pricing ."mb-64" {
+        (render_header(html!{}))
+        section ."mb-64" {
             (render_section("Plans and Pricing", "Use it for free. Upgrade if you need to.", html! {
                 ."flex max-sm:flex-col justify-center gap-20" {
                     (render_plan(
@@ -148,7 +44,7 @@ pub async fn get_about_page(
             }))
         }
 
-        #mission ."mb-64" {
+        section ."mb-64" {
             (render_section("Mission", "Simple. Privacy friendly. Open source.", html! {
                 ."grid md:grid-cols-2 gap-10 text-slate-700" {
                     ."flex flex-col gap-10" {
@@ -193,7 +89,7 @@ pub async fn get_about_page(
                 }
             }))
         }
-    }, false).into_response());
+    }).into_response());
 }
 
 fn render_section(section_name: &str, heading: &str, content: Markup) -> Markup {
@@ -259,116 +155,3 @@ fn render_plan(
         }
     };
 }
-
-#[derive(Deserialize)]
-pub struct GetStartPageDemoParams {
-    pub index: usize,
-}
-
-pub async fn get_mc_start_page_demo(Query(params): Query<GetStartPageDemoParams>) -> Response {
-    return render_mc_demo(params.index).into_response();
-}
-
-pub async fn get_ft_start_page_demo(Query(params): Query<GetStartPageDemoParams>) -> Response {
-    return render_ft_demo(params.index).into_response();
-}
-
-pub fn render_mc_demo(index: usize) -> Markup {
-    let stats_timeline = [
-        (0, 0, 0),
-        (1, 0, 0),
-        (1, 1, 0),
-        (1, 2, 0),
-        (1, 2, 1),
-        (2, 2, 1),
-        (3, 2, 1),
-        (4, 2, 1),
-        (4, 2, 2),
-        (4, 2, 3),
-        (5, 2, 3),
-        (6, 2, 3),
-        (6, 3, 3),
-        (7, 3, 3),
-        (8, 3, 3),
-        (8, 3, 4),
-        (8, 3, 5),
-        (9, 3, 5),
-        (9, 4, 5),
-        (10, 4, 5),
-    ];
-
-    let mut example_mc_item = Slide {
-        question: "Is Severus Snape a good person?".to_string(),
-        slide_type: SlideType::SingleChoice(MultipleChoiceLiveAnswers {
-            answers: vec![
-                ("Yes".to_string(), false),
-                ("No".to_string(), false),
-                ("Maybe".to_string(), false),
-            ],
-            answer_counts: vec![
-                stats_timeline[index % stats_timeline.len()].0,
-                stats_timeline[index % stats_timeline.len()].1,
-                stats_timeline[index % stats_timeline.len()].2,
-            ],
-            player_answers: Vec::new(),
-        }),
-        player_scores: Vec::new(),
-    };
-
-    return html! {
-        input type="hidden" name="index" value=(index + 1);
-        (example_mc_item.render_host_view(1_000_000, 1, 22))
-        ."h-24" {}
-        (example_mc_item.render_statistics())
-    };
-}
-
-static FT_DEMO_MARKUP: OnceLock<Vec<Markup>> = OnceLock::new();
-
-pub fn render_ft_demo(index: usize) -> Markup {
-    let markup_array = FT_DEMO_MARKUP.get_or_init(|| {
-        let mut example_ft_item = Slide {
-            question: "How do you feel about the upcoming exam?".to_string(),
-            slide_type: SlideType::FreeText(FreeTextLiveAnswers {
-                word_cloud: WordCloud::new(),
-                player_answers: Vec::new(),
-            }),
-            player_scores: Vec::new(),
-        };
-
-        let answers = [
-            "didn't learn yet",
-            "well prepared",
-            "stressed",
-            "well prepared",
-            "stressed",
-            "what exam",
-            "stressed",
-            "don't care",
-            "no time to learn",
-            "no time to learn",
-            "what exam",
-            "well prepared",
-            "well prepared",
-        ];
-        let mut res = Vec::new();
-
-        for ans in answers {
-            if let SlideType::FreeText(ft_answers) = &mut example_ft_item.slide_type {
-                ft_answers.word_cloud.insert(ans);
-            }
-
-            res.push(html! {
-                input type="hidden" name="index" value=(res.len() + 1);
-                (example_ft_item.render_host_view(1_000_000, 2, 25))
-                ."h-24" {}
-                (example_ft_item.render_statistics())
-            });
-        }
-
-        return res;
-    });
-
-    return markup_array[index % markup_array.len()].clone();
-}
-*/

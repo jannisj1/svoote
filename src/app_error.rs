@@ -1,7 +1,7 @@
 use axum::response::{IntoResponse, Response};
 use maud::html;
 
-use crate::html_page;
+use crate::html_page::{self, render_header};
 
 #[derive(Debug)]
 pub enum AppError {
@@ -18,6 +18,7 @@ impl IntoResponse for AppError {
                 return (
                     axum::http::StatusCode::NOT_FOUND,
                     html_page::render_html_page("Svoote - 404 Not Found", html! {
+                        (render_header(html!{}))
                         h1 ."mt-20 text-slate-900 font-extrabold text-3xl sm:text-4xl lg:text-5xl tracking-tight text-center" { "404 - Not found" }
                         p ."mt-4 mb-20 text-lg text-slate-600 text-center" { "Unfortunately, the webpage at this address does not exist (anymore)." }
                     }).into_response()
@@ -31,7 +32,14 @@ impl IntoResponse for AppError {
             }
             AppError::OtherInternalServerError(s) => {
                 error!("Other internal server error: {s}");
-                return generate_500_response();
+                return (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    html_page::render_html_page("Svoote - 500 Internal Server Error", html! {
+                        (render_header(html!{}))
+                        h1 ."mt-20 text-slate-900 font-extrabold text-3xl sm:text-4xl lg:text-5xl tracking-tight text-center" { "500 - Internal server error" }
+                        p ."mt-4 mb-20 text-lg text-slate-600 text-center" { "Something went wrong, we are working on fixing the issue." }
+                    }) .into_response(),
+                ).into_response();
             }
         }
     }
@@ -48,19 +56,4 @@ impl core::fmt::Display for AppError {
 
         return Ok(());
     }
-}
-
-fn generate_500_response() -> Response {
-    return (
-        axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-        html_page::render_html_page(
-            "Svoote - 500 Internal server error",
-            html! {
-                h1 ."mt-20 text-slate-900 font-extrabold text-3xl sm:text-4xl lg:text-5xl tracking-tight text-center" { "500 - Internal server error" }
-                p ."mt-4 mb-20 text-lg text-slate-600 text-center" { "Something went wrong, we are working on fixing the issue." }
-            }
-        )
-        .into_response(),
-    )
-        .into_response();
 }
