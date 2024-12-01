@@ -160,9 +160,9 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                         div ."relative h-full" {
                                             div ."flex gap-4" {
                                                 div ."flex-1" {
+                                                    div ."-z-10 absolute px-1 py-0.5 text-xl text-slate-500 bg-transparent" x-cloak x-show="slide.question.trim() == ''" { "Question" }
                                                     span x-init="$el.innerText = slide.question"
-                                                        "@input"="slide.question = $el.innerText; save();"
-                                                        "@keydown.enter"="if (!$event.shiftKey) { $event.preventDefault(); questionInputEnterEvent(slideIndex, slide); }"
+                                                        "@input"="slide.question = $el.innerText; save(); console.log(slide.question);"
                                                         ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                         ":contenteditable"="!isLive"
                                                         ."block mb-3 px-1 py-0.5 text-xl text-slate-800 bg-transparent" {}
@@ -179,6 +179,14 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                             button x-show="!isLive" "@click"="slide.mcAnswers.splice(answer_index, 1); save();" ."size-6 text-slate-300 hover:text-slate-500" { (SvgIcon::Trash2.render()) }
                                                         }
                                                     }
+                                                    button
+                                                        "@click"={"if (slide.mcAnswers.length < " (POLL_MAX_MC_ANSWERS) ") { slide.mcAnswers.push({ text: '', isCorrect: false }); save(); $nextTick(() => $el.previousSibling.children[1].focus()); }" }
+                                                        ":class"={ "(slide.mcAnswers.length >= " (POLL_MAX_MC_ANSWERS) ") && 'hidden'" }
+                                                        ."ml-6 text-slate-700 underline"
+                                                        ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
+                                                        ":id"="'add-mc-answer-' + slideIndex"
+                                                        x-show="!isLive"
+                                                        { "Add answer" }
                                                 }
                                                 div x-show="isLive" x-cloak ."translate-x-4 flex flex-col items-center" {
                                                     div x-data="qrCode" x-effect="render($el, code)" ."mb-3 w-24" {}
@@ -186,14 +194,6 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                     a x-show="code !== null" ."text-center text-xs text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
                                                 }
                                             }
-                                            button
-                                                "@click"={"if (slide.mcAnswers.length < " (POLL_MAX_MC_ANSWERS) ") { slide.mcAnswers.push({ text: '', isCorrect: false }); save(); $nextTick(() => $el.previousSibling.children[1].focus()); }" }
-                                                ":class"={ "(slide.mcAnswers.length >= " (POLL_MAX_MC_ANSWERS) ") && 'hidden'" }
-                                                ."ml-6 text-slate-700 underline"
-                                                ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
-                                                ":id"="'add-mc-answer-' + slideIndex"
-                                                x-show="!isLive"
-                                                { "Add answer" }
                                             div ."absolute w-full left-0 bottom-0 flex items-start justify-center gap-4" {
                                                 template x-for="(answer, answer_index) in slide.mcAnswers" {
                                                     div ."w-28" {
@@ -206,7 +206,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                                     ."absolute w-full text-slate-600 text-center font-medium -translate-y-7" {}
                                                             }
                                                         }
-                                                        div x-text="answer.text" ."h-10 my-2 text-slate-600 text-sm text-center break-words overflow-hidden" {}
+                                                        div x-text="answer.text != '' ? answer.text : 'Answer ' + incrementChar('A', answer_index)" ."h-10 my-2 text-slate-600 text-sm text-center break-words overflow-hidden" {}
                                                     }
                                                 }
                                             }
@@ -216,9 +216,9 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                         div ."h-full flex flex-col" {
                                             div ."flex gap-4" {
                                                 div ."flex-1" {
+                                                    div ."-z-10 absolute px-1 py-0.5 text-xl text-slate-500 bg-transparent" x-cloak x-show="slide.question.trim() == ''" { "Question" }
                                                     span x-init="$el.innerText = slide.question"
                                                         "@input"="slide.question = $el.innerText; save();"
-                                                        "@keydown.enter"="if (!$event.shiftKey) { $event.preventDefault(); questionInputEnterEvent(slideIndex, slide); }"
                                                         ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                         ":contenteditable"="!isLive"
                                                         ."block mb-3 px-1 py-0.5 text-xl text-slate-800 bg-transparent" {}
@@ -245,30 +245,8 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                 }
                                             }
                                             div x-show="(slide.stats !== null ? slide.stats.terms : []).length == 0"
-                                                ."absolute size-full inset-0 flex items-center justify-center gap-2 text-slate-500 text-sm"
-                                            {
-                                                div ."size-4 shrink-0" { (SvgIcon::Edit3.render()) }
-                                                "Free text: Participants can submit their own answer."
-                                            }
-                                            /*div ."mt-24 text-slate-500 text-center text-sm"  { "Correct answers:" }
-                                            div ."mx-auto my-4 max-w-2xl flex justify-center flex-wrap gap-4" {
-                                                template x-for="(answer, answer_index) in slide.ftAnswers" {
-                                                    div ."flex items-center gap-1" {
-                                                        span x-init="$el.innerText = answer.text" "@input"="answer.text = $el.innerText; save();" contenteditable
-                                                            ."block w-fit min-w-16 px-3 py-0.5 bg-slate-100 text-slate-500 rounded-full outline-none"
-                                                            ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
-                                                            ":id"="(answer_index == 0) && 's-' + slideIndex + '-ft-answer-0'"
-                                                            "@keydown.enter.prevent"="let next = $el.parentElement.nextSibling; if (next.tagName == 'DIV') next.children[0].focus(); else next.click();" {}
-                                                        button "@click"="slide.ftAnswers.splice(answer_index, 1); save();" ."size-4 text-slate-300" { (SvgIcon::X.render()) }
-                                                    }
-                                                }
-                                                button "@click"="slide.ftAnswers.push({ text: '' }); save(); $nextTick(() => $el.previousSibling.children[0].focus());"
-                                                    ":id"="'add-ft-answer-' + slideIndex"
-                                                    ."size-7 p-0.5 text-slate-300 border rounded-full"
-                                                { (SvgIcon::Plus.render()) }
-                                            }
-                                            div ."text-slate-500 text-center text-sm"  { "If the leaderboard is enabled, Participants can receive points for submitting the correct answer." }
-                                            */
+                                                ."-z-10 absolute size-full inset-0 flex items-center justify-center gap-2 text-slate-500 text-sm"
+                                            { div ."size-4 shrink-0" { (SvgIcon::Edit3.render()) } "Free text: Participants can submit their own answer." }
                                         }
                                     }
                                 }
@@ -278,9 +256,14 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                     }
                 }
             }
-            button onclick="document.getElementById('help-dialog').showModal();"
-                ."mt-6 mx-auto px-4 py-1 flex items-center gap-1.5 text-slate-500 border rounded-full hover:bg-slate-100"
-                { div ."size-5" { (SvgIcon::Help.render()) } "How to use Svoote?" }
+            div ."mb-6 flex justify-center gap-6 items-center" {
+                button onclick="document.getElementById('help-dialog').showModal();"
+                    ."px-4 py-1 flex items-center gap-1.5 text-slate-500 border rounded-full hover:bg-slate-100"
+                    { div ."size-5" { (SvgIcon::Help.render()) } "How to use Svoote" }
+                a href="/about" ."px-4 py-1 flex items-center gap-1.5 text-slate-500 border rounded-full hover:bg-slate-100"
+                    { "About Svoote " div ."size-4" { (SvgIcon::Rss.render()) } }
+
+            }
             dialog #"help-dialog" ."fixed inset-0" {
                 div ."max-w-96 px-8 py-6 rounded-lg" {
                     form method="dialog" ."flex justify-end" { button ."size-6 text-red-500" { (SvgIcon::X.render()) } }
@@ -293,9 +276,6 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                         li { "Your slides are saved locally in your browser. If you wish to transfer them to another device or store them for a longer time, click on the settings button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Settings.render()) } ") in the top left and then on 'Save presentation'. You can later import the slides via 'Load presentation'." }
                     }
                 }
-            }
-            div ."my-24" {
-                a href="/about" ."text-center text-sm text-slate-500 underline" { "Features, pricing and mission →" }
             }
         },
     );

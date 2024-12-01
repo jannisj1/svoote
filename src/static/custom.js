@@ -271,18 +271,6 @@ document.addEventListener("alpine:init", () => {
       else this.poll.slides.splice(targetIndex + 1, 0, temp[0]);
     },
 
-    questionInputEnterEvent(slideIndex, slide) {
-      if (slide.type == "mc") {
-        let e = document.getElementById("s-" + slideIndex + "-mc-answer-0");
-        if (e !== null) e.focus();
-        else document.getElementById("add-mc-answer-" + slideIndex).click();
-      } else if (slide.type == "ft") {
-        let e = document.getElementById("s-" + slideIndex + "-ft-answer-0");
-        if (e !== null) e.focus();
-        else document.getElementById("add-ft-answer-" + slideIndex).click();
-      }
-    },
-
     async startPoll() {
       let response = await fetch("/start_poll", {
         method: "POST",

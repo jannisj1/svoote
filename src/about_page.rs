@@ -9,42 +9,16 @@ use maud::{html, Markup};
 pub async fn get_about_page() -> Result<Response, AppError> {
     return Ok(html_page::render_html_page("Svoote - About", html! {
         (render_header(html!{}))
-        section ."mb-64" {
-            (render_section("Plans and Pricing", "Use it for free. Upgrade if you need to.", html! {
-                ."flex max-sm:flex-col justify-center gap-20" {
-                    (render_plan(
-                        "Free",
-                        "Everything you need to get started.",
-                        "$0",
-                        "Up to 100 live users",
-                        "No account needed",
-                        &[
-                            "Unlimited number of polls",
-                            "Up to 100 live users",
-                            "Multiple choice questions",
-                            "Free text questions"
-                        ])
-                    )
-                    (render_plan(
-                        "Pro",
-                        "More question types, built for large audiences.",
-                        "$4",
-                        "Unlimited live users",
-                        "Ready for large conferences",
-                        &[
-                            "Unlimited number of polls",
-                            "Unlimited live users",
-                            "Multiple choice questions",
-                            "Free text questions",
-                            "Image questions",
-                            "Number questions"
-                        ])
-                    )
-                }
-            }))
+        h1 ."mt-64 mb-8 text-center text-slate-800 text-6xl font-medium" { "Modern live polling" }
+        h2 ."mb-16 text-center text-slate-700 text-xl leading-8" {
+            "Powerful and simple modern live polling. Free for up to 100 live users." br;
+            "No login needed. No credit card required."
         }
-
-        section ."mb-64" {
+        div ."w-fit mb-24 mx-auto px-6 py-4 flex flex-col items-center bg-slate-700 rounded-xl shadow-lg" {
+            div ."mb-3 text-slate-300 text-sm" { "Want to create your own poll?" }
+            a ."px-6 py-2 text-slate-900 bg-slate-50 rounded-md hover:bg-slate-300 transition" href="/" { "Start now →" }
+        }
+        section ."my-64" {
             (render_section("Mission", "Simple. Privacy friendly. Open source.", html! {
                 ."grid md:grid-cols-2 gap-10 text-slate-700" {
                     ."flex flex-col gap-10" {
@@ -89,13 +63,47 @@ pub async fn get_about_page() -> Result<Response, AppError> {
                 }
             }))
         }
+        section ."mb-64" {
+            (render_section("Plans and Pricing", "Use it for free. Upgrade if you need to.", html! {
+                ."flex max-sm:flex-col justify-center gap-20" {
+                    (render_plan(
+                        "Free",
+                        "Everything you need to get started.",
+                        "$0",
+                        "Up to 100 live users",
+                        "No account needed",
+                        &[
+                            "Unlimited number of polls",
+                            "Up to 100 live users",
+                            "Multiple choice questions",
+                            "Free text questions"
+                        ])
+                    )
+                    (render_plan(
+                        "Pro",
+                        "More question types, built for large audiences.",
+                        "$4",
+                        "Unlimited live users",
+                        "Ready for large conferences",
+                        &[
+                            "Unlimited number of polls",
+                            "Unlimited live users",
+                            "Multiple choice questions",
+                            "Free text questions",
+                            "Image questions",
+                            "Number questions"
+                        ])
+                    )
+                }
+            }))
+        }
     }).into_response());
 }
 
 fn render_section(section_name: &str, heading: &str, content: Markup) -> Markup {
     return html! {
-        ."container mx-auto mb-2 px-8 text-xl text-slate-600 font-medium" { (section_name) }
-        ."bg-slate-100 px-6 py-12 lg:rounded-lg lg:container lg:mx-auto" {
+        ."max-w-screen-lg mx-auto mb-2 px-8 text-xl text-slate-600 font-medium" { (section_name) }
+        ."max-w-screen-lg mx-auto bg-slate-100 px-6 py-12 rounded-lg" {
             ."mb-12 text-slate-800 text-3xl font-medium text-center leading-10" {
                 (heading)
             }

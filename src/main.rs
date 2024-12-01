@@ -55,6 +55,7 @@ fn main() {
                 get(compliance::get_terms_of_service_page),
             )
             .route("/cookie-policy", get(compliance::get_cookie_policy_page))
+            .route("/manage-cookies", get(compliance::get_manage_cookies_page))
             .route("/contact", get(compliance::get_contact_page))
             .route("/robots.txt", get(compliance::get_robots_txt))
             .fallback(get(get_fallback));

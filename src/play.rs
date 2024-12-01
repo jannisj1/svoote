@@ -95,7 +95,7 @@ pub async fn get_play_page(
                                 template x-if="currentSlide.slideType == 'null'" { div {} }
                                 template x-if="currentSlide.slideType == 'mc'" {
                                     div {
-                                        h1 x-text="currentSlide.question" ."mb-3 text-slate-700 font-medium" {}
+                                        h1 x-init="$el.innerText = currentSlide.question" x-effect="$el.innerText = currentSlide.question" ."mb-3 text-slate-700 font-medium" {}
                                         template x-for="(answer, answerIndex) in currentSlide.answers" {
                                             label ."w-full mb-4 px-3 py-1.5 flex gap-2 items-center ring-2 ring-slate-500 has-[:checked]:ring-4 has-[:checked]:ring-indigo-500 rounded-lg" {
                                                 input type="radio" x-model="currentSlide.selectedAnswer" ":disabled"="currentSlide.submitted" ":value"="answerIndex" ."accent-indigo-500";
@@ -115,7 +115,7 @@ pub async fn get_play_page(
                                 }
                                 template x-if="currentSlide.slideType == 'ft'" {
                                     div {
-                                        h1 x-text="currentSlide.question" ."mb-3 text-slate-700 font-medium" {}
+                                        h1 x-init="$el.innerText = currentSlide.question" x-effect="$el.innerText = currentSlide.question" ."mb-3 text-slate-700 font-medium" {}
                                         input type="text"
                                             x-model="currentSlide.selectedAnswer"
                                             "@keyup.enter"="$refs.ftSubmitButton.click()"

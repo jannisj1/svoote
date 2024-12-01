@@ -32,12 +32,6 @@ pub fn init() {
     ));
 
     bundles.push(create_bundle(
-        "cookies.js",
-        "text/javascript",
-        &["./src/static/enzuzo_24_07_18.js"],
-    ));
-
-    bundles.push(create_bundle(
         "qrcode.js",
         "text/javascript",
         &["./src/static/qrcode.min.js"],

@@ -33,23 +33,27 @@ pub fn render_html_page(title: &str, main_content: maud::Markup) -> maud::Markup
                 }
 
                 footer ."mt-4 px-4 py-8 text-xs text-slate-500 flex justify-center flex-wrap gap-4" {
-                    a href="/" ."hover:underline" {
-                        "Home"
+                    a href="/" ."hover:underline" { "Home" }
+                    a href="/about" ."hover:underline" { "About" }
+                    a href="/data-privacy" ."hover:underline" { "Data privacy" }
+                    a href="/terms-of-service" ."hover:underline" { "Terms of service" }
+                    a href="/cookie-policy" ."hover:underline" { "Cookie policy" }
+                    a href="/manage-cookies" ."hover:underline" { "Manage cookies" }
+                    a href="/contact" ."hover:underline" { "Contact" }
+                }
+
+                div x-cloak x-data="{ cookiesAccepted: false }" x-show="!cookiesAccepted"
+                    x-init="let local = JSON.parse(localStorage.getItem('cookiesAccepted')); cookiesAccepted = local !== null ? local : false;"
+                    ."fixed right-24 bottom-12 px-6 py-4 bg-slate-700 max-w-xl"
+                {
+                    h1 ."text-slate-100 text-xl font-semibold tracking-tight" { "Cookies" }
+                    p ."text-slate-300" {
+                        "Svoote.com only uses necessary cookies. We don't use cookies to track users across sites or show ads. "
+                        "For more information see our " a href="/cookie-policy" { "Cookie Policy"} "."
                     }
-                    a href="/about" ."hover:underline" {
-                        "About"
-                    }
-                    a href="/data-privacy" ."hover:underline" {
-                        "Data privacy"
-                    }
-                    a href="/terms-of-service" ."hover:underline" {
-                        "Terms of service"
-                    }
-                    a href="/cookie-policy" ."hover:underline" {
-                        "Cookie policy"
-                    }
-                    a href="/contact" ."hover:underline" {
-                        "Contact"
+                    div ."flex justify-end gap-4" {
+                        a href="/manage-cookies" ."px-2 py-1 bg-slate-300 text-slate-700" { "Customize" }
+                        button "@click"="cookiesAccepted = true; localStorage.setItem('cookiesAccepted', 'true');" ."px-2 py-1 bg-sky-500 text-slate-900" { "Accept necessary cookies" }
                     }
                 }
             }
