@@ -44,16 +44,17 @@ pub fn render_html_page(title: &str, main_content: maud::Markup) -> maud::Markup
 
                 div x-cloak x-data="{ cookiesAccepted: false }" x-show="!cookiesAccepted"
                     x-init="let local = JSON.parse(localStorage.getItem('cookiesAccepted')); cookiesAccepted = local !== null ? local : false;"
-                    ."fixed right-24 bottom-12 px-6 py-4 bg-slate-700 max-w-xl"
+                    ."fixed mx-8 bottom-12 px-6 py-4 bg-slate-700 border shadow-xl"
                 {
-                    h1 ."text-slate-100 text-xl font-semibold tracking-tight" { "Cookies" }
-                    p ."text-slate-300" {
+                    h1 ."mb-1 text-slate-100 text-xl font-semibold tracking-tight" { "Cookies" }
+                    p ."text-sm mb-5 text-slate-300" {
                         "Svoote.com only uses necessary cookies. We don't use cookies to track users across sites or show ads. "
-                        "For more information see our " a href="/cookie-policy" { "Cookie Policy"} "."
+                        "For more information see our " a href="/cookie-policy" ."underline" { "Cookie Policy"} "."
                     }
-                    div ."flex justify-end gap-4" {
-                        a href="/manage-cookies" ."px-2 py-1 bg-slate-300 text-slate-700" { "Customize" }
-                        button "@click"="cookiesAccepted = true; localStorage.setItem('cookiesAccepted', 'true');" ."px-2 py-1 bg-sky-500 text-slate-900" { "Accept necessary cookies" }
+                    div ."flex flex-wrap justify-end gap-4" {
+                        a href="/manage-cookies" ."px-4 py-1 bg-slate-300 text-slate-700 font-bold tracking-tight shadow-lg hover:bg-slate-400" { "Customize" }
+                        button "@click"="cookiesAccepted = true; localStorage.setItem('cookiesAccepted', 'true');"
+                            ."px-4 py-1 bg-sky-500 text-slate-100 font-bold tracking-tight shadow-lg hover:bg-sky-600" { "Accept necessary cookies" }
                     }
                 }
             }
