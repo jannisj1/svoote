@@ -53,7 +53,7 @@ pub async fn get_play_page(
         let html = html_page::render_html_page(
             "Svoote",
             html! {
-                div ."mt-6 mb-16 mx-4 sm:mx-14" {
+                div ."mt-6 mb-16 mx-8 sm:mx-14" {
                     form ."w-full max-w-64 mx-auto" {
                         div ."flex items-baseline justify-center gap-2 mb-12 text-3xl font-semibold tracking-tight" {
                             "Svoote" ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
@@ -87,8 +87,8 @@ pub async fn get_play_page(
                 html! {
                     script { "document.code = " (poll_id.unwrap_or(0)) ";" }
                     div x-data="participant" {
-                        div ."mt-6 mb-16 mx-4 sm:mx-14" {
-                            div ."w-full max-w-64 min-h-64 mx-auto" {
+                        div ."mt-6 mb-16 mx-8 sm:mx-14" {
+                            div ."w-full max-w-96 min-h-64 mx-auto" {
                                 div ."mb-10 flex items-baseline justify-center gap-2 text-3xl font-semibold tracking-tight" {
                                     "Svoote" ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
                                 }
@@ -134,7 +134,8 @@ pub async fn get_play_page(
                                     }
                                 }
                             }
-                            div ."mt-32 max-w-64 mx-auto" {
+                            hr ."mt-32";
+                            div ."mt-8 max-w-64 mx-auto" {
                                 div ."mb-4 mx-auto max-w-56" { (Illustrations::TeamCollaboration.render()) }
                                 h1 ."mb-5 text-2xl text-center font-bold tracking-tight" { "Want to create your own polls?" }
                                 a href="/" ."block w-fit mx-auto text-indigo-600 underline font-semibold hover:text-indigo-800" { "Start now →"}
@@ -345,7 +346,7 @@ pub async fn post_ft_answer(
         let trimmed_answer = form
             .answer
             .trim()
-            .to_lowercase()
+            .to_uppercase()
             .chars()
             .take(FREE_TEXT_MAX_CHAR_LENGTH)
             .collect::<SmartString<Compact>>();

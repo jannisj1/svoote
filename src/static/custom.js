@@ -164,7 +164,7 @@ document.addEventListener("alpine:init", () => {
         font-size: ${0.5 + (2.25 * term.count) / maxCount}rem;
         opacity: ${0.7 + (0.3 * term.count) / maxCount};
         letter-spacing: ${0.02 - 0.04 * (term.count / maxCount)}em;
-        font-weight: ${500 + 300 * (term.count / maxCount)};
+        font-weight: 500;
         top: ${term.top != null ? term.top : 0}px;
         left: ${term.left != null ? term.left : 0}px;
       `;

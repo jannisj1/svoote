@@ -72,7 +72,7 @@ pub async fn get_manage_cookies_page() -> Result<Response, AppError> {
         "Manage cookies - Svoote",
         html! {
             (render_header(html!{}))
-                div ."mx-4 sm:mx-14" {
+                div ."mx-6 sm:mx-14" {
                     h1 ."mb-2 text-slate-500 text-xl font-bold" { "Cookie settings" }
                     p ."max-w-2xl text-slate-500" {
                         "As stated in our "
