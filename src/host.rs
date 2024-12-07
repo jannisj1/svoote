@@ -38,9 +38,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
             script src=(static_file::get_path("qrcode.js")) {}
             @if poll_is_live { script { "document.pollAlreadyLive = true;" } }
             (render_header(html! {
-                a href="/p" ."text-slate-500" {
-                    "Join presentation →"
-                }
+                a href="/p" ."text-slate-500" { "Join presentation →" }
             }))
             div x-data="poll" {
                 div ."mx-4 sm:mx-16 grid grid-cols-3 items-center" {
@@ -81,7 +79,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                         button "@click"="gridView = !gridView; if (!gridView) $dispatch('leavegridview');"
                             ."size-6" ":class"="gridView && 'text-indigo-500'"
                             title="Grid view" { (SvgIcon::Grid.render()) }
-                        button "@click"="poll.slides.splice(poll.slides.length, 0, createSlide('undefined')); $nextTick(() => { gotoSlide(poll.slides.length - 1) });"
+                        button "@click"="poll.slides.splice(poll.slides.length, 0, createSlide('mc')); $nextTick(() => { gotoSlide(poll.slides.length - 1) });"
                             ":disabled"={ "isLive || poll.slides.length >= " (POLL_MAX_SLIDES) }
                             ."-translate-x-1 size-6 disabled:text-slate-300"
                             title="Add new slide" { (SvgIcon::Plus.render()) }
@@ -91,7 +89,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                             template x-for="i in poll.slides.length" {
                                 button x-text="i"
                                     ."absolute -top-3 left-1/2 size-6 rounded-full text-sm font-mono transition-transform duration-500 ease-out disabled:opacity-0"
-                                    ":style"="`transform: translateX(${ ((i - 1) - poll.activeSlide) * 24 }px);`"
+                                    ":style"="`transform: translateX(${ ((i - 1) - poll.activeSlide) * 24 - 12 }px);`"
                                     ":class"="(i - 1 == poll.activeSlide ? 'bg-slate-500 text-slate-50' : 'bg-white')"
                                     ":disabled"="Math.abs((i - 1) - poll.activeSlide) > 6"
                                     "@click"="gotoSlide(i - 1)" ":title"="`Go to slide ${i}`"
@@ -118,7 +116,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                 ":style"="calculateSlideStyle(slideIndex, poll.activeSlide, gridView)"
                                 "@click"="if (slideIndex != poll.activeSlide) gotoSlide(slideIndex); if (gridView) { gridView = false; $refs.outerSlideContainer.scrollTo({ top: 0, behavior: 'smooth' }); $dispatch('leavegridview'); }"
                             {
-                                div ."flex-1 flex flex-col" {
+                                div x-data="{ selectTemplate: false }" ."flex-1 flex flex-col" {
                                     h1 x-show="gridView" x-cloak x-text="'Slide ' + (slideIndex + 1)" ."absolute text-5xl text-slate-500 -top-20 left-[45%]" {}
                                     button "@click"="isReordering = !isReordering; reorderedSlideIndex = slideIndex; $event.stopPropagation();"
                                         x-show="!isLive && gridView && (!isReordering || slideIndex == reorderedSlideIndex)" x-cloak
@@ -130,32 +128,28 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                         { (SvgIcon::Trash2.render()) }
                                     button x-show="gridView && isReordering && slideIndex % 3 == 0" x-cloak ."absolute h-full w-[14%] top-0 -left-[17%] z-40 rounded-lg bg-red-200 hover:bg-red-300"
                                         "@click"="$event.stopPropagation(); moveSlide(slideIndex, true); isReordering = false;"
-                                    { }
+                                        { }
                                     button x-show="gridView && isReordering" x-cloak ."absolute h-full w-[14%] top-0 -right-[17%] z-40 rounded-lg bg-red-200 hover:bg-red-300"
                                         "@click"="$event.stopPropagation(); moveSlide(slideIndex, false); isReordering = false;"
-                                    { }
-                                    template x-if="slide.type == 'undefined'" {
-                                        div {
-                                            ."mb-2 text-slate-500 tracking-tight text-center" {
-                                                "Choose item type:"
-                                            }
-                                            ."flex justify-center gap-4" {
-                                                button "@click"="slide.type = 'mc'; slide.mcAnswers.push({ text: '', isCorrect: false }, { text: '', isCorrect: false }); save(); document.getElementById('question-input-' + slideIndex).focus();" ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
-                                                    ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
-                                                {
-                                                    ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) }
-                                                    "Multiple choice"
-                                                }
-                                                button "@click"="slide.type = 'ft'; save(); document.getElementById('question-input-' + slideIndex).focus();"
-                                                    ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
-                                                    ."px-3.5 py-2 flex justify-center items-center gap-2 text-slate-600 border rounded hover:bg-slate-100"
-                                                {
-                                                    ."size-6 p-1 shrink-0 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
-                                                    "Free text"
-                                                }
-                                            }
-                                        }
-                                    }
+                                        { }
+                                    button x-show="!gridView && !isLive" x-cloak ."absolute top-4 right-4 size-5 text-slate-400 hover:text-red-500"
+                                        "@click"="poll.slides.splice(slideIndex, 1); gotoSlide(poll.activeSlide);"
+                                        title="Delete slide"
+                                        { (SvgIcon::X.render()) }
+                                    div ."absolute inset-0 size-full transition duration-300 "
+                                        ":class"="selectTemplate ? 'backdrop-blur-sm z-10' : '-z-10'"
+                                        "@click"="selectTemplate = false" {}
+                                    h2 ."absolute left-1/2 top-4 -translate-x-1/2 z-10 text-sm text-slate-500 transition duration-300 "
+                                        ":class"="selectTemplate ? '' : 'opacity-0'"
+                                        { "Choose template:" }
+                                    button
+                                        "@click"="if (!selectTemplate) { selectTemplate = true; } else { selectTemplate = false; slide.type = 'mc'; } save(); $nextTick(() => document.getElementById('question-input-' + slideIndex).focus());"
+                                        ":class"="calculateSlideTypeButtonClasses(slide.type, 'mc', selectTemplate)"
+                                        { ."size-6 p-1 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) } "Multiple choice" }
+                                    button
+                                        "@click"="if (!selectTemplate) { selectTemplate = true; } else { selectTemplate = false; slide.type = 'ft'; } save(); $nextTick(() => document.getElementById('question-input-' + slideIndex).focus());"
+                                        ":class"="calculateSlideTypeButtonClasses(slide.type, 'ft', selectTemplate)"
+                                        { ."size-6 p-1 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) } "Free text" }
                                     template x-if="slide.type == 'mc'" {
                                         div ."relative h-full" {
                                             div ."flex gap-4" {
