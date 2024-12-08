@@ -186,7 +186,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                         { "Add answer" }
                                                 }
                                                 div x-show="isLive" x-cloak ."translate-x-6 -translate-y-4 flex flex-col items-center" {
-                                                    div x-data="qrCode" x-effect="render($el, code)" ."mb-3 w-24" {}
+                                                    div x-data="qrCode" x-effect="if (slideIndex == poll.activeSlide) render($el, code)" ."mb-3 w-24" {}
                                                     div x-text="code !== null ? code : ''" ."text-xl text-slate-600 tracking-wide font-bold" {}
                                                     a x-show="code !== null" ."text-center text-xs text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
                                                 }
