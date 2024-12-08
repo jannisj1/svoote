@@ -94,7 +94,7 @@ document.addEventListener("alpine:init", () => {
 
     calculateSlideClasses(slideIndex, activeSlide, gridView) {
       let classes =
-        "absolute inset-0 size-full px-14 pb-10 pt-14 flex gap-14 border rounded transition-transform duration-500 ease-out transform-gpu ";
+        "absolute inset-0 size-full px-6 sm:px-14 pb-10 pt-14 flex gap-14 border rounded transition-transform duration-500 ease-out transform-gpu ";
 
       if (gridView) {
         classes +=
