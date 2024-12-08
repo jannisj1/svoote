@@ -257,19 +257,6 @@ document.addEventListener("alpine:init", () => {
       }
     },
 
-    getPlaceholderTerms() {
-      return {
-        terms: [
-          { text: "word cloud", count: 5 },
-          { text: "svoote", count: 5 },
-          { text: "free text", count: 2 },
-          { text: "live", count: 2 },
-        ],
-        totalCount: 19,
-        maxCount: 10,
-      };
-    },
-
     gotoSlide(slideIndex) {
       slideIndex = Math.max(
         0,
@@ -322,7 +309,7 @@ document.addEventListener("alpine:init", () => {
             case "updateStats":
               this.poll.slides[msg.data.slideIndex].stats = msg.data.stats;
               this.$nextTick(() => this.renderWordCloud(msg.data.slideIndex));
-              setTimeout(() => this.renderWordCloud(msg.data.slideIndex), 500);
+              //setTimeout(() => this.renderWordCloud(msg.data.slideIndex), 500);
               break;
           }
         };

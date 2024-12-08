@@ -24,16 +24,16 @@ pub struct LivePoll {
     pub stats_change_notification_channel_sender: broadcast::Sender<usize>,
     pub stats_change_notification_channel_receiver: broadcast::Receiver<usize>,
     pub exit_poll_channel_sender: mpsc::Sender<()>,
-    pub leaderboard_enabled: bool,
-    pub allow_custom_player_names: bool,
+    //pub leaderboard_enabled: bool,
+    //pub allow_custom_player_names: bool,
 }
 
 impl LivePoll {
     pub fn orchestrate(
         slides: Vec<Slide>,
         host_session_id: Uuid,
-        leaderboard_enabled: bool,
-        allow_custom_player_names: bool,
+        //leaderboard_enabled: bool,
+        //allow_custom_player_names: bool,
     ) -> Result<(ShortID, Arc<Mutex<Self>>), AppError> {
         let (start_poll_channel_sender, start_poll_channel_receiver) = oneshot::channel::<()>();
         let (set_slide_index_channel_sender, mut set_slide_index_channel_receiver) =
@@ -58,8 +58,8 @@ impl LivePoll {
                 .clone(),
             stats_change_notification_channel_receiver,
             exit_poll_channel_sender,
-            leaderboard_enabled,
-            allow_custom_player_names,
+            //leaderboard_enabled,
+            //allow_custom_player_names,
         })?;
 
         let return_live_poll_handle = live_poll.clone();
@@ -139,9 +139,9 @@ impl LivePoll {
         return &self.players[player_index];
     }
 
-    pub fn get_player_mut<'a>(&'a mut self, player_index: usize) -> &'a mut Player {
+    /*pub fn get_player_mut<'a>(&'a mut self, player_index: usize) -> &'a mut Player {
         return &mut self.players[player_index];
-    }
+    }*/
 
     pub fn get_current_slide<'a>(&'a mut self) -> &'a mut Slide {
         return &mut self.slides[self.current_slide_index];

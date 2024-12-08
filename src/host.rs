@@ -11,7 +11,7 @@ use axum::{
 use axum_extra::extract::CookieJar;
 use maud::html;
 use serde_json::{json, Value};
-use smartstring::{Compact, SmartString};
+use smartstring::SmartString;
 use tokio::select;
 
 use crate::{
@@ -21,7 +21,7 @@ use crate::{
     live_poll::LivePoll,
     live_poll_store::{ShortID, LIVE_POLL_STORE},
     session_id,
-    slide::{FreeTextLiveAnswers, MultipleChoiceLiveAnswers, Slide, SlideType},
+    slide::{FreeTextLiveAnswers, MultipleChoiceLiveAnswers, Slide, SlideType, WordCloudTerm},
     static_file,
     svg_icons::SvgIcon,
     wsmessage::WSMessage,
@@ -221,7 +221,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                         ."block mb-3 px-1 py-0.5 text-xl text-slate-800 bg-transparent" {}
                                                 }
                                                 div x-show="isLive" x-cloak ."sm:translate-x-6 -translate-y-4 flex flex-col items-center" {
-                                                    div x-data="qrCode" x-effect="render($el, code)" ."mb-3 w-24" {}
+                                                    div x-data="qrCode" x-effect="if (slideIndex == poll.activeSlide) render($el, code)" ."mb-3 w-24" {}
                                                     div x-text="code !== null ? code : ''" ."text-xl text-slate-600 tracking-wide font-bold" {}
                                                     a x-show="code !== null" ."text-center text-xs text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
                                                 }
@@ -233,7 +233,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                 "@slidechange.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
                                             {
                                                 template x-for="(term, termIndex) in (slide.stats !== null ? slide.stats.terms : [])" {
-                                                    div ."absolute size-fit inset-1/2 leading-none whitespace-nowrap"
+                                                    div ."absolute size-fit inset-1/2 leading-none whitespace-nowrap invisible"
                                                         x-text="term.text"
                                                         ":class"="['text-rose-500', 'text-cyan-500', 'text-lime-500', 'text-fuchsia-500', 'text-slate-500', 'text-teal-500'][termIndex % 6]"
                                                         ":title"="`${term.text}: ${term.count}`"
@@ -253,11 +253,11 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                     }
                 }
             }
-            div ."mb-6 flex justify-center gap-6 items-center" {
+            div ."mt-2 mb-6 mx-6 flex justify-center flex-wrap gap-x-6 gap-y-4 items-center" {
                 button onclick="document.getElementById('help-dialog').showModal();"
-                    ."px-4 py-1 flex items-center gap-1.5 text-slate-500 border rounded-full hover:bg-slate-100"
-                    { div ."size-5" { (SvgIcon::Help.render()) } "How to use Svoote" }
-                a href="/about" ."px-4 py-1 flex items-center gap-1.5 text-slate-500 border rounded-full hover:bg-slate-100"
+                    ."px-3 py-1 flex items-center gap-1.5 text-slate-500 border rounded-full hover:bg-slate-100"
+                    { "How to use Svoote" div ."size-5" { (SvgIcon::Help.render()) } }
+                a href="/about" ."px-3 py-1 flex items-center gap-1.5 text-slate-500 border rounded-full hover:bg-slate-100"
                     { "About Svoote " div ."size-4" { (SvgIcon::Rss.render()) } }
 
             }
@@ -286,8 +286,8 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
     let poll = serde_json::from_str::<serde_json::Value>(&body)
         .map_err(|e| AppError::BadRequest(e.to_string()))?;
 
-    let enable_leaderboard = poll["enableLeaderboard"].as_bool().unwrap_or(false);
-    let allow_custom_names = poll["allowCustomNames"].as_bool().unwrap_or(false);
+    //let enable_leaderboard = poll["enableLeaderboard"].as_bool().unwrap_or(false);
+    //let allow_custom_names = poll["allowCustomNames"].as_bool().unwrap_or(false);
 
     let (poll_id, _live_poll) = match LIVE_POLL_STORE.get_by_session_id(&session_id) {
         Some((poll_id, live_poll)) => (poll_id, live_poll),
@@ -333,16 +333,16 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
                         });
                     }
                     "ft" => {
-                        let answers: Vec<SmartString<Compact>> = item["ftAnswers"]
-                            .as_array()
-                            .ok_or(AppError::BadRequest(
-                                "mcAnswers must be an array".to_string(),
-                            ))?
-                            .into_iter()
-                            .map(|ft_answer| {
-                                SmartString::from(ft_answer["text"].as_str().unwrap_or_default())
-                            })
-                            .collect();
+                        /*let answers: Vec<SmartString<Compact>> = item["ftAnswers"]
+                        .as_array()
+                        .ok_or(AppError::BadRequest(
+                            "mcAnswers must be an array".to_string(),
+                        ))?
+                        .into_iter()
+                        .map(|ft_answer| {
+                            SmartString::from(ft_answer["text"].as_str().unwrap_or_default())
+                        })
+                        .collect();*/
 
                         slides.push(Slide {
                             question: item["question"]
@@ -352,7 +352,7 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
                                 ))?
                                 .to_string(),
                             slide_type: SlideType::FreeText(FreeTextLiveAnswers {
-                                correct_answers: answers,
+                                //correct_answers: answers,
                                 player_answers: Vec::new(),
                                 word_cloud_terms: Vec::new(),
                                 max_term_count: 1usize,
@@ -376,8 +376,7 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
                 });
             }
 
-            let (poll_id, live_poll) =
-                LivePoll::orchestrate(slides, session_id, enable_leaderboard, allow_custom_names)?;
+            let (poll_id, live_poll) = LivePoll::orchestrate(slides, session_id)?;
 
             live_poll
                 .lock()
@@ -491,4 +490,31 @@ async fn handle_host_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll
             }
         };
     }
+}
+
+pub async fn get_bombardft(Path(poll_id): Path<ShortID>) -> Result<Response, AppError> {
+    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+
+    tokio::spawn(async move {
+        let mut i = 0;
+        loop {
+            i += 1;
+            let _ = tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+            let mut live_poll = live_poll.lock().unwrap();
+            if let SlideType::FreeText(answers) = &mut live_poll.get_current_slide().slide_type {
+                answers.word_cloud_terms.push(WordCloudTerm {
+                    text: SmartString::from(i.to_string()),
+                    count: 1,
+                });
+                answers.max_term_count = 1;
+
+                let _ = live_poll
+                    .stats_change_notification_channel_sender
+                    .send(live_poll.current_slide_index);
+            }
+        }
+    });
+
+    return Ok("Starting bombarding...".into_response());
 }

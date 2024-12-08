@@ -1,8 +1,6 @@
 use crate::{
     app_error::AppError,
-    config::{
-        CUSTOM_PLAYER_NAME_LENGTH_LIMIT, FREE_TEXT_MAX_CHAR_LENGTH, LIVE_POLL_PARTICIPANT_LIMIT,
-    },
+    config::{FREE_TEXT_MAX_CHAR_LENGTH, LIVE_POLL_PARTICIPANT_LIMIT},
     html_page::{self, render_header},
     illustrations::Illustrations,
     live_poll::LivePoll,
@@ -22,14 +20,11 @@ use axum::{
 };
 use axum_extra::extract::CookieJar;
 
-use maud::{html, PreEscaped};
+use maud::html;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use smartstring::{Compact, SmartString};
-use std::{
-    fmt::Write,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 use tokio::select;
 
 #[derive(Deserialize)]
@@ -160,7 +155,7 @@ pub async fn get_play_page(
 
 // These awesome SVG-avatars were obtained from dicebear.com (Adventurer Neutral by Lisa Wischofsky)
 // They are published under the CC BY 4.0 license (https://creativecommons.org/licenses/by/4.0/)
-const AVATARS: &[(&'static str, &'static str)] = &[
+const _AVATARS: &[(&'static str, &'static str)] = &[
     ("Rascal", include_str!("static/svgs/rascal_square.svg")),
     ("Chester", include_str!("static/svgs/chester_square.svg")),
     ("Coco", include_str!("static/svgs/coco_square.svg")),
@@ -184,14 +179,15 @@ const AVATARS: &[(&'static str, &'static str)] = &[
 ];
 
 pub struct Player {
-    generated_name: SmartString<Compact>,
-    custom_name: Option<SmartString<Compact>>,
-    avatar_index: usize,
+    //generated_name: SmartString<Compact>,
+    //custom_name: Option<SmartString<Compact>>,
+    //avatar_index: usize,
 }
 
 impl Player {
-    pub fn new(player_index: usize) -> Self {
-        let avatar_index = player_index % AVATARS.len();
+    pub fn new(_player_index: usize) -> Self {
+        return Player {};
+        /*let avatar_index = player_index % AVATARS.len();
         let duplicate_name_number = ((player_index - avatar_index) / AVATARS.len()) + 1;
         let mut generated_name = SmartString::<Compact>::new();
 
@@ -209,9 +205,10 @@ impl Player {
             generated_name,
             custom_name: None,
             avatar_index,
-        };
+        };*/
     }
 
+    /*
     pub fn get_name<'a>(&'a self) -> &'a SmartString<Compact> {
         return match &self.custom_name {
             Some(name) => name,
@@ -264,7 +261,7 @@ impl Player {
 
     pub fn get_avatar_svg(&self) -> PreEscaped<&'static str> {
         return PreEscaped(AVATARS[self.avatar_index].1);
-    }
+    }*/
 }
 
 #[derive(Deserialize)]

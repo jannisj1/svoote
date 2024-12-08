@@ -11,7 +11,7 @@ pub async fn get_about_page() -> Result<Response, AppError> {
         (render_header(html!{
             a href="/p" ."text-slate-500" { "Join presentation →" }
         }))
-        div ."mt-16 mx-6 sm:mx-14" {
+        div ."mt-24 mx-6 sm:mx-14" {
             div ."max-w-2xl mx-auto" {
                 h1 ."mb-8 text-center text-slate-800 text-5xl font-bold" { "Easy to use, cheap and privacy-friendly Mentimeter alternative" }
                 h2 ."mb-8 text-center text-slate-500 text-xl leading-8" {
@@ -62,7 +62,7 @@ pub async fn get_about_page() -> Result<Response, AppError> {
                     }
                 }
                 h3 ."mb-10 text-center text-slate-700 text-4xl font-bold" { "Plans and pricing" }
-                section ."flex justify-center gap-10 sm:gap-20 flex-wrap" {
+                section ."mb-8 flex justify-center gap-10 sm:gap-20 flex-wrap" {
                     div ."w-64 p-8 bg-white rounded-lg border shadow" {
                         ."mb-6 text-2xl text-slate-900 font-medium tracking-tight" { "Free" }
                         ."mb-10 text-slate-800 tracking-wide leading-normal" { "Everything you need to get started." }

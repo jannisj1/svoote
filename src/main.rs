@@ -58,6 +58,7 @@ fn main() {
             .route("/manage-cookies", get(compliance::get_manage_cookies_page))
             .route("/contact", get(compliance::get_contact_page))
             .route("/robots.txt", get(compliance::get_robots_txt))
+            .route("/bombardft/:poll_id", get(host::get_bombardft))
             .fallback(get(get_fallback));
 
         axum::serve(listener, routes).await.unwrap();

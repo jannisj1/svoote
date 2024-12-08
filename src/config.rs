@@ -1,4 +1,3 @@
-pub const MAX_FREE_TEXT_ANSWERS: usize = 3;
 pub const FREE_TEXT_MAX_CHAR_LENGTH: usize = 32;
 pub const LIVE_POLL_PARTICIPANT_LIMIT: usize = 100usize;
 
@@ -16,5 +15,3 @@ pub const POLL_MAX_SLIDES: usize = 32;
 //pub const POLL_MAX_STR_LEN: usize = 1024;
 
 pub const POLL_EXIT_TIMEOUT: tokio::time::Duration = tokio::time::Duration::from_secs(2 * 60 * 60); // 2 hours
-
-pub const CUSTOM_PLAYER_NAME_LENGTH_LIMIT: usize = 32;

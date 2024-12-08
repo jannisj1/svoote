@@ -13,8 +13,6 @@ pub enum SlideType {
     Undefined,
     MultipleChoice(MultipleChoiceLiveAnswers),
     FreeText(FreeTextLiveAnswers),
-    EntrySlide,
-    FinalSlide,
 }
 
 pub struct MultipleChoiceLiveAnswers {
@@ -24,7 +22,7 @@ pub struct MultipleChoiceLiveAnswers {
 }
 
 pub struct FreeTextLiveAnswers {
-    pub correct_answers: Vec<SmartString<Compact>>,
+    //pub correct_answers: Vec<SmartString<Compact>>,
     pub player_answers: Vec<Option<SmartString<Compact>>>,
     pub word_cloud_terms: Vec<WordCloudTerm>,
     pub max_term_count: usize,
@@ -42,8 +40,6 @@ impl Slide {
 
         match &mut self.slide_type {
             SlideType::Undefined => {}
-            SlideType::EntrySlide => {}
-            SlideType::FinalSlide => {}
             SlideType::MultipleChoice(mc_answers) => {
                 mc_answers.player_answers.push(None);
             }
