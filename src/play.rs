@@ -1,6 +1,6 @@
 use crate::{
     app_error::AppError,
-    config::{FREE_TEXT_MAX_CHAR_LENGTH, LIVE_POLL_PARTICIPANT_LIMIT},
+    config::{FREE_TEXT_MAX_CHAR_LENGTH, LIVE_POLL_PARTICIPANT_LIMIT, POLL_MAX_MC_ANSWERS},
     html_page::{self, render_header},
     illustrations::Illustrations,
     live_poll::LivePoll,
@@ -10,13 +10,14 @@ use crate::{
     svg_icons::SvgIcon,
     wsmessage::WSMessage,
 };
+use arrayvec::ArrayVec;
 use axum::{
     extract::{
         ws::{Message, WebSocket},
         Path, Query, WebSocketUpgrade,
     },
     response::{IntoResponse, Response},
-    Form,
+    Form, Json,
 };
 use axum_extra::extract::CookieJar;
 
@@ -24,7 +25,10 @@ use maud::html;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use smartstring::{Compact, SmartString};
-use std::sync::{Arc, Mutex};
+use std::{
+    fmt::Write,
+    sync::{Arc, Mutex},
+};
 use tokio::select;
 
 #[derive(Deserialize)]
@@ -83,7 +87,7 @@ pub async fn get_play_page(
                     script { "document.code = " (poll_id.unwrap_or(0)) ";" }
                     div x-data="participant" {
                         div ."mt-6 mb-16 mx-8 sm:mx-14" {
-                            div ."w-full max-w-96 min-h-64 mx-auto" {
+                            div ."w-full max-w-96 min-h-96 mx-auto" {
                                 div ."mb-10 flex items-baseline justify-center gap-2 text-3xl font-semibold tracking-tight" {
                                     "Svoote" ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
                                 }
@@ -93,7 +97,7 @@ pub async fn get_play_page(
                                         h1 x-init="$el.innerText = currentSlide.question" x-effect="$el.innerText = currentSlide.question" ."mb-3 text-slate-700 font-medium" {}
                                         template x-for="(answer, answerIndex) in currentSlide.answers" {
                                             label ."w-full mb-4 px-3 py-1.5 flex gap-2 items-center ring-2 ring-slate-500 has-[:checked]:ring-4 has-[:checked]:ring-indigo-500 rounded-lg" {
-                                                input type="radio" x-model="currentSlide.selectedAnswer" ":disabled"="currentSlide.submitted" ":value"="answerIndex" ."accent-indigo-500";
+                                                input ":type"="currentSlide.allowMultipleMCAnswers ? 'checkbox' : 'radio'" x-model="currentSlide.selectedAnswer" ":disabled"="currentSlide.submitted" ":value"="answerIndex" ."accent-indigo-500";
                                                 div ."text-slate-700 font-medium" x-text="answer.text" {}
                                             }
                                         }
@@ -129,8 +133,8 @@ pub async fn get_play_page(
                                     }
                                 }
                             }
-                            hr ."mt-32";
-                            div ."mt-8 max-w-64 mx-auto" {
+                            hr ."mt-32 mx-auto max-w-96";
+                            div ."mt-16 mx-auto max-w-64" {
                                 div ."mb-4 mx-auto max-w-56" { (Illustrations::TeamCollaboration.render()) }
                                 h1 ."mb-5 text-2xl text-center font-bold tracking-tight" { "Want to create your own polls?" }
                                 a href="/" ."block w-fit mx-auto text-indigo-600 underline font-semibold hover:text-indigo-800" { "Start now →"}
@@ -267,13 +271,13 @@ impl Player {
 #[derive(Deserialize)]
 pub struct PostMCAnswerForm {
     pub slide_index: usize,
-    pub answer_index: usize,
+    pub answer_indices: ArrayVec<u8, POLL_MAX_MC_ANSWERS>,
 }
 
 pub async fn post_mc_answer(
     Path(poll_id): Path<ShortID>,
     cookies: CookieJar,
-    Form(form): Form<PostMCAnswerForm>,
+    Json(form): Json<PostMCAnswerForm>,
 ) -> Result<Response, AppError> {
     let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
     let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
@@ -291,7 +295,7 @@ pub async fn post_mc_answer(
     let score = if let SlideType::MultipleChoice(mc_answers) =
         &mut live_poll.slides[form.slide_index].slide_type
     {
-        mc_answers.submit_answer(player_index, form.answer_index, start_time)?
+        mc_answers.submit_answer(player_index, form.answer_indices, start_time)?
     } else {
         return Err(AppError::BadRequest(
             "This is not a multiple choice item".to_string(),
@@ -513,12 +517,26 @@ async fn handle_play_socket(
 fn create_slide_ws_message(slide_index: usize, slide: &Slide, player_index: usize) -> WSMessage {
     let slide_json = match &slide.slide_type {
         SlideType::MultipleChoice(answers) => {
+            let selected_answer = if answers.allow_multiple_answers {
+                json! { answers.player_answers[player_index].as_ref().unwrap_or(&ArrayVec::new()) }
+            } else {
+                json! {
+                answers.player_answers[player_index]
+                    .as_ref()
+                    .map(|answer_indices| {
+                        let mut s = SmartString::<Compact>::new();
+                        write!(&mut s, "{}", *answer_indices.get(0).unwrap_or(&0u8));
+                        s
+                    })
+                    .unwrap_or(SmartString::new()) }
+            };
             json!({
                 "slideType": "mc",
                 "question": slide.question,
                 "answers": answers.answers.iter().map(|(answer_text, _is_correct)| json!({ "text": answer_text })).collect::<Vec<Value>>(),
                 "submitted": answers.player_answers[player_index].is_some(),
-                "selectedAnswer": answers.player_answers[player_index].map(|answer_index| answer_index.to_string()).unwrap_or(String::new()),
+                "selectedAnswer": selected_answer,
+                "allowMultipleMCAnswers": answers.allow_multiple_answers,
             })
         }
         SlideType::FreeText(answers) => {

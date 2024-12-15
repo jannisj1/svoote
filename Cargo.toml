@@ -16,5 +16,5 @@ env_logger = "0.11.5"
 rand = "0.8.5"
 md5 = "0.7.0"
 maud = { version = "0.26.0", features = ["axum"] }
-#arrayvec = { version = "0.7.6", features = ["serde"] }
+arrayvec = { version = "0.7.6", features = ["serde"] }
 smartstring = { version = "1.0.1", features = ["serde"] }

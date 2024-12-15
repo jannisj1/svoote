@@ -1,7 +1,8 @@
+use arrayvec::ArrayVec;
 use serde::Serialize;
 use smartstring::{Compact, SmartString};
 
-use crate::app_error::AppError;
+use crate::{app_error::AppError, config::POLL_MAX_MC_ANSWERS};
 
 pub struct Slide {
     pub question: String,
@@ -18,7 +19,8 @@ pub enum SlideType {
 pub struct MultipleChoiceLiveAnswers {
     pub answers: Vec<(String, bool)>,
     pub answer_counts: Vec<usize>,
-    pub player_answers: Vec<Option<usize>>,
+    pub player_answers: Vec<Option<ArrayVec<u8, POLL_MAX_MC_ANSWERS>>>,
+    pub allow_multiple_answers: bool,
 }
 
 pub struct FreeTextLiveAnswers {
@@ -55,17 +57,31 @@ impl Slide {
 }
 
 impl MultipleChoiceLiveAnswers {
-    // Returns true if the player scored points (then the leaderboard has to be updated)
+    // Returns the scored points
     pub fn submit_answer(
         &mut self,
         player_index: usize,
-        answer_index: usize,
-        start_time: tokio::time::Instant,
+        answer_indices: ArrayVec<u8, POLL_MAX_MC_ANSWERS>,
+        _start_time: tokio::time::Instant,
     ) -> Result<usize, AppError> {
-        if answer_index >= self.answers.len() {
+        if answer_indices.len() == 0 {
             return Err(AppError::BadRequest(
-                "Answer index out of bounds".to_string(),
+                "Can't submit an empty answer_indices array".to_string(),
             ));
+        }
+
+        if !self.allow_multiple_answers && answer_indices.len() > 1 {
+            return Err(AppError::BadRequest(
+                "Can't submit more than one answer to this MC question".to_string(),
+            ));
+        }
+
+        for answer_index in &answer_indices {
+            if *answer_index as usize >= self.answers.len() {
+                return Err(AppError::BadRequest(
+                    "Answer index out of bounds".to_string(),
+                ));
+            }
         }
 
         if self.player_answers[player_index].is_some() {
@@ -74,19 +90,21 @@ impl MultipleChoiceLiveAnswers {
             ));
         }
 
-        self.player_answers[player_index] = Some(answer_index);
-        self.answer_counts[answer_index] += 1;
+        for answer_index in &answer_indices {
+            self.answer_counts[*answer_index as usize] += 1;
+            // if answer is correct
+            /*if self.answers[answer_index].1 {
+                let mut elapsed = tokio::time::Instant::now() - start_time;
+                if elapsed > tokio::time::Duration::from_secs(60) {
+                    elapsed = tokio::time::Duration::from_secs(60);
+                }
 
-        // if answer is correct
-        if self.answers[answer_index].1 {
-            let mut elapsed = tokio::time::Instant::now() - start_time;
-            if elapsed > tokio::time::Duration::from_secs(60) {
-                elapsed = tokio::time::Duration::from_secs(60);
-            }
-
-            let fraction_points = (60_000 - elapsed.as_millis()) as f32 / 60_000f32;
-            return Ok(50usize + (fraction_points * 50f32) as usize);
+                let fraction_points = (60_000 - elapsed.as_millis()) as f32 / 60_000f32;
+                return Ok(50usize + (fraction_points * 50f32) as usize);
+            }*/
         }
+
+        self.player_answers[player_index] = Some(answer_indices);
 
         return Ok(0usize);
     }

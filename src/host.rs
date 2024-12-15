@@ -159,10 +159,13 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                 div ."flex-1" {
                                                     div ."-z-10 absolute px-1 py-0.5 text-xl text-slate-500 bg-transparent" x-cloak x-show="slide.question.trim() == '' && !isLive" { "Question" }
                                                     span x-init="$el.innerText = slide.question"
-                                                        "@input"="slide.question = $el.innerText; save(); console.log(slide.question);"
+                                                        "@input"="slide.question = $el.innerText; save();"
                                                         ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                         ":contenteditable"="!isLive"
                                                         ."block mb-3 px-1 py-0.5 text-xl text-slate-800 bg-transparent" {}
+                                                    label x-show="!isLive" x-collapse ."ml-2 mb-2 flex gap-2 items-center text-slate-700" {
+                                                        input x-model="slide.allowMultipleMCAnswers" "@change"="save()" type="checkbox" ."accent-indigo-500"; "Allow multiple answers per user"
+                                                    }
                                                     template x-for="(answer, answer_index) in slide.mcAnswers" {
                                                         div ."mb-1.5 flex items-center gap-2" {
                                                             div x-text="incrementChar('A', answer_index)" ."ml-2 text-sm text-slate-400" {}
@@ -294,14 +297,14 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
         None => {
             let mut slides = Vec::new();
 
-            for item in poll["slides"].as_array().ok_or(AppError::BadRequest(
+            for slide in poll["slides"].as_array().ok_or(AppError::BadRequest(
                 "Poll needs to contain a 'slides' array".to_string(),
             ))? {
-                match item["type"].as_str().ok_or(AppError::BadRequest(
+                match slide["type"].as_str().ok_or(AppError::BadRequest(
                     "type field needs to be a string".to_string(),
                 ))? {
                     "mc" => {
-                        let answers: Vec<(String, bool)> = item["mcAnswers"]
+                        let answers: Vec<(String, bool)> = slide["mcAnswers"]
                             .as_array()
                             .ok_or(AppError::BadRequest(
                                 "mcAnswers must be an array".to_string(),
@@ -316,7 +319,7 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
                             .collect();
 
                         slides.push(Slide {
-                            question: item["question"]
+                            question: slide["question"]
                                 .as_str()
                                 .ok_or(AppError::BadRequest(
                                     "Question field missing for slide".to_string(),
@@ -328,6 +331,9 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
                                     .collect(),
                                 answers: answers.clone(),
                                 player_answers: Vec::new(),
+                                allow_multiple_answers: slide["allowMultipleMCAnswers"]
+                                    .as_bool()
+                                    .unwrap_or(false),
                             }),
                             player_scores: Vec::new(),
                         });
@@ -345,7 +351,7 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
                         .collect();*/
 
                         slides.push(Slide {
-                            question: item["question"]
+                            question: slide["question"]
                                 .as_str()
                                 .ok_or(AppError::BadRequest(
                                     "Question field missing for slide".to_string(),

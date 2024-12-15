@@ -10,6 +10,7 @@ function createSlide(type) {
       { text: "", isCorrect: false },
       { text: "", isCorrect: false },
     ],
+    allowMultipleMCAnswers: false,
     ftAnswers: [],
     stats: null,
   };
@@ -146,8 +147,12 @@ document.addEventListener("alpine:init", () => {
             classes += "translate-y-[3rem] ";
             break;
           case "ft":
-            classes += "translate-y-[7rem] ";
+            classes += "translate-y-[6.5rem] ";
             break;
+        }
+
+        if (slideType == buttonType) {
+          classes += "ring-4 ring-indigo-500 ";
         }
       } else if (slideType == buttonType) {
         classes += "z-10 scale-75 bg-white text-slate-500 ";
@@ -300,7 +305,7 @@ document.addEventListener("alpine:init", () => {
 
         this.socket = new ReconnectingWebSocket(wsUrl);
         this.socket.onopen = (_e) => {
-          this.gotoSlide(0);
+          this.gotoSlide(this.poll.activeSlide);
         };
         this.socket.onmessage = (e) => {
           let msg = JSON.parse(e.data);
@@ -387,9 +392,11 @@ document.addEventListener("alpine:init", () => {
     async submitMCAnswer(poll_id) {
       let res = await fetch("/submit_mc_answer/" + poll_id, {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          answer_index: this.currentSlide.selectedAnswer,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          answer_indices: this.currentSlide.allowMultipleMCAnswers
+            ? this.currentSlide.selectedAnswer.map(Number)
+            : [Number(this.currentSlide.selectedAnswer)],
           slide_index: this.slideIndex,
         }),
       });
