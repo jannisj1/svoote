@@ -52,9 +52,9 @@ pub fn render_html_page(title: &str, main_content: maud::Markup) -> maud::Markup
                         "For more information see our " a href="/cookie-policy" ."underline" { "Cookie Policy"} "."
                     }
                     div ."flex flex-wrap justify-end gap-4" {
-                        a href="/manage-cookies" ."px-4 py-1 bg-slate-300 text-slate-700 font-bold tracking-tight shadow-lg hover:bg-slate-400" { "Customize" }
+                        a href="/manage-cookies" ."px-4 py-1 bg-slate-300 text-slate-700 font-semibold tracking-tight shadow-lg hover:bg-slate-400" { "Customize" }
                         button "@click"="cookiesAccepted = true; localStorage.setItem('cookiesAccepted', 'true');"
-                            ."px-4 py-1 bg-sky-500 text-slate-100 font-bold tracking-tight shadow-lg hover:bg-sky-600" { "Accept necessary cookies" }
+                            ."px-4 py-1 bg-sky-600 text-slate-50 font-semibold tracking-tight shadow-lg hover:bg-sky-600" { "Accept necessary cookies" }
                     }
                 }
             }

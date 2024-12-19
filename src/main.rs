@@ -59,6 +59,7 @@ fn main() {
             .route("/contact", get(compliance::get_contact_page))
             .route("/robots.txt", get(compliance::get_robots_txt))
             .route("/bombardft/:poll_id", get(host::get_bombardft))
+            .route("/stats", get(host::get_stats))
             .fallback(get(get_fallback));
 
         axum::serve(listener, routes).await.unwrap();

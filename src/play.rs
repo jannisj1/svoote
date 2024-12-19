@@ -525,7 +525,7 @@ fn create_slide_ws_message(slide_index: usize, slide: &Slide, player_index: usiz
                     .as_ref()
                     .map(|answer_indices| {
                         let mut s = SmartString::<Compact>::new();
-                        write!(&mut s, "{}", *answer_indices.get(0).unwrap_or(&0u8));
+                        let _ = write!(&mut s, "{}", *answer_indices.get(0).unwrap_or(&0u8));
                         s
                     })
                     .unwrap_or(SmartString::new()) }

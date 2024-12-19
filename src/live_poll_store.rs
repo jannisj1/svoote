@@ -12,8 +12,8 @@ pub type ShortID = u32;
 pub static LIVE_POLL_STORE: LivePollStore = LivePollStore::new();
 
 pub struct LivePollStore {
-    polls: Mutex<BTreeMap<ShortID, Arc<Mutex<LivePoll>>>>,
-    session_lookup: Mutex<BTreeMap<Uuid, ShortID>>,
+    pub polls: Mutex<BTreeMap<ShortID, Arc<Mutex<LivePoll>>>>,
+    pub session_lookup: Mutex<BTreeMap<Uuid, ShortID>>,
 }
 
 impl LivePollStore {

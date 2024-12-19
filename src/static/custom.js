@@ -314,7 +314,7 @@ document.addEventListener("alpine:init", () => {
             case "updateStats":
               this.poll.slides[msg.data.slideIndex].stats = msg.data.stats;
               this.$nextTick(() => this.renderWordCloud(msg.data.slideIndex));
-              //setTimeout(() => this.renderWordCloud(msg.data.slideIndex), 500);
+              setTimeout(() => this.renderWordCloud(msg.data.slideIndex), 500);
               break;
           }
         };

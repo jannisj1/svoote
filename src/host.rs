@@ -264,7 +264,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                     { "About Svoote " div ."size-4" { (SvgIcon::Rss.render()) } }
 
             }
-            dialog #"help-dialog" ."fixed inset-0" {
+            dialog id="help-dialog" ."fixed inset-0" {
                 div ."max-w-96 px-8 py-6 rounded-lg" {
                     form method="dialog" ."flex justify-end" { button ."size-6 text-red-500" { (SvgIcon::X.render()) } }
                     h1 ."mb-6 text-xl text-slate-500 font-semibold" { "Help" }
@@ -276,6 +276,12 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                         li { "Your slides are saved locally in your browser. If you wish to transfer them to another device or store them for a longer time, click on the settings button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Settings.render()) } ") in the top left and then on 'Save presentation'. You can later import the slides via 'Load presentation'." }
                     }
                 }
+            }
+            p ."my-16 text-center text-sm text-slate-500" {
+                "Svoote is a new and growing open-source project. "
+                "Please leave your feedback and issues on "
+                a href="https://github.com/jannisj1/svoote" ."underline" { "Github" }
+                "."
             }
         },
     );
@@ -499,28 +505,77 @@ async fn handle_host_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll
 }
 
 pub async fn get_bombardft(Path(poll_id): Path<ShortID>) -> Result<Response, AppError> {
-    let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
+    if cfg!(debug_assertions) {
+        let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
 
-    tokio::spawn(async move {
-        let mut i = 0;
-        loop {
-            i += 1;
-            let _ = tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        tokio::spawn(async move {
+            let mut i = 0;
+            loop {
+                i += 1;
+                let _ = tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
-            let mut live_poll = live_poll.lock().unwrap();
-            if let SlideType::FreeText(answers) = &mut live_poll.get_current_slide().slide_type {
-                answers.word_cloud_terms.push(WordCloudTerm {
-                    text: SmartString::from(i.to_string()),
-                    count: 1,
-                });
-                answers.max_term_count = 1;
+                let mut live_poll = live_poll.lock().unwrap();
+                if let SlideType::FreeText(answers) = &mut live_poll.get_current_slide().slide_type
+                {
+                    answers.word_cloud_terms.push(WordCloudTerm {
+                        text: SmartString::from(i.to_string()),
+                        count: 1,
+                    });
+                    answers.max_term_count = 1;
 
-                let _ = live_poll
-                    .stats_change_notification_channel_sender
-                    .send(live_poll.current_slide_index);
+                    let _ = live_poll
+                        .stats_change_notification_channel_sender
+                        .send(live_poll.current_slide_index);
+                }
             }
-        }
-    });
+        });
 
-    return Ok("Starting bombarding...".into_response());
+        return Ok("Starting bombarding...".into_response());
+    } else {
+        return Err(AppError::BadRequest(
+            "Only available in debug mode.".to_string(),
+        ));
+    }
+}
+
+struct WebsiteStats {
+    pub timepoint: tokio::time::Instant,
+    pub num_live_polls: usize,
+}
+static STATS: Mutex<Option<WebsiteStats>> = Mutex::new(None);
+
+pub async fn get_stats() -> Result<Response, AppError> {
+    use tokio::time::{Duration, Instant};
+    let mut stats = STATS.lock().unwrap();
+
+    if stats.is_none()
+        || stats
+            .as_ref()
+            .is_some_and(|stats| (Instant::now() - stats.timepoint) >= Duration::from_secs(5))
+    {
+        let num_live_polls = LIVE_POLL_STORE.polls.lock().unwrap().len();
+
+        *stats = Some(WebsiteStats {
+            timepoint: Instant::now(),
+            num_live_polls,
+        });
+    }
+
+    if let Some(stats) = &*stats {
+        return Ok(html_page::render_html_page(
+            "Svoote Live Stats",
+            html! {
+                (render_header(html!{}))
+                div ."my-32 mx-auto max-w-96 p-4 text-center border rounded-lg shadow" {
+                    h1 ."text-xl font-bold text-slate-600" { "Svoote live statistics" }
+                    p ."" { "Number of live polls: " (stats.num_live_polls) }
+                }
+            },
+        )
+        .into_response());
+    }
+
+    return Err(AppError::OtherInternalServerError(
+        "Failure getting cached website stats".to_string(),
+    ));
 }

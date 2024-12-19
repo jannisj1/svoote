@@ -56,8 +56,8 @@ pub async fn get_contact_page() -> Result<Response, AppError> {
         "Contact - Svoote",
         html! {
             (render_header(html!{}))
-            ."text-slate-700" {
-                ."my-8 text-2xl font-semibold" { "Svoote - Contact" }
+            ."mx-6 sm:mx-14 my-32 text-center text-slate-700" {
+                ."my-8 text-xl font-semibold" { "Svoote - Contact" }
                 ."mb-2" { "Svoote.com is owned and operated by" }
                 ."mb-4" { "Jannis Jelten" br; "Zimmermannstrasse 16b" br; "37075 Göttingen" br; "Germany" }
                 ."" { "Contact us at:" br; "info@svoote.com" }
@@ -72,9 +72,9 @@ pub async fn get_manage_cookies_page() -> Result<Response, AppError> {
         "Manage cookies - Svoote",
         html! {
             (render_header(html!{}))
-                div ."mx-6 sm:mx-14" {
-                    h1 ."mb-2 text-slate-500 text-xl font-bold" { "Cookie settings" }
-                    p ."max-w-2xl text-slate-500" {
+                div ."mx-6 sm:mx-14 my-32 text-slate-700 text-center" {
+                    h1 ."mb-2 text-xl font-bold" { "Customize cookies" }
+                    p {
                         "As stated in our "
                         a href="/cookie-policy" ."underline" { "Cookie Policy" }
                         ", we only use necessary cookies, which you cannot deactivate. "
