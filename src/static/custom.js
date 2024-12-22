@@ -44,7 +44,7 @@ document.addEventListener("alpine:init", () => {
     socket: null,
 
     init() {
-      addEventListener("keyup", (event) => {
+      addEventListener("keydown", (event) => {
         if (event.target === document.body) {
           if (event.code === "ArrowRight") {
             this.gotoSlide(this.poll.activeSlide + 1);
@@ -95,7 +95,7 @@ document.addEventListener("alpine:init", () => {
 
     calculateSlideClasses(slideIndex, activeSlide, gridView) {
       let classes =
-        "absolute inset-0 size-full px-6 sm:px-14 pb-10 pt-14 flex gap-14 border rounded transition-transform duration-500 ease-out transform-gpu ";
+        "absolute inset-0 size-full px-6 sm:px-14 pb-10 pt-14 flex gap-14 bg-white border rounded transition-transform duration-500 ease-out transform-gpu ";
 
       if (gridView) {
         classes +=
@@ -112,12 +112,12 @@ document.addEventListener("alpine:init", () => {
       return classes;
     },
 
-    calculateSlideStyle(slideIndex, activeSlide, gridView) {
+    calculateSlideStyle(slideIndex, activeSlide, gridView, isLive) {
       if (!gridView)
         return (
           "transform: perspective(100px)" +
           "translateX(" +
-          (slideIndex - activeSlide) * 106 +
+          (slideIndex - activeSlide) * (isLive ? 120 : 106) +
           "%)" +
           "translateZ(" +
           (slideIndex == activeSlide ? "0" : "-10") +
@@ -301,6 +301,7 @@ document.addEventListener("alpine:init", () => {
       if (response.ok) {
         this.code = await response.text();
         this.isLive = true;
+        document.querySelector("body").dataset.live = true;
         const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws/host/${this.code}`;
 
         this.socket = new ReconnectingWebSocket(wsUrl);
@@ -331,6 +332,7 @@ document.addEventListener("alpine:init", () => {
         this.isLive = false;
         this.socket.close();
         this.clearStatistics();
+        document.querySelector("body").dataset.live = false;
       }
     },
 
