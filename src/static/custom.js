@@ -40,6 +40,7 @@ document.addEventListener("alpine:init", () => {
     isReordering: false,
     reorderedSlideIndex: null,
     isLive: false,
+    isFullscreen: false,
     code: null,
     socket: null,
 
@@ -303,6 +304,7 @@ document.addEventListener("alpine:init", () => {
         this.isLive = true;
         document.querySelector("body").dataset.live = true;
         const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws/host/${this.code}`;
+        if (this.gridView) this.gridView = false;
 
         this.socket = new ReconnectingWebSocket(wsUrl);
         this.socket.onopen = (_e) => {
@@ -333,6 +335,10 @@ document.addEventListener("alpine:init", () => {
         this.socket.close();
         this.clearStatistics();
         document.querySelector("body").dataset.live = false;
+
+        if (this.isFullscreen) {
+          this.toggleFullscreen();
+        }
       }
     },
 
@@ -341,6 +347,12 @@ document.addEventListener("alpine:init", () => {
         slide.stats = null;
       });
       this.save();
+    },
+
+    toggleFullscreen() {
+      if (!document.fullscreenElement)
+        document.getElementById("fullscreen-container").requestFullscreen();
+      else if (document.exitFullscreen) document.exitFullscreen();
     },
   }));
 

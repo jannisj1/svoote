@@ -27,7 +27,7 @@ pub fn render_html_page(title: &str, main_content: maud::Markup) -> maud::Markup
                     "];"
                 }
             }
-            body ."group min-h-screen flex flex-col text-slate-700 bg-white data-[live=true]:bg-slate-700 transition duration-500" {
+            body ."group min-h-screen flex flex-col text-slate-700" {
                 main ."flex-1 mx-auto w-full max-w-screen-xl" {
                     (main_content)
                 }
@@ -65,7 +65,7 @@ pub fn render_html_page(title: &str, main_content: maud::Markup) -> maud::Markup
 pub fn render_header(top_right_content: Markup) -> Markup {
     return html! {
         header . "mx-6 sm:mx-14 mt-5 mb-6 flex justify-between" {
-            a href="/" ."z-10 flex items-baseline gap-1.5 transition duration-500 group-data-[live=true]:text-white" {
+            a href="/" ."z-10 flex items-baseline gap-1.5" {
                 span ."text-xl tracking-tight font-semibold" { "Svoote" }
                 ."size-4 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
             }

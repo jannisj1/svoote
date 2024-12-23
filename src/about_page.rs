@@ -92,7 +92,7 @@ pub async fn get_about_page() -> Result<Response, AppError> {
                         ."mb-10 text-sm text-slate-500 leading-2 tracking-tight"
                             { "Unlimited live users" br; "Ready for large conferences" }
                         ."mb-16 block w-fit px-5 py-3 bg-slate-800 text-slate-100 font-medium rounded-xl"
-                            { "Coming soon" }
+                            { "Not available yet" }
                         div ."mb-2 text-sm text-slate-800 tracking-wide"
                             { "What's included in " span ."font-medium tracking-tight" { "Pro" } ":" }
 
