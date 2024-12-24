@@ -47,7 +47,7 @@ document.addEventListener("alpine:init", () => {
     init() {
       addEventListener("keydown", (event) => {
         if (event.target === document.body) {
-          if (event.code === "ArrowRight") {
+          if (event.code === "ArrowRight" || event.code === "Space") {
             this.gotoSlide(this.poll.activeSlide + 1);
           } else if (event.code === "ArrowLeft") {
             this.gotoSlide(this.poll.activeSlide - 1);
@@ -350,9 +350,10 @@ document.addEventListener("alpine:init", () => {
     },
 
     toggleFullscreen() {
-      if (!document.fullscreenElement)
+      if (!document.fullscreenElement) {
         document.getElementById("fullscreen-container").requestFullscreen();
-      else if (document.exitFullscreen) document.exitFullscreen();
+        document.activeElement?.blur(); // Remove focus from fullscreen-button so the user goes to the next slide on pressing space next
+      } else if (document.exitFullscreen) document.exitFullscreen();
     },
   }));
 

@@ -41,7 +41,9 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
             div x-data="poll" id="fullscreen-container" "@fullscreenchange"="if (document.fullscreenElement == null) isFullscreen = false; else isFullscreen = true;"
                 ":class"="isFullscreen ? 'bg-slate-700 h-full flex flex-col justify-center' : 'bg-white'"
             {
-                div ."relative mx-6 sm:mx-16 flex justify-between items-center" {
+                div ."relative mx-6 sm:mx-16 flex justify-between items-center"
+                    ":class"="isFullscreen && 'mt-6'"
+                {
                     div ."absolute size-0 left-1/2 top-1.5" {
                         template x-for="i in poll.slides.length" {
                             button x-text="i"
@@ -120,7 +122,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                         }
                     }
                 }
-                div x-ref="outerSlideContainer" ."px-4 pt-3 pb-2 sm:px-12 overflow-x-hidden overflow-y-scroll scrollbar-hidden" ":class"="isFullscreen && 'flex-1'" {
+                div x-ref="outerSlideContainer" ."px-4 pt-3 pb-2 sm:px-12 overflow-x-hidden overflow-y-scroll scrollbar-hidden" ":class"="isFullscreen && 'flex-1 mb-6'" {
                     div ."relative" ":class"="isFullscreen ? 'h-full' : 'h-[36rem]'" {
                         p x-show="poll.slides.length == 0" x-cloak ."absolute inset-0 px-6 size-full flex justify-center items-center text-slate-500 text-sm" { "Empty presentation, add slides by clicking '+' in the top left." }
                         template x-for="(slide, slideIndex) in poll.slides" {
@@ -271,31 +273,31 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                         }
                     }
                 }
-                div ."mt-2 mb-6 mx-6 flex justify-center flex-wrap gap-x-6 gap-y-4 items-center" {
-                    button onclick="document.getElementById('help-dialog').showModal();"
-                        ."px-3 py-1 flex items-center gap-1.5 text-slate-500 border rounded-full hover:bg-slate-100"
-                        { "How to use Svoote" div ."size-5" { (SvgIcon::Help.render()) } }
-                    a href="/about" ."px-3 py-1 flex items-center gap-1.5 text-slate-500 border rounded-full hover:bg-slate-100"
-                        { "About Svoote " div ."size-4" { (SvgIcon::Rss.render()) } }
-                }
-                dialog id="help-dialog" ."fixed inset-0" {
-                    div ."max-w-96 px-8 py-6 rounded-lg" {
-                        form method="dialog" ."flex justify-end" { button ."size-6 text-red-500" { (SvgIcon::X.render()) } }
-                        h1 ."mb-6 text-xl text-slate-500 font-semibold" { "Help" }
-                        ul ."ml-6 list-disc text-slate-500 space-y-1" {
-                            li { "Add slides by clicking the plus button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Plus.render()) } ") in the top left and fill the slides with your content." }
-                            li { "To remove slides or change the order of them, go to the grid view via the grid view button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Grid.render()) } ") in the top left." }
-                            li { "Start the interactive presentation by clicking the start button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Play.render()) } ") in the top right. A QR-Code will show up on the slides to let participants join your presentation." }
-                            li { "When you are finished with your presentation, you can stop it by clicking on the stop button ( " div ."inline-block size-3 bg-slate-500 translate-y-[0.1rem]" {} " ) in the top right." }
-                            li { "Your slides are saved locally in your browser. If you wish to transfer them to another device or store them for a longer time, click on the settings button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Settings.render()) } ") in the top left and then on 'Save presentation'. You can later import the slides via 'Load presentation'." }
-                        }
+            }
+            p ."mt-6 mb-4 text-center text-sm text-slate-500" {
+                "Svoote is a new and growing open-source project. "
+                "Please leave your feedback and issues on "
+                a href="https://github.com/jannisj1/svoote" ."underline" { "Github" }
+                "."
+            }
+            div ."mx-6 flex justify-center flex-wrap gap-x-6 gap-y-4 items-center" {
+                button onclick="document.getElementById('help-dialog').showModal();"
+                    ."px-3 py-1 flex items-center gap-1.5 text-sm text-slate-500 border rounded-full hover:bg-slate-100"
+                    { "How to use Svoote" div ."size-5" { (SvgIcon::Help.render()) } }
+                a href="/about" ."px-3 py-1 flex items-center gap-1.5 text-sm text-slate-500 border rounded-full hover:bg-slate-100"
+                    { "About Svoote " div ."size-4" { (SvgIcon::Rss.render()) } }
+            }
+            dialog id="help-dialog" ."fixed inset-0" {
+                div ."max-w-96 px-8 py-6 rounded-lg" {
+                    form method="dialog" ."flex justify-end" { button ."size-6 text-red-500" { (SvgIcon::X.render()) } }
+                    h1 ."mb-6 text-xl text-slate-500 font-semibold" { "Help" }
+                    ul ."ml-6 list-disc text-slate-500 space-y-1" {
+                        li { "Add slides by clicking the plus button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Plus.render()) } ") in the top left and fill the slides with your content." }
+                        li { "To remove slides or change the order of them, go to the grid view via the grid view button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Grid.render()) } ") in the top left." }
+                        li { "Start the interactive presentation by clicking the start button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Play.render()) } ") in the top right. A QR-Code will show up on the slides to let participants join your presentation." }
+                        li { "When you are finished with your presentation, you can stop it by clicking on the stop button ( " div ."inline-block size-3 bg-slate-500 translate-y-[0.1rem]" {} " ) in the top right." }
+                        li { "Your slides are saved locally in your browser. If you wish to transfer them to another device or store them for a longer time, click on the settings button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Settings.render()) } ") in the top left and then on 'Save presentation'. You can later import the slides via 'Load presentation'." }
                     }
-                }
-                p ."mt-6 text-center text-sm text-slate-500" {
-                    "Svoote is a new and growing open-source project. "
-                    "Please leave your feedback and issues on "
-                    a href="https://github.com/jannisj1/svoote" ."underline" { "Github" }
-                    "."
                 }
             }
         },
