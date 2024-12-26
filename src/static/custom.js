@@ -174,7 +174,6 @@ document.addEventListener("alpine:init", () => {
         return;
 
       let stats = this.poll.slides[slideIndex].stats;
-      console.log(stats);
 
       let containerHeight = container.getBoundingClientRect().height;
       let containerWidth = container.getBoundingClientRect().width;
@@ -218,7 +217,7 @@ document.addEventListener("alpine:init", () => {
         });
       }
 
-      sortedTerms.sort((a, b) => b.term.count - a.term.count);
+      sortedTerms.sort((a, b) => b.term[1] - a.term[1]);
 
       let rows = [];
       let rowHeightSum = 0;
@@ -419,7 +418,6 @@ document.addEventListener("alpine:init", () => {
 
         switch (msg.cmd) {
           case "updateSlide":
-            console.log(msg);
             this.currentSlide = msg.data.slide;
             this.slideIndex = msg.data.slideIndex;
             break;

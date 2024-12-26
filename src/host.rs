@@ -19,7 +19,7 @@ use tokio::select;
 
 use crate::{
     app_error::AppError,
-    config::{COLOR_PALETTE, POLL_MAX_MC_ANSWERS, POLL_MAX_SLIDES},
+    config::{COLOR_PALETTE, POLL_MAX_MC_ANSWERS, POLL_MAX_SLIDES, STATS_UPDATE_THROTTLE},
     html_page::{self, render_header},
     live_poll::LivePoll,
     live_poll_store::{ShortID, LIVE_POLL_STORE},
@@ -175,7 +175,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                     template x-if="slide.type == 'mc'" {
                                         div ."relative h-full" {
                                             div ."flex gap-4" {
-                                                div ."flex-1" {
+                                                div ."relative z-10 flex-1" {
                                                     div ."-z-10 absolute px-1 py-0.5 text-xl text-slate-500 bg-transparent" x-cloak x-show="slide.question.trim() == '' && !isLive" { "Question" }
                                                     span x-init="$el.innerText = slide.question"
                                                         "@input"="slide.question = $el.innerText; save();"
@@ -466,7 +466,18 @@ async fn handle_host_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll
         )
     };
 
+    let mut last_sent_timepoint = tokio::time::Instant::now() - STATS_UPDATE_THROTTLE;
+    let mut throttled_msg = None;
+
     loop {
+        let throttled_msg_sent_timeout = if throttled_msg.is_some() {
+            STATS_UPDATE_THROTTLE
+                .checked_sub(tokio::time::Instant::now() - last_sent_timepoint)
+                .unwrap_or(tokio::time::Duration::from_secs(0))
+        } else {
+            tokio::time::Duration::from_secs(999999)
+        };
+
         select! {
             msg = socket.recv() => {
                 if let Some(Ok(msg)) = msg {
@@ -509,15 +520,29 @@ async fn handle_host_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll
                         _ => Value::Null
                     };
 
-                    let _  = socket.send(WSMessage {
+                    let msg = WSMessage {
                         cmd: SmartString::from("updateStats"),
                         data: json!({
                             "slideIndex": slide_index,
                             "stats": stats,
                         })
-                    }.into()).await;
+                    }.into();
+
+                    if tokio::time::Instant::now() - last_sent_timepoint > STATS_UPDATE_THROTTLE {
+                        let _  = socket.send(msg).await;
+                        last_sent_timepoint = tokio::time::Instant::now();
+                        throttled_msg = None;
+                    } else {
+                        throttled_msg = Some(msg);
+                    }
                 } else {
                     return;
+                }
+            }
+            _ = tokio::time::sleep(throttled_msg_sent_timeout) => {
+                if let Some(msg) = throttled_msg.take() {
+                    let _  = socket.send(msg).await;
+                    last_sent_timepoint = tokio::time::Instant::now();
                 }
             }
             _ = tokio::time::sleep(tokio::time::Duration::from_secs(15)) => {
@@ -537,11 +562,14 @@ pub async fn get_bombardft(Path(poll_id): Path<ShortID>) -> Result<Response, App
             let mut i = 0;
             loop {
                 i += 1;
-                let _ = tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                let _ = tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
 
                 let mut live_poll = live_poll.lock().unwrap();
                 if let SlideType::FreeText(answers) = &mut live_poll.get_current_slide().slide_type
                 {
+                    use rand::Rng;
+                    let mut rng = rand::thread_rng();
+
                     answers.word_cloud_terms.push(WordCloudTerm {
                         lowercase_text: SmartString::from(i.to_string()),
                         count: 1,
@@ -549,7 +577,14 @@ pub async fn get_bombardft(Path(poll_id): Path<ShortID>) -> Result<Response, App
                         highest_spelling_count: 1,
                         spellings: HashMap::new(),
                     });
-                    answers.max_term_count = 1;
+
+                    let random_int = rng.gen_range::<usize, _>(0..20);
+                    if random_int < answers.word_cloud_terms.len() {
+                        answers.word_cloud_terms[random_int].count += 1;
+                        if answers.word_cloud_terms[random_int].count > answers.max_term_count {
+                            answers.max_term_count = answers.word_cloud_terms[random_int].count;
+                        }
+                    }
 
                     let _ = live_poll
                         .stats_change_notification_channel_sender
