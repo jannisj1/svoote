@@ -28,8 +28,8 @@
 use maud::PreEscaped;
 
 pub enum SvgIcon {
-    //ArrowRight,
-    //ArrowLeft,
+    ArrowRight,
+    ArrowLeft,
     BarChart2,
     Check,
     //CheckSquare,
@@ -66,12 +66,12 @@ pub enum SvgIcon {
 impl SvgIcon {
     pub fn render(self) -> PreEscaped<&'static str> {
         return PreEscaped(match self {
-            /*Self::ArrowRight => {
+            Self::ArrowRight => {
                 r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>"#
             }
             Self::ArrowLeft => {
                 r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>"#
-            }*/
+            }
             Self::BarChart2 => {
                 r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bar-chart-2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>"#
             }

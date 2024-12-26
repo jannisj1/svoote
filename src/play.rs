@@ -26,6 +26,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use smartstring::{Compact, SmartString};
 use std::{
+    collections::HashMap,
     fmt::Write,
     sync::{Arc, Mutex},
 };
@@ -344,10 +345,10 @@ pub async fn post_ft_answer(
             ));
         }
 
-        let trimmed_answer = form
-            .answer
-            .trim()
-            .to_uppercase()
+        let trimmed_answer = SmartString::from(form.answer.trim());
+
+        let lowercase_answer = trimmed_answer
+            .to_lowercase()
             .chars()
             .take(FREE_TEXT_MAX_CHAR_LENGTH)
             .collect::<SmartString<Compact>>();
@@ -357,17 +358,34 @@ pub async fn post_ft_answer(
         let term_index = ft_answers
             .word_cloud_terms
             .iter()
-            .position(|term| term.text == trimmed_answer);
+            .position(|term| term.lowercase_text == lowercase_answer);
 
         if let Some(term_index) = term_index {
-            ft_answers.word_cloud_terms[term_index].count += 1;
-            if ft_answers.max_term_count < ft_answers.word_cloud_terms[term_index].count {
-                ft_answers.max_term_count = ft_answers.word_cloud_terms[term_index].count;
+            let term = &mut ft_answers.word_cloud_terms[term_index];
+            term.count += 1;
+            if term.count > ft_answers.max_term_count {
+                ft_answers.max_term_count = term.count;
+            }
+
+            if let Some(spelling_count) = term.spellings.get_mut(&trimmed_answer) {
+                *spelling_count += 1;
+                if *spelling_count > term.highest_spelling_count {
+                    term.highest_spelling_count = *spelling_count;
+                    term.preferred_spelling = trimmed_answer;
+                }
+            } else {
+                term.spellings.insert(trimmed_answer, 1);
             }
         } else {
+            let mut spellings = HashMap::new();
+            spellings.insert(trimmed_answer.clone(), 1);
+
             ft_answers.word_cloud_terms.push(WordCloudTerm {
-                text: trimmed_answer,
+                lowercase_text: lowercase_answer,
                 count: 1,
+                preferred_spelling: SmartString::from(trimmed_answer),
+                spellings,
+                highest_spelling_count: 1,
             });
         }
     } else {

@@ -164,18 +164,6 @@ document.addEventListener("alpine:init", () => {
       return classes;
     },
 
-    calculateWCTermStyle(term, maxCount) {
-      return `
-        transition: all 0.5s ease-out;
-        font-size: ${0.5 + (2.25 * term.count) / maxCount}rem;
-        opacity: ${0.7 + (0.3 * term.count) / maxCount};
-        letter-spacing: ${0.02 - 0.04 * (term.count / maxCount)}em;
-        font-weight: 500;
-        top: ${term.top != null ? term.top : 0}px;
-        left: ${term.left != null ? term.left : 0}px;
-      `;
-    },
-
     renderWordCloud(slideIndex) {
       let container = document.getElementById("word-cloud-" + slideIndex);
       if (
@@ -186,22 +174,50 @@ document.addEventListener("alpine:init", () => {
         return;
 
       let stats = this.poll.slides[slideIndex].stats;
+      console.log(stats);
 
       let containerHeight = container.getBoundingClientRect().height;
       let containerWidth = container.getBoundingClientRect().width;
-      const HORIZONTAL_GAP = 24;
+      const HORIZONTAL_GAP = 32;
       const VERTICAL_GAP = 12;
 
       let sortedTerms = [];
+
       for (i = 0; i < stats.terms.length; i++) {
-        let element = container.children[i + 1];
+        const term = stats.terms[i];
+        let c = container.children[i];
+        if (c == null) {
+          c = document.createElement("div");
+          c.className =
+            "absolute size-fit left-1/2 top-full leading-none whitespace-nowrap transition-all duration-500 ease-out invisible";
+          c.classList.add(
+            [
+              "text-rose-600",
+              "text-cyan-600",
+              "text-lime-600",
+              "text-fuchsia-600",
+              "text-slate-600",
+              "text-teal-600",
+            ][i % 6],
+          );
+          c.style.fontWeight = "500";
+          container.appendChild(c);
+        }
+
+        c.innerText = term[0];
+        c.title = `${term[0]}: ${term[1]}`;
+        c.style.fontSize = `${0.5 + (2.25 * term[1]) / stats.maxCount}rem`;
+        c.style.opacity = `${0.7 + (0.3 * term[1]) / stats.maxCount}`;
+        c.style.letterSpacing = `${0.02 - 0.04 * (term[1] / stats.maxCount)}em`;
+
         sortedTerms.push({
-          term: stats.terms[i],
-          element: element,
-          width: element.getBoundingClientRect().width,
-          height: element.getBoundingClientRect().height,
+          term: term,
+          element: c,
+          width: c.getBoundingClientRect().width,
+          height: c.getBoundingClientRect().height,
         });
       }
+
       sortedTerms.sort((a, b) => b.term.count - a.term.count);
 
       let rows = [];
@@ -254,8 +270,8 @@ document.addEventListener("alpine:init", () => {
 
         let leftOffset = containerWidth / 2 - row.width / 2;
         for (term of row.terms) {
-          term.term.top = top + (row.height - term.height) / 2;
-          term.term.left = leftOffset;
+          term.element.style.top = `${top + (row.height - term.height) / 2}px`;
+          term.element.style.left = `${leftOffset}px`;
           leftOffset += term.width + HORIZONTAL_GAP;
         }
 
@@ -284,10 +300,13 @@ document.addEventListener("alpine:init", () => {
     },
 
     moveSlide(targetIndex, before) {
-      let temp = this.poll.slides.splice(this.reorderedSlideIndex, 1);
-      if (targetIndex >= this.reorderedSlideIndex) targetIndex -= 1;
-      if (before) this.poll.slides.splice(targetIndex, 0, temp[0]);
-      else this.poll.slides.splice(targetIndex + 1, 0, temp[0]);
+      if (!before) targetIndex += 1;
+      let temp = this.poll.slides[this.reorderedSlideIndex];
+      this.poll.slides.splice(targetIndex, 0, temp);
+
+      if (targetIndex < this.reorderedSlideIndex)
+        this.poll.slides.splice(this.reorderedSlideIndex + 1, 1);
+      else this.poll.slides.splice(this.reorderedSlideIndex, 1);
     },
 
     async startPoll() {
@@ -316,7 +335,7 @@ document.addEventListener("alpine:init", () => {
           switch (msg.cmd) {
             case "updateStats":
               this.poll.slides[msg.data.slideIndex].stats = msg.data.stats;
-              this.$nextTick(() => this.renderWordCloud(msg.data.slideIndex));
+              this.renderWordCloud(msg.data.slideIndex);
               setTimeout(() => this.renderWordCloud(msg.data.slideIndex), 500);
               break;
           }
@@ -343,9 +362,13 @@ document.addEventListener("alpine:init", () => {
     },
 
     clearStatistics() {
-      this.poll.slides.forEach((slide) => {
-        slide.stats = null;
-      });
+      for (i = 0; i < this.poll.slides.length; i++) {
+        this.poll.slides[i].stats = null;
+        let wc = document.getElementById(`word-cloud-${i}`);
+        if (wc != null) {
+          wc.innerHTML = "";
+        }
+      }
       this.save();
     },
 

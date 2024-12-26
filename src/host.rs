@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use axum::{
     extract::{
@@ -93,7 +96,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                 }
                             }
                         }
-                        button "@click"="gridView = !gridView; if (!gridView) $dispatch('leavegridview');"
+                        button "@click"="gridView = !gridView;"
                             ":disabled"="isLive" ."size-6"
                             ":class"="gridView ? 'text-indigo-500' : (isFullscreen ? 'disabled:text-slate-500' : 'disabled:text-slate-300')"
                             title="Grid view" { (SvgIcon::Grid.render()) }
@@ -122,14 +125,14 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                         }
                     }
                 }
-                div x-ref="outerSlideContainer" ."px-4 pt-3 pb-2 sm:px-12 overflow-x-hidden overflow-y-scroll scrollbar-hidden" ":class"="isFullscreen && 'flex-1 mb-6'" {
+                div x-ref="outerSlideContainer" ."px-4 pt-3 pb-2 sm:px-12 overflow-x-hidden overflow-y-scroll scrollbar-hidden" ":class"="isFullscreen && 'flex-1'" {
                     div ."relative" ":class"="isFullscreen ? 'h-full' : 'h-[36rem]'" {
                         p x-show="poll.slides.length == 0" x-cloak ."absolute inset-0 px-6 size-full flex justify-center items-center text-slate-500 text-sm" { "Empty presentation, add slides by clicking '+' in the top left." }
                         template x-for="(slide, slideIndex) in poll.slides" {
                             div
                                 ":class"="calculateSlideClasses(slideIndex, poll.activeSlide, gridView)"
                                 ":style"="calculateSlideStyle(slideIndex, poll.activeSlide, gridView, isLive)"
-                                "@click"="if (slideIndex != poll.activeSlide) gotoSlide(slideIndex); if (gridView) { gridView = false; $refs.outerSlideContainer.scrollTo({ top: 0, behavior: 'smooth' }); $dispatch('leavegridview'); }"
+                                "@click"="if (slideIndex != poll.activeSlide) gotoSlide(slideIndex); if (gridView) { gridView = false; $refs.outerSlideContainer.scrollTo({ top: 0, behavior: 'smooth' }); }"
                             {
                                 div x-data="{ selectTemplate: false }" ."flex-1 flex flex-col" {
                                     h1 x-show="gridView" x-cloak x-text="'Slide ' + (slideIndex + 1)" ."absolute text-5xl text-slate-500 -top-20 left-[45%]" {}
@@ -168,7 +171,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                         "@click"="if (!selectTemplate) { selectTemplate = true; } else { selectTemplate = false; slide.type = 'ft'; } save();"
                                         ":class"="calculateSlideTypeButtonClasses(slide.type, 'ft', selectTemplate)"
                                         x-show="!isLive"
-                                        { ."size-6 p-1 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) } "Free text" }
+                                        { ."size-6 p-1 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) } "Open ended" }
                                     template x-if="slide.type == 'mc'" {
                                         div ."relative h-full" {
                                             div ."flex gap-4" {
@@ -247,24 +250,14 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                     a x-show="code !== null" ."text-center text-xs text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
                                                 }
                                             }
-                                            div ."relative flex-1 mx-auto w-full max-w-2xl"
+                                            div ."relative flex-1 mx-auto w-full"
                                                 ":id"="`word-cloud-${slideIndex}`"
                                                 "@resize.window"="$nextTick(() => { renderWordCloud(slideIndex); })"
-                                                "@leavegridview.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
                                                 "@slidechange.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
-                                            {
-                                                template x-for="(term, termIndex) in (slide.stats !== null ? slide.stats.terms : [])" {
-                                                    div ."absolute size-fit inset-1/2 leading-none whitespace-nowrap invisible"
-                                                        x-text="term.text"
-                                                        ":class"="['text-rose-500', 'text-cyan-500', 'text-lime-500', 'text-fuchsia-500', 'text-slate-500', 'text-teal-500'][termIndex % 6]"
-                                                        ":title"="`${term.text}: ${term.count}`"
-                                                        ":style"="calculateWCTermStyle(term, slide.stats.maxCount)"
-                                                        {}
-                                                }
-                                            }
+                                                { }
                                             div x-show="(slide.stats !== null ? slide.stats.terms : []).length == 0"
                                                 ."absolute size-full inset-0 -z-10 p-6 flex items-center justify-center gap-2 text-slate-500 text-sm"
-                                                { div ."size-4" { (SvgIcon::Edit3.render()) } "Free text: Participants can submit their own answer." }
+                                                { div ."size-4" { (SvgIcon::Edit3.render()) } "Open-ended: Answers will show up here in a word cloud." }
                                         }
                                     }
                                 }
@@ -273,8 +266,20 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                         }
                     }
                 }
+                div ."mt-2 mb-6 flex justify-center gap-4" {
+                    button ."p-2 size-8 rounded-full shadow hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
+                        ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
+                        "@click"="gotoSlide(poll.activeSlide - 1)"
+                        ":disabled"="poll.activeSlide == 0"
+                        { (SvgIcon::ArrowLeft.render()) }
+                    button ."p-2 size-8 rounded-full shadow hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
+                        ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
+                        "@click"="gotoSlide(poll.activeSlide + 1)"
+                        ":disabled"="poll.activeSlide == poll.slides.length - 1"
+                        { (SvgIcon::ArrowRight.render()) }
+                }
             }
-            p ."mt-6 mb-4 text-center text-sm text-slate-500" {
+            p ."mb-4 text-center text-sm text-slate-500" {
                 "Svoote is a new and growing open-source project. "
                 "Please leave your feedback and issues on "
                 a href="https://github.com/jannisj1/svoote" ."underline" { "Github" }
@@ -494,7 +499,10 @@ async fn handle_host_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll
                         }
                         SlideType::FreeText(answers) => {
                             json!({
-                                "terms": answers.word_cloud_terms,
+                                "terms": answers.word_cloud_terms
+                                    .iter()
+                                    .map(|term| (term.preferred_spelling.clone(), term.count))
+                                    .collect::<Vec<_>>(),
                                 "maxCount": answers.max_term_count,
                             })
                         }
@@ -535,8 +543,11 @@ pub async fn get_bombardft(Path(poll_id): Path<ShortID>) -> Result<Response, App
                 if let SlideType::FreeText(answers) = &mut live_poll.get_current_slide().slide_type
                 {
                     answers.word_cloud_terms.push(WordCloudTerm {
-                        text: SmartString::from(i.to_string()),
+                        lowercase_text: SmartString::from(i.to_string()),
                         count: 1,
+                        preferred_spelling: SmartString::from(i.to_string()),
+                        highest_spelling_count: 1,
+                        spellings: HashMap::new(),
                     });
                     answers.max_term_count = 1;
 
@@ -558,6 +569,7 @@ pub async fn get_bombardft(Path(poll_id): Path<ShortID>) -> Result<Response, App
 struct WebsiteStats {
     pub timepoint: tokio::time::Instant,
     pub num_live_polls: usize,
+    pub num_participants: usize,
 }
 static STATS: Mutex<Option<WebsiteStats>> = Mutex::new(None);
 
@@ -570,11 +582,15 @@ pub async fn get_stats() -> Result<Response, AppError> {
             .as_ref()
             .is_some_and(|stats| (Instant::now() - stats.timepoint) >= Duration::from_secs(5))
     {
-        let num_live_polls = LIVE_POLL_STORE.polls.lock().unwrap().len();
+        let polls = LIVE_POLL_STORE.polls.lock().unwrap();
 
         *stats = Some(WebsiteStats {
             timepoint: Instant::now(),
-            num_live_polls,
+            num_live_polls: polls.len(),
+            num_participants: polls
+                .iter()
+                .map(|p| p.1.lock().unwrap().players.len())
+                .sum::<usize>(),
         });
     }
 
@@ -586,6 +602,8 @@ pub async fn get_stats() -> Result<Response, AppError> {
                 div ."my-32 mx-auto max-w-96 p-4 text-center border rounded-lg shadow" {
                     h1 ."text-xl font-bold text-slate-600" { "Svoote live statistics" }
                     p ."" { "Number of live polls: " (stats.num_live_polls) }
+                    p ."" { "Number of participants: " (stats.num_participants) }
+                    p ."" { "Avg. participants per poll: " (format!("{:.2}", stats.num_participants as f32 / stats.num_live_polls as f32)) }
                 }
             },
         )
