@@ -207,7 +207,7 @@ document.addEventListener("alpine:init", () => {
 
         c.innerText = term[0];
         c.title = `${term[0]}: ${term[1]}`;
-        c.style.fontSize = `${0.5 + (2.25 * term[1]) / stats.maxCount}rem`;
+        c.style.fontSize = `${0.5 + (2.25 * term[1]) / stats.maxCount}em`;
         c.style.opacity = `${0.7 + (0.3 * term[1]) / stats.maxCount}`;
         c.style.letterSpacing = `${0.02 - 0.04 * (term[1] / stats.maxCount)}em`;
 
