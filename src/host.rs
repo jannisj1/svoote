@@ -76,17 +76,12 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                     input type="checkbox" x-model="poll.allowCustomNames" ."size-4 accent-indigo-500";
                                     "Custom names"
                                 }
-                                ."ml-6 mb-3 text-slate-400 text-sm" { "Allow participants to set a custom name." }
-                                hr ."mb-3";*/
+                                ."ml-6 mb-3 text-slate-400 text-sm" { "Allow participants to set a custom name." }*/
                                 a download="poll.json" ":href"="'data:application/json;charset=utf-8,' + JSON.stringify(poll)"
                                     ."mb-2 flex gap-2 items-center text-slate-600 hover:text-slate-900"
-                                {
-                                    ."size-4" { (SvgIcon::Save.render()) }
-                                    "Save presentation (.json)"
-                                }
+                                    { ."size-4" { (SvgIcon::Save.render()) } "Save presentation (.json)" }
                                 label ."mb-3 flex gap-2 items-center text-slate-600 cursor-pointer hover:text-slate-900" {
-                                    ."size-4" { (SvgIcon::Folder.render()) }
-                                    "Load presentation (.json)"
+                                    ."size-4" { (SvgIcon::Folder.render()) } "Load presentation (.json)"
                                     input type="file" accept=".json" "@change"="importJsonFile($event);" ."hidden";
                                 }
                                 hr ."mb-3";
@@ -107,6 +102,13 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                             title="Add new slide" { (SvgIcon::Plus.render()) }
                     }
                     div ."pl-4 flex items-center gap-3 z-10" ":class"="isFullscreen ? 'bg-slate-700' : 'bg-white'" {
+                        div x-show="isFullscreen" x-cloak x-effect="$dispatch('fontsizechange', { size: fontSize })"
+                            ."mr-2 flex items-baseline gap-2 text-slate-500 font-mono font-bold"
+                        {
+                            label ."text-sm cursor-pointer has-[:checked]:text-slate-100" title="Text size medium" { "Aa" input type="radio" ."hidden" x-model="fontSize" name="fontSize" value="medium"; }
+                            label ."text-large cursor-pointer has-[:checked]:text-slate-100" title="Text size large" { "Aa" input type="radio" ."hidden" x-model="fontSize" name="fontSize" value="large"; }
+                            label ."text-xl cursor-pointer has-[:checked]:text-slate-100" title="Text size extra-large" { "Aa" input type="radio" ."hidden" x-model="fontSize" name="fontSize" value="xlarge"; }
+                        }
                         button x-show="!isLive" "@click"="startPoll()"
                             ":disabled"="poll.slides.length == 0"
                             ."p-2 text-slate-50 bg-green-500 rounded-full shadow shadow-slate-400 hover:bg-green-600 hover:shadow-none disabled:bg-green-200 disabled:shadow-none"
@@ -125,9 +127,10 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                         }
                     }
                 }
-                div x-ref="outerSlideContainer" ."px-4 pt-3 pb-2 sm:px-12 overflow-x-hidden overflow-y-scroll scrollbar-hidden" ":class"="isFullscreen && 'flex-1'" {
+                div x-ref="outerSlideContainer" ."px-4 pt-3 pb-2 sm:px-12 overflow-x-hidden overflow-y-scroll scrollbar-hidden"
+                    ":class"="isFullscreen && ('flex-1 ' + (fontSize == 'large' ? 'text-[1.25rem]' : (fontSize == 'xlarge' ? 'text-[1.5rem]' : 'text-base')))" {
                     div ."relative" ":class"="isFullscreen ? 'h-full' : 'h-[36rem]'" {
-                        p x-show="poll.slides.length == 0" x-cloak ."absolute inset-0 px-6 size-full flex justify-center items-center text-slate-500 text-sm" { "Empty presentation, add slides by clicking '+' in the top left." }
+                        p x-show="poll.slides.length == 0" x-cloak ."absolute inset-0 px-6 size-full flex justify-center items-center text-slate-500 text-[0.875em]" { "Empty presentation, add slides by clicking '+' in the top left." }
                         template x-for="(slide, slideIndex) in poll.slides" {
                             div
                                 ":class"="calculateSlideClasses(slideIndex, poll.activeSlide, gridView)"
@@ -158,7 +161,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                         ":class"="selectTemplate ? 'backdrop-blur-sm' : 'pointer-events-none'"
                                         x-show="!isLive"
                                         "@click"="selectTemplate = false" {}
-                                    h2 ."absolute left-1/2 top-4 -translate-x-1/2 z-10 text-sm text-slate-500 transition duration-300 "
+                                            h2 ."absolute left-1/2 top-[1em] -translate-x-1/2 z-10 text-[0.875em] text-slate-500 transition duration-300 "
                                         ":class"="selectTemplate ? '' : 'opacity-0'"
                                         x-show="!isLive"
                                         { "Choose template:" }
@@ -173,61 +176,61 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                         x-show="!isLive"
                                         { ."size-6 p-1 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) } "Open ended" }
                                     template x-if="slide.type == 'mc'" {
-                                        div ."relative h-full" {
-                                            div ."flex gap-4" {
-                                                div ."relative z-10 flex-1" {
-                                                    div ."-z-10 absolute px-1 py-0.5 text-xl text-slate-500 bg-transparent" x-cloak x-show="slide.question.trim() == '' && !isLive" { "Question" }
+                                        div ."relative h-full flex flex-col gap-[3em] justify-between" {
+                                            div ."flex gap-[1em]" {
+                                                div ."flex-1" {
+                                                    div ."-z-10 absolute px-[0.25em] py-[0.125em] text-[1.25em] text-slate-500 bg-transparent" x-cloak x-show="slide.question.trim() == '' && !isLive" { "Question" }
                                                     span x-init="$el.innerText = slide.question"
                                                         "@input"="slide.question = $el.innerText; save();"
                                                         ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                         ":contenteditable"="!isLive"
-                                                        ."block mb-3 px-1 py-0.5 text-xl text-slate-800 bg-transparent" {}
-                                                    label /*x-show="!isLive" x-collapse*/ ."ml-2 mb-2 overflow-hidden flex gap-2 items-center text-slate-700 transition-all duration-500"
-                                                        ":class"="isLive ? 'h-0 opacity-0' : 'h-6'" {
+                                                        ."block mb-3 px-[0.25em] py-[0.125em] text-[1.25em] text-slate-800 bg-transparent" {}
+                                                    label /*x-show="!isLive" x-collapse*/ ."ml-[0.5em] mb-[0.5em] overflow-hidden flex gap-[0.5em] items-center text-slate-700 transition-all duration-500"
+                                                        ":class"="isLive ? 'h-0 opacity-0' : 'h-[1.5em]'" {
                                                         input x-model="slide.allowMultipleMCAnswers" "@change"="save()" type="checkbox" ."accent-indigo-500";
                                                         "Allow multiple answers per user"
                                                     }
                                                     template x-for="(answer, answer_index) in slide.mcAnswers" {
-                                                        div ."mb-1.5 flex items-center gap-2" {
-                                                            div x-text="incrementChar('A', answer_index)" ."ml-2 text-sm text-slate-400" {}
+                                                        div ."mb-[0.375em] flex items-center gap-[0.5em]" {
+                                                            div x-text="incrementChar('A', answer_index)" ."ml-[0.5em] text-[0.875em] text-slate-400" {}
                                                             input type="text" x-model="answer.text" "@input"="save()"
                                                                 "@keydown.enter"="let next = $el.parentElement.nextSibling; if (next.tagName == 'DIV') next.children[1].focus(); else next.click();"
                                                                 ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                                 ":id"="(answer_index == 0) && 's-' + slideIndex + '-mc-answer-0'"
                                                                 ":disabled"="isLive"
-                                                                ."w-full px-1 py-0.5 text-slate-700 bg-transparent";
+                                                                ."w-full px-[0.25em] py-[0.125em] text-slate-700 bg-transparent";
                                                             //button x-show="!isLive" "@click"="answer.isCorrect = !answer.isCorrect; save()" ":class"="answer.isCorrect ? 'text-green-600' : 'text-slate-300 hover:text-green-600'" ."size-6" { (SvgIcon::CheckSquare.render()) }
-                                                            button x-show="!isLive" "@click"="slide.mcAnswers.splice(answer_index, 1); save();" ."size-6 text-slate-300 hover:text-slate-500" { (SvgIcon::Trash2.render()) }
+                                                            button x-show="!isLive" "@click"="slide.mcAnswers.splice(answer_index, 1); save();" ."size-[1.5em] text-slate-300 hover:text-slate-500" { (SvgIcon::Trash2.render()) }
                                                         }
                                                     }
                                                     button
                                                         "@click"={"if (slide.mcAnswers.length < " (POLL_MAX_MC_ANSWERS) ") { slide.mcAnswers.push({ text: '', isCorrect: false }); save(); $nextTick(() => $el.previousSibling.children[1].focus()); }" }
                                                         ":class"={ "(slide.mcAnswers.length >= " (POLL_MAX_MC_ANSWERS) ") && 'hidden'" }
-                                                        ."ml-6 text-slate-700 underline"
+                                                        ."ml-[1.5em] text-slate-700 underline"
                                                         ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                         ":id"="'add-mc-answer-' + slideIndex"
                                                         x-show="!isLive"
                                                         { "Add answer" }
                                                 }
-                                                div x-show="isLive" x-cloak ."sm:translate-x-6 -translate-y-4 flex flex-col items-center" {
-                                                    div x-data="qrCode" x-effect="if (slideIndex == poll.activeSlide) render($el, code)" ."mb-3 w-16 sm:w-24" {}
-                                                    div x-text="code !== null ? code : ''" ."text-xl text-slate-600 tracking-wide font-bold" {}
-                                                    a x-show="code !== null" ."text-center text-xs text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
+                                                div x-show="isLive" x-cloak ."sm:translate-x-[1.5em] -translate-y-[1em] flex flex-col items-center" {
+                                                    div x-data="qrCode" x-effect="if (slideIndex == poll.activeSlide) render($el, code)" ."mb-[0.75em] w-[4em] sm:w-[6em]" {}
+                                                    div x-text="code !== null ? code : ''" ."text-[1.25em] text-slate-600 tracking-wide font-bold" {}
+                                                    a x-show="code !== null" ."text-center text-[0.75em] text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
                                                 }
                                             }
-                                            div ."absolute w-full left-0 bottom-0 flex items-start justify-center gap-4" {
+                                            div ."flex-1 max-h-[10em] flex items-start justify-center gap-[1em]" {
                                                 template x-for="(answer, answer_index) in slide.mcAnswers" {
-                                                    div ."w-28" {
-                                                        div ."h-40 flex flex-col justify-end items-center" {
+                                                    div ."h-full w-[7em]" {
+                                                        div ."h-[calc(100%-2.5em)] flex flex-col justify-end items-center" {
                                                             div ":class"="colorPalette[answer_index % colorPalette.length]"
                                                                 ":style"="`height: ${ Math.max(2, slide.stats !== null ? slide.stats.percentages[answer_index] : 2) }%;`"
-                                                                ."w-16 transition-all duration-300 relative shadow-lg"
+                                                                ."w-[4em] transition-all duration-300 relative shadow-lg"
                                                             {
                                                                 div x-text="`${ slide.stats !== null ? slide.stats.counts[answer_index] : 0 }`"
-                                                                    ."absolute w-full text-slate-600 text-center font-medium -translate-y-7" {}
+                                                                    ."absolute w-full text-slate-600 text-center font-medium -translate-y-[1.75em]" {}
                                                             }
                                                         }
-                                                        div x-text="answer.text != '' ? answer.text : 'Answer ' + incrementChar('A', answer_index)" ."h-10 my-2 text-slate-600 text-sm text-center break-words overflow-hidden" {}
+                                                        div x-text="answer.text != '' ? answer.text : 'Answer ' + incrementChar('A', answer_index)" ."h-[2.5em] my-[0.5em] text-slate-600 text-[0.875em] text-center break-words overflow-hidden" {}
                                                     }
                                                 }
                                             }
@@ -235,29 +238,30 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                     }
                                     template x-if="slide.type == 'ft'" {
                                         div ."h-full flex flex-col" {
-                                            div ."flex gap-4" {
+                                            div ."flex gap-[1em]" {
                                                 div ."flex-1" {
-                                                    div ."-z-10 absolute px-1 py-0.5 text-xl text-slate-500 bg-transparent" x-cloak x-show="slide.question.trim() == '' && !isLive" { "Question" }
+                                                    div ."-z-10 absolute px-[0.25em] py-[0.125em] text-[1.25em] text-slate-500 bg-transparent" x-cloak x-show="slide.question.trim() == '' && !isLive" { "Question" }
                                                     span x-init="$el.innerText = slide.question"
                                                         "@input"="slide.question = $el.innerText; save();"
                                                         ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                         ":contenteditable"="!isLive"
-                                                        ."block mb-3 px-1 py-0.5 text-xl text-slate-800 bg-transparent" {}
+                                                        ."block mb-[0.75em] px-[0.25em] py-[0.125em] text-[1.25em] text-slate-800 bg-transparent" {}
                                                 }
-                                                div x-show="isLive" x-cloak ."sm:translate-x-6 -translate-y-4 flex flex-col items-center" {
-                                                    div x-data="qrCode" x-effect="if (slideIndex == poll.activeSlide) render($el, code)" ."mb-3 w-24" {}
-                                                    div x-text="code !== null ? code : ''" ."text-xl text-slate-600 tracking-wide font-bold" {}
-                                                    a x-show="code !== null" ."text-center text-xs text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
+                                                div x-show="isLive" x-cloak ."sm:translate-x-[1.5em] -translate-y-[1em] flex flex-col items-center" {
+                                                    div x-data="qrCode" x-effect="if (slideIndex == poll.activeSlide) render($el, code)" ."mb-[0.75em] w-[6em]" {}
+                                                    div x-text="code !== null ? code : ''" ."text-[1.25em] text-slate-600 tracking-wide font-bold" {}
+                                                    a x-show="code !== null" ."text-center text-[0.75em] text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
                                                 }
                                             }
                                             div ."relative flex-1 mx-auto w-full"
                                                 ":id"="`word-cloud-${slideIndex}`"
                                                 "@resize.window"="$nextTick(() => { renderWordCloud(slideIndex); })"
+                                                "@fontsizechange.window"="$nextTick(() => { renderWordCloud(slideIndex); })"
                                                 "@slidechange.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
                                                 { }
                                             div x-show="(slide.stats !== null ? slide.stats.terms : []).length == 0"
-                                                ."absolute size-full inset-0 -z-10 p-6 flex items-center justify-center gap-2 text-slate-500 text-sm"
-                                                { div ."size-4" { (SvgIcon::Edit3.render()) } "Open-ended: Answers will show up here in a word cloud." }
+                                                ."absolute size-full inset-0 -z-10 p-[1.5em] flex items-center justify-center gap-[0.5em] text-slate-500 text-[0.875em]"
+                                                { div ."size-[1em]" { (SvgIcon::Edit3.render()) } "Open-ended: Answers will show up here in a word cloud." }
                                         }
                                     }
                                 }
@@ -528,7 +532,8 @@ async fn handle_host_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll
                         })
                     }.into();
 
-                    if tokio::time::Instant::now() - last_sent_timepoint > STATS_UPDATE_THROTTLE {
+                    if throttled_msg.is_none() &&
+                        tokio::time::Instant::now() - last_sent_timepoint > STATS_UPDATE_THROTTLE {
                         let _  = socket.send(msg).await;
                         last_sent_timepoint = tokio::time::Instant::now();
                         throttled_msg = None;

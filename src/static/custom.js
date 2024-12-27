@@ -43,6 +43,7 @@ document.addEventListener("alpine:init", () => {
     isFullscreen: false,
     code: null,
     socket: null,
+    fontSize: "medium",
 
     init() {
       addEventListener("keydown", (event) => {
@@ -91,12 +92,13 @@ document.addEventListener("alpine:init", () => {
         this.gridView = false;
         this.isReordering = false;
         this.reorderedSlideIndex = null;
+        this.fontSize = "medium";
       }
     },
 
     calculateSlideClasses(slideIndex, activeSlide, gridView) {
       let classes =
-        "absolute inset-0 size-full px-6 sm:px-14 pb-10 pt-14 flex gap-14 bg-white border rounded transition-transform duration-500 ease-out transform-gpu ";
+        "absolute inset-0 size-full px-[1.5em] sm:px-[3.5em] pb-[2.5em] pt-[3.5em] flex gap-[3.5em] bg-white border rounded transition-transform duration-500 ease-out transform-gpu ";
 
       if (gridView) {
         classes +=
@@ -139,16 +141,16 @@ document.addEventListener("alpine:init", () => {
 
     calculateSlideTypeButtonClasses(slideType, buttonType, showSelection) {
       let classes =
-        "absolute left-1/2 top-1 -translate-x-1/2 px-3.5 py-2 flex justify-center items-center gap-2 rounded-full hover:shadow transition duration-300 ";
+        "absolute left-1/2 top-[0.25em] -translate-x-1/2 px-[0.875em] py-[0.5em] flex justify-center items-center gap-[0.5em] rounded-full hover:shadow transition duration-300 ";
 
       if (showSelection) {
         classes += "shadow z-10 bg-slate-700 text-slate-100 ";
         switch (buttonType) {
           case "mc":
-            classes += "translate-y-[3rem] ";
+            classes += "translate-y-[3em] ";
             break;
           case "ft":
-            classes += "translate-y-[6.5rem] ";
+            classes += "translate-y-[6.5em] ";
             break;
         }
 
