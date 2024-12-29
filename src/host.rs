@@ -256,7 +256,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                             div ."relative flex-1 mx-auto w-full"
                                                 ":id"="`word-cloud-${slideIndex}`"
                                                 "@resize.window"="$nextTick(() => { renderWordCloud(slideIndex); })"
-                                                "@fontsizechange.window"="$nextTick(() => { renderWordCloud(slideIndex); })"
+                                                "@fontsizechange.window"="console.log('RedraRedraww'); setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
                                                 "@slidechange.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
                                                 { }
                                             div x-show="(slide.stats !== null ? slide.stats.terms : []).length == 0"

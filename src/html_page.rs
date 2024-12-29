@@ -31,7 +31,6 @@ pub fn render_html_page(title: &str, main_content: maud::Markup) -> maud::Markup
                 main ."flex-1 mx-auto w-full max-w-screen-xl" {
                     (main_content)
                 }
-
                 footer ."mt-4 px-4 py-8 text-xs text-slate-500 flex justify-center flex-wrap gap-4" {
                     a href="/" ."hover:underline" { "Home" }
                     a href="/about" ."hover:underline" { "About" }
@@ -41,20 +40,19 @@ pub fn render_html_page(title: &str, main_content: maud::Markup) -> maud::Markup
                     a href="/manage-cookies" ."hover:underline" { "Manage cookies" }
                     a href="/contact" ."hover:underline" { "Contact" }
                 }
-
                 div x-cloak x-data="{ cookiesAccepted: false }" x-show="!cookiesAccepted"
                     x-init="let local = JSON.parse(localStorage.getItem('cookiesAccepted')); cookiesAccepted = local !== null ? local : false;"
                     ."fixed mx-8 bottom-12 px-6 py-4 bg-slate-700 border shadow-xl"
                 {
                     h1 ."mb-1 text-slate-100 text-xl font-semibold tracking-tight" { "Cookies" }
-                    p ."text-sm mb-5 text-slate-300" {
+                    p ."mb-5 text-slate-300" {
                         "Svoote.com only uses necessary cookies. We don't use cookies to track users across sites or show ads. "
                         "For more information see our " a href="/cookie-policy" ."underline" { "Cookie Policy"} "."
                     }
                     div ."flex flex-wrap justify-end gap-4" {
-                        a href="/manage-cookies" ."px-4 py-1 bg-slate-300 text-slate-700 font-semibold tracking-tight shadow-lg hover:bg-slate-400" { "Customize" }
+                        a href="/manage-cookies" ."px-4 py-1 bg-slate-500 text-white font-bold hover:bg-slate-400" { "Customize" }
                         button "@click"="cookiesAccepted = true; localStorage.setItem('cookiesAccepted', 'true');"
-                            ."px-4 py-1 bg-sky-600 text-slate-50 font-semibold tracking-tight shadow-lg hover:bg-sky-600" { "Accept necessary cookies" }
+                            ."px-4 py-1 bg-teal-700 text-white font-bold hover:bg-teal-600" { "Accept necessary cookies" }
                     }
                 }
             }

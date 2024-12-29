@@ -43,7 +43,7 @@ document.addEventListener("alpine:init", () => {
     isFullscreen: false,
     code: null,
     socket: null,
-    fontSize: "medium",
+    fontSize: "large",
 
     init() {
       addEventListener("keydown", (event) => {
