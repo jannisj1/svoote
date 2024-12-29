@@ -118,7 +118,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                             ."p-3 text-slate-50 bg-red-500 rounded-full hover:bg-red-700"
                             title="Stop poll"
                             { ."size-3 bg-slate-50" {} }
-                        button "@click"="toggleFullscreen()" ":disabled"="!isLive"
+                        button "@click"="toggleFullscreen()" ":disabled"="!isLive" x-show="document.documentElement.requestFullscreen != null"
                             ."p-2 bg-white border rounded-full shadow hover:bg-slate-200 hover:shadow-none disabled:shadow-none disabled:text-slate-300 disabled:bg-white"
                             title="Toggle fullscreen mode"
                         {
@@ -283,7 +283,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                         { (SvgIcon::ArrowRight.render()) }
                 }
             }
-            p ."mb-4 text-center text-sm text-slate-500" {
+            p ."mx-6 mb-4 text-center text-sm text-slate-500" {
                 "Svoote is a new and growing open-source project. "
                 "Please leave your feedback and issues on "
                 a href="https://github.com/jannisj1/svoote" ."underline" { "Github" }
