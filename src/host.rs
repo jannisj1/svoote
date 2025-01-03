@@ -41,7 +41,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
             script src=(static_file::get_path("qrcode.js")) {}
             @if poll_is_live { script { "document.pollAlreadyLive = true;" } }
             (render_header(html! { a href="/p" ."text-slate-500 text-sm underline" { "Join presentation" } }))
-            div x-data="poll" id="fullscreen-container" "@fullscreenchange"="if (document.fullscreenElement == null) isFullscreen = false; else isFullscreen = true;"
+            div x-data="poll" id="fullscreen-container" "@fullscreenchange"="if (document.fullscreenElement == null) isFullscreen = false; else isFullscreen = true; $dispatch('fontsizechange');"
                 ":class"="isFullscreen ? 'bg-slate-700 h-full flex flex-col justify-center' : 'bg-white'"
             {
                 div ."relative mx-6 sm:mx-16 flex justify-between items-center"
@@ -179,13 +179,13 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                         div ."relative h-full flex flex-col gap-[3em] justify-between" {
                                             div ."flex gap-[1em]" {
                                                 div ."flex-1" {
-                                                    div ."-z-10 absolute px-[0.25em] py-[0.125em] text-[1.25em] text-slate-500 bg-transparent" x-cloak x-show="slide.question.trim() == '' && !isLive" { "Question" }
                                                     span x-init="$el.innerText = slide.question"
                                                         "@input"="slide.question = $el.innerText; save();"
                                                         ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                         ":contenteditable"="!isLive"
-                                                        ."block mb-3 px-[0.25em] py-[0.125em] text-[1.25em] text-slate-800 bg-transparent" {}
-                                                    label /*x-show="!isLive" x-collapse*/ ."ml-[0.5em] mb-[0.5em] overflow-hidden flex gap-[0.5em] items-center text-slate-700 transition-all duration-500"
+                                                        ."block mb-3 px-[0.5em] text-[1.25em] text-slate-800 bg-transparent outline-none"
+                                                        ":class"="!isLive && 'ring-2 ring-slate-200 ring-offset-4 rounded focus:ring-indigo-500'" {}
+                                                    label ."ml-[0.5em] mb-[0.5em] overflow-hidden flex gap-[0.5em] items-center text-slate-700 transition-all duration-500"
                                                         ":class"="isLive ? 'h-0 opacity-0' : 'h-[1.5em]'" {
                                                         input x-model="slide.allowMultipleMCAnswers" "@change"="save()" type="checkbox" ."accent-indigo-500";
                                                         "Allow multiple answers per user"
@@ -198,7 +198,8 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                                 ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                                 ":id"="(answer_index == 0) && 's-' + slideIndex + '-mc-answer-0'"
                                                                 ":disabled"="isLive"
-                                                                ."w-full px-[0.25em] py-[0.125em] text-slate-700 bg-transparent";
+                                                                ."w-full px-[0.25em] py-[0.125em] text-slate-700 bg-transparent outline-none"
+                                                                ":class"="!isLive && 'focus:ring-2 ring-indigo-500 ring-offset-2 rounded'";
                                                             //button x-show="!isLive" "@click"="answer.isCorrect = !answer.isCorrect; save()" ":class"="answer.isCorrect ? 'text-green-600' : 'text-slate-300 hover:text-green-600'" ."size-6" { (SvgIcon::CheckSquare.render()) }
                                                             button x-show="!isLive" "@click"="slide.mcAnswers.splice(answer_index, 1); save();" ."size-[1.5em] text-slate-300 hover:text-slate-500" { (SvgIcon::Trash2.render()) }
                                                         }
@@ -230,7 +231,8 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                                     ."absolute w-full text-slate-600 text-center font-medium -translate-y-[1.75em]" {}
                                                             }
                                                         }
-                                                        div x-text="answer.text != '' ? answer.text : 'Answer ' + incrementChar('A', answer_index)" ."h-[2.5em] my-[0.5em] text-slate-600 text-[0.875em] text-center break-words overflow-hidden" {}
+                                                        div x-text="answer.text != '' ? answer.text : 'Answer ' + incrementChar('A', answer_index)"
+                                                            ."h-[3.25em] my-[0.5em] text-slate-600 text-[0.875em] text-center break-words overflow-hidden" {}
                                                     }
                                                 }
                                             }
@@ -240,12 +242,12 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                         div ."h-full flex flex-col" {
                                             div ."flex gap-[1em]" {
                                                 div ."flex-1" {
-                                                    div ."-z-10 absolute px-[0.25em] py-[0.125em] text-[1.25em] text-slate-500 bg-transparent" x-cloak x-show="slide.question.trim() == '' && !isLive" { "Question" }
                                                     span x-init="$el.innerText = slide.question"
                                                         "@input"="slide.question = $el.innerText; save();"
                                                         ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                         ":contenteditable"="!isLive"
-                                                        ."block mb-[0.75em] px-[0.25em] py-[0.125em] text-[1.25em] text-slate-800 bg-transparent" {}
+                                                        ."block mb-[0.75em] px-[0.5em] text-[1.25em] text-slate-800 bg-transparent outline-none"
+                                                        ":class"="!isLive && 'ring-2 ring-slate-200 ring-offset-4 rounded focus:ring-indigo-500'" {}
                                                 }
                                                 div x-show="isLive" x-cloak ."sm:translate-x-[1.5em] -translate-y-[1em] flex flex-col items-center" {
                                                     div x-data="qrCode" x-effect="if (slideIndex == poll.activeSlide) render($el, code)" ."mb-[0.75em] w-[6em]" {}
@@ -256,7 +258,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                             div ."relative flex-1 mx-auto w-full"
                                                 ":id"="`word-cloud-${slideIndex}`"
                                                 "@resize.window"="$nextTick(() => { renderWordCloud(slideIndex); })"
-                                                "@fontsizechange.window"="console.log('RedraRedraww'); setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
+                                                "@fontsizechange.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
                                                 "@slidechange.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
                                                 { }
                                             div x-show="(slide.stats !== null ? slide.stats.terms : []).length == 0"
