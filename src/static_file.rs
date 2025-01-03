@@ -27,7 +27,7 @@ pub fn init() {
         &[
             "./src/static/reconnecting-websocket.min.js",
             "./src/static/custom.js",
-            "./src/static/alpine_3_14_3_collapse.min.js",
+            //"./src/static/alpine_3_14_3_collapse.min.js",
             "./src/static/alpine_3_14_3.min.js",
         ],
     ));

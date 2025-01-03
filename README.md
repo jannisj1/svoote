@@ -11,8 +11,7 @@ Made and hosted in the EU 🇪🇺
 
 ## Self-hosting
 
-To self-host Svoote, you need to have Redis or a Redis-compatible database installed.
-Then just go `cargo run --release` and you should have a running web-server on `localhost:8080`.
+You need to have Rust installed to run Svoote. Then just go `cargo run --release` and you should have a running web-server on `localhost:8080`.
 
 ## License
 

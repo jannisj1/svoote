@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use arrayvec::ArrayVec;
 use serde::Serialize;
 use smartstring::{Compact, SmartString};
@@ -32,8 +34,11 @@ pub struct FreeTextLiveAnswers {
 
 #[derive(Serialize)]
 pub struct WordCloudTerm {
-    pub text: SmartString<Compact>,
+    pub lowercase_text: SmartString<Compact>,
     pub count: usize,
+    pub preferred_spelling: SmartString<Compact>,
+    pub spellings: HashMap<SmartString<Compact>, usize>,
+    pub highest_spelling_count: usize,
 }
 
 impl Slide {

@@ -40,13 +40,15 @@ document.addEventListener("alpine:init", () => {
     isReordering: false,
     reorderedSlideIndex: null,
     isLive: false,
+    isFullscreen: false,
     code: null,
     socket: null,
+    fontSize: "large",
 
     init() {
-      addEventListener("keyup", (event) => {
+      addEventListener("keydown", (event) => {
         if (event.target === document.body) {
-          if (event.code === "ArrowRight") {
+          if (event.code === "ArrowRight" || event.code === "Space") {
             this.gotoSlide(this.poll.activeSlide + 1);
           } else if (event.code === "ArrowLeft") {
             this.gotoSlide(this.poll.activeSlide - 1);
@@ -90,12 +92,13 @@ document.addEventListener("alpine:init", () => {
         this.gridView = false;
         this.isReordering = false;
         this.reorderedSlideIndex = null;
+        this.fontSize = "medium";
       }
     },
 
     calculateSlideClasses(slideIndex, activeSlide, gridView) {
       let classes =
-        "absolute inset-0 size-full px-6 sm:px-14 pb-10 pt-14 flex gap-14 border rounded transition-transform duration-500 ease-out transform-gpu ";
+        "absolute inset-0 size-full px-[1.5em] sm:px-[3.5em] pb-[2.5em] pt-[3.5em] flex gap-[3.5em] bg-white border rounded transition-transform duration-500 ease-out transform-gpu ";
 
       if (gridView) {
         classes +=
@@ -112,12 +115,12 @@ document.addEventListener("alpine:init", () => {
       return classes;
     },
 
-    calculateSlideStyle(slideIndex, activeSlide, gridView) {
+    calculateSlideStyle(slideIndex, activeSlide, gridView, isLive) {
       if (!gridView)
         return (
           "transform: perspective(100px)" +
           "translateX(" +
-          (slideIndex - activeSlide) * 106 +
+          (slideIndex - activeSlide) * (isLive ? 120 : 106) +
           "%)" +
           "translateZ(" +
           (slideIndex == activeSlide ? "0" : "-10") +
@@ -138,16 +141,16 @@ document.addEventListener("alpine:init", () => {
 
     calculateSlideTypeButtonClasses(slideType, buttonType, showSelection) {
       let classes =
-        "absolute left-1/2 top-1 -translate-x-1/2 px-3.5 py-2 flex justify-center items-center gap-2 rounded-full hover:shadow transition duration-300 ";
+        "absolute left-1/2 top-[0.25em] -translate-x-1/2 px-[0.875em] py-[0.5em] flex justify-center items-center gap-[0.5em] rounded-full hover:shadow transition duration-300 ";
 
       if (showSelection) {
         classes += "shadow z-10 bg-slate-700 text-slate-100 ";
         switch (buttonType) {
           case "mc":
-            classes += "translate-y-[3rem] ";
+            classes += "translate-y-[3em] ";
             break;
           case "ft":
-            classes += "translate-y-[6.5rem] ";
+            classes += "translate-y-[6.5em] ";
             break;
         }
 
@@ -163,18 +166,6 @@ document.addEventListener("alpine:init", () => {
       return classes;
     },
 
-    calculateWCTermStyle(term, maxCount) {
-      return `
-        transition: all 0.5s ease-out;
-        font-size: ${0.5 + (2.25 * term.count) / maxCount}rem;
-        opacity: ${0.7 + (0.3 * term.count) / maxCount};
-        letter-spacing: ${0.02 - 0.04 * (term.count / maxCount)}em;
-        font-weight: 500;
-        top: ${term.top != null ? term.top : 0}px;
-        left: ${term.left != null ? term.left : 0}px;
-      `;
-    },
-
     renderWordCloud(slideIndex) {
       let container = document.getElementById("word-cloud-" + slideIndex);
       if (
@@ -188,20 +179,47 @@ document.addEventListener("alpine:init", () => {
 
       let containerHeight = container.getBoundingClientRect().height;
       let containerWidth = container.getBoundingClientRect().width;
-      const HORIZONTAL_GAP = 24;
+      const HORIZONTAL_GAP = 32;
       const VERTICAL_GAP = 12;
 
       let sortedTerms = [];
+
       for (i = 0; i < stats.terms.length; i++) {
-        let element = container.children[i + 1];
+        const term = stats.terms[i];
+        let c = container.children[i];
+        if (c == null) {
+          c = document.createElement("div");
+          c.className =
+            "absolute size-fit left-1/2 top-full leading-none whitespace-nowrap transition-all duration-500 ease-out invisible";
+          c.classList.add(
+            [
+              "text-rose-600",
+              "text-cyan-600",
+              "text-lime-600",
+              "text-fuchsia-600",
+              "text-slate-600",
+              "text-teal-600",
+            ][i % 6],
+          );
+          c.style.fontWeight = "500";
+          container.appendChild(c);
+        }
+
+        c.innerText = term[0];
+        c.title = `${term[0]}: ${term[1]}`;
+        c.style.fontSize = `${0.5 + (2.25 * term[1]) / stats.maxCount}em`;
+        c.style.opacity = `${0.7 + (0.3 * term[1]) / stats.maxCount}`;
+        c.style.letterSpacing = `${0.02 - 0.04 * (term[1] / stats.maxCount)}em`;
+
         sortedTerms.push({
-          term: stats.terms[i],
-          element: element,
-          width: element.getBoundingClientRect().width,
-          height: element.getBoundingClientRect().height,
+          term: term,
+          element: c,
+          width: c.getBoundingClientRect().width,
+          height: c.getBoundingClientRect().height,
         });
       }
-      sortedTerms.sort((a, b) => b.term.count - a.term.count);
+
+      sortedTerms.sort((a, b) => b.term[1] - a.term[1]);
 
       let rows = [];
       let rowHeightSum = 0;
@@ -253,8 +271,8 @@ document.addEventListener("alpine:init", () => {
 
         let leftOffset = containerWidth / 2 - row.width / 2;
         for (term of row.terms) {
-          term.term.top = top + (row.height - term.height) / 2;
-          term.term.left = leftOffset;
+          term.element.style.top = `${top + (row.height - term.height) / 2}px`;
+          term.element.style.left = `${leftOffset}px`;
           leftOffset += term.width + HORIZONTAL_GAP;
         }
 
@@ -283,10 +301,13 @@ document.addEventListener("alpine:init", () => {
     },
 
     moveSlide(targetIndex, before) {
-      let temp = this.poll.slides.splice(this.reorderedSlideIndex, 1);
-      if (targetIndex >= this.reorderedSlideIndex) targetIndex -= 1;
-      if (before) this.poll.slides.splice(targetIndex, 0, temp[0]);
-      else this.poll.slides.splice(targetIndex + 1, 0, temp[0]);
+      if (!before) targetIndex += 1;
+      let temp = this.poll.slides[this.reorderedSlideIndex];
+      this.poll.slides.splice(targetIndex, 0, temp);
+
+      if (targetIndex < this.reorderedSlideIndex)
+        this.poll.slides.splice(this.reorderedSlideIndex + 1, 1);
+      else this.poll.slides.splice(this.reorderedSlideIndex, 1);
     },
 
     async startPoll() {
@@ -301,7 +322,9 @@ document.addEventListener("alpine:init", () => {
       if (response.ok) {
         this.code = await response.text();
         this.isLive = true;
+        document.querySelector("body").dataset.live = true;
         const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws/host/${this.code}`;
+        if (this.gridView) this.gridView = false;
 
         this.socket = new ReconnectingWebSocket(wsUrl);
         this.socket.onopen = (_e) => {
@@ -313,7 +336,7 @@ document.addEventListener("alpine:init", () => {
           switch (msg.cmd) {
             case "updateStats":
               this.poll.slides[msg.data.slideIndex].stats = msg.data.stats;
-              this.$nextTick(() => this.renderWordCloud(msg.data.slideIndex));
+              this.renderWordCloud(msg.data.slideIndex);
               setTimeout(() => this.renderWordCloud(msg.data.slideIndex), 500);
               break;
           }
@@ -331,14 +354,30 @@ document.addEventListener("alpine:init", () => {
         this.isLive = false;
         this.socket.close();
         this.clearStatistics();
+        document.querySelector("body").dataset.live = false;
+
+        if (this.isFullscreen) {
+          this.toggleFullscreen();
+        }
       }
     },
 
     clearStatistics() {
-      this.poll.slides.forEach((slide) => {
-        slide.stats = null;
-      });
+      for (i = 0; i < this.poll.slides.length; i++) {
+        this.poll.slides[i].stats = null;
+        let wc = document.getElementById(`word-cloud-${i}`);
+        if (wc != null) {
+          wc.innerHTML = "";
+        }
+      }
       this.save();
+    },
+
+    toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.getElementById("fullscreen-container").requestFullscreen();
+        document.activeElement?.blur(); // Remove focus from fullscreen-button so the user goes to the next slide on pressing space next
+      } else if (document.exitFullscreen) document.exitFullscreen();
     },
   }));
 
@@ -381,7 +420,6 @@ document.addEventListener("alpine:init", () => {
 
         switch (msg.cmd) {
           case "updateSlide":
-            console.log(msg);
             this.currentSlide = msg.data.slide;
             this.slideIndex = msg.data.slideIndex;
             break;
