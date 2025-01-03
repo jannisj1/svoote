@@ -77,14 +77,6 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                     "Custom names"
                                 }
                                 ."ml-6 mb-3 text-slate-400 text-sm" { "Allow participants to set a custom name." }*/
-                                a download="poll.json" ":href"="'data:application/json;charset=utf-8,' + JSON.stringify(poll)"
-                                    ."mb-2 flex gap-2 items-center text-slate-600 hover:text-slate-900"
-                                    { ."size-4" { (SvgIcon::Save.render()) } "Save presentation (.json)" }
-                                label ."mb-3 flex gap-2 items-center text-slate-600 cursor-pointer hover:text-slate-900" {
-                                    ."size-4" { (SvgIcon::Folder.render()) } "Load presentation (.json)"
-                                    input type="file" accept=".json" "@change"="importJsonFile($event);" ."hidden";
-                                }
-                                hr ."mb-3";
                                 button "@click"="reset()" ":disabled"="isLive" ."flex gap-2 items-center text-slate-600 disabled:text-slate-300" {
                                     ."size-4" { (SvgIcon::Refresh.render()) }
                                     "Reset slides and settings"
@@ -184,7 +176,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                         ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                         ":contenteditable"="!isLive"
                                                         ."block mb-3 px-[0.5em] text-[1.25em] text-slate-800 bg-transparent outline-none"
-                                                        ":class"="!isLive && 'ring-2 ring-slate-200 ring-offset-4 rounded focus:ring-indigo-500'" {}
+                                                        ":class"="!isLive && 'ring-1 ring-slate-200 ring-offset-4 rounded focus:ring-2 focus:ring-indigo-500'" {}
                                                     label ."ml-[0.5em] mb-[0.5em] overflow-hidden flex gap-[0.5em] items-center text-slate-700 transition-all duration-500"
                                                         ":class"="isLive ? 'h-0 opacity-0' : 'h-[1.5em]'" {
                                                         input x-model="slide.allowMultipleMCAnswers" "@change"="save()" type="checkbox" ."accent-indigo-500";
@@ -247,7 +239,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                         ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                         ":contenteditable"="!isLive"
                                                         ."block mb-[0.75em] px-[0.5em] text-[1.25em] text-slate-800 bg-transparent outline-none"
-                                                        ":class"="!isLive && 'ring-2 ring-slate-200 ring-offset-4 rounded focus:ring-indigo-500'" {}
+                                                        ":class"="!isLive && 'ring-1 ring-slate-200 ring-offset-4 rounded focus:ring-2 focus:ring-indigo-500'" {}
                                                 }
                                                 div x-show="isLive" x-cloak ."sm:translate-x-[1.5em] -translate-y-[1em] flex flex-col items-center" {
                                                     div x-data="qrCode" x-effect="if (slideIndex == poll.activeSlide) render($el, code)" ."mb-[0.75em] w-[6em]" {}
@@ -272,17 +264,36 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                         }
                     }
                 }
-                div ."mt-2 mb-6 flex justify-center gap-4" {
-                    button ."p-2 size-8 rounded-full shadow hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
-                        ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
-                        "@click"="gotoSlide(poll.activeSlide - 1)"
-                        ":disabled"="poll.activeSlide == 0"
-                        { (SvgIcon::ArrowLeft.render()) }
-                    button ."p-2 size-8 rounded-full shadow hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
-                        ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
-                        "@click"="gotoSlide(poll.activeSlide + 1)"
-                        ":disabled"="poll.activeSlide == poll.slides.length - 1"
-                        { (SvgIcon::ArrowRight.render()) }
+                div ."mx-6 sm:mx-14 mt-2 mb-6 grid grid-cols-3 items-center gap-4" {
+                    div x-data="{ open: false }" ."relative" {
+                        button ."py-1 px-3 flex items-center gap-1.5 text-sm text-slate-500 bg-slate-100 shadow hover:bg-slate-200 rounded-full"
+                            "@click"="open = !open"
+                            { ."size-4" { (SvgIcon::Save.render()) } "Saved in browser" }
+                        div x-show="open" x-cloak "@click.outside"="open = false"
+                            ."absolute z-10 bg-white border rounded-lg shadow-xl" {
+                            label ."px-3 py-1.5 flex gap-2 items-center text-sm text-slate-600 cursor-pointer hover:bg-slate-100" {
+                                ."size-4" { (SvgIcon::Folder.render()) } "Open presentation"
+                                input type="file" accept=".json" "@change"="importJsonFile($event);" ."hidden";
+                            }
+                            hr;
+                            a download="poll.json" ":href"="'data:application/json;charset=utf-8,' + JSON.stringify(poll)"
+                                ."px-3 py-1.5 flex gap-2 items-center text-sm text-slate-600 hover:bg-slate-100"
+                                { ."size-4" { (SvgIcon::Download.render()) } "Download copy" }
+                        }
+                    }
+                    div ."flex justify-center items-center gap-4" {
+                        button ."p-2 size-8 rounded-full shadow hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
+                            ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
+                            "@click"="gotoSlide(poll.activeSlide - 1)"
+                            ":disabled"="poll.activeSlide == 0"
+                            { (SvgIcon::ArrowLeft.render()) }
+                        button ."p-2 size-8 rounded-full shadow hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
+                            ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
+                            "@click"="gotoSlide(poll.activeSlide + 1)"
+                            ":disabled"="poll.activeSlide == poll.slides.length - 1"
+                            { (SvgIcon::ArrowRight.render()) }
+                    }
+                    div ."" {}
                 }
             }
             p ."mx-6 mb-4 text-center text-sm text-slate-500" {

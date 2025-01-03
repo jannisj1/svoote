@@ -1,6 +1,11 @@
 #[macro_use]
 extern crate log;
 
+#[macro_use]
+extern crate rust_i18n;
+
+i18n!("locales", fallback = "en");
+
 mod about_page;
 mod app_error;
 mod compliance;
