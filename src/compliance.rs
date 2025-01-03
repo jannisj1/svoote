@@ -1,3 +1,5 @@
+use std::env;
+
 use axum::response::{IntoResponse, Response};
 use maud::html;
 
@@ -57,10 +59,14 @@ pub async fn get_contact_page() -> Result<Response, AppError> {
         html! {
             (render_header(html!{}))
             ."mx-6 sm:mx-14 my-32 text-center text-slate-700" {
-                ."my-8 text-xl font-semibold" { "Svoote - Contact" }
-                ."mb-2" { "Svoote.com is owned and operated by" }
-                ."mb-4" { "Jannis Jelten" br; "Zimmermannstrasse 16b" br; "37075 Göttingen" br; "Germany" }
-                ."" { "Contact us at:" br; "info@svoote.com" }
+                ."mb-2" { "This website (" (env::var("DOMAIN_NAME").unwrap_or("DOMAIN_NAME missing".to_string())) ") is owned and operated by" }
+                ."mb-4" {
+                    (env::var("CONTACT_1").unwrap_or("CONTACT_1 missing".to_string())) br;
+                    (env::var("CONTACT_2").unwrap_or("CONTACT_2 missing".to_string())) br;
+                    (env::var("CONTACT_3").unwrap_or("CONTACT_3 missing".to_string())) br;
+                    (env::var("CONTACT_4").unwrap_or("CONTACT_4 missing".to_string()))
+                }
+                ."" { "Contact us at:" br; (env::var("CONTACT_EMAIL").unwrap_or("CONTACT_EMAIL missing".to_string())) }
             }
         }
     )
@@ -75,9 +81,7 @@ pub async fn get_manage_cookies_page() -> Result<Response, AppError> {
                 div ."mx-6 sm:mx-14 my-32 text-slate-700 text-center" {
                     h1 ."mb-2 text-xl font-bold" { "Customize cookies" }
                     p {
-                        "As stated in our "
-                        a href="/cookie-policy" ."underline" { "Cookie Policy" }
-                        ", we only use necessary cookies, which you cannot deactivate. "
+                        "As stated in our " a href="/cookie-policy" ."underline" { "Cookie Policy" } ", we only use necessary cookies, which are set automatically on the first visit. This website can't be used without these cookies and therefore you cannot deactivate them. Do not use Svoote if you don't want to have these cookies set."
                     }
                 }
         },

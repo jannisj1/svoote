@@ -18,3 +18,4 @@ md5 = "0.7.0"
 maud = { version = "0.26.0", features = ["axum"] }
 arrayvec = { version = "0.7.6", features = ["serde"] }
 smartstring = { version = "1.0.1", features = ["serde"] }
+dotenv = "0.15.0"

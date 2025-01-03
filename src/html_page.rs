@@ -18,7 +18,9 @@ pub fn render_html_page(title: &str, main_content: maud::Markup) -> maud::Markup
                 }
                 link rel="stylesheet" href=(static_file::get_path("bundle.css"));
                 script defer src=(static_file::get_path("app.js")) {}
-                script defer data-domain="svoote.com" src="https://plausible.io/js/script.js" {}
+                @if let Ok(domain) = std::env::var("PLAUSIBLE_DOMAIN") {
+                    script defer data-domain=(domain) src="https://plausible.io/js/script.js" {}
+                }
                 script {
                     "let colorPalette = ["
                     @for color in COLOR_PALETTE {

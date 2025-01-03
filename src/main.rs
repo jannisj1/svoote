@@ -31,6 +31,10 @@ fn main() {
     env_logger::init();
     static_file::init();
 
+    if let Err(e) = dotenv::dotenv() {
+        error!("Error parsing .env-file: {}", e);
+    }
+
     runtime.block_on(async {
         let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 8080));
         let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
