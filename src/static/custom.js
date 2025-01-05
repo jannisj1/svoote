@@ -1,3 +1,17 @@
+async function joinPoll() {
+  let e = document.getElementById("poll-id-input");
+  let res = await fetch("/poll_exists/" + e.value);
+  if (res.ok) {
+    let txt = await res.text();
+    if (txt == "true") {
+      window.location.href = "/p?c=" + e.value;
+      return;
+    }
+  }
+
+  e.classList.add("bg-red-100");
+}
+
 function incrementChar(c, add) {
   return String.fromCharCode(c.charCodeAt(0) + add);
 }

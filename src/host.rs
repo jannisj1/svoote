@@ -8,6 +8,7 @@ use axum::{
         ws::{Message, WebSocket},
         Path, WebSocketUpgrade,
     },
+    http::HeaderMap,
     response::{IntoResponse, Response},
 };
 
@@ -19,6 +20,7 @@ use tokio::select;
 
 use crate::{
     app_error::AppError,
+    choose_language,
     config::{COLOR_PALETTE, POLL_MAX_MC_ANSWERS, POLL_MAX_SLIDES, STATS_UPDATE_THROTTLE},
     html_page::{self, render_header},
     live_poll::LivePoll,
@@ -30,7 +32,7 @@ use crate::{
     wsmessage::WSMessage,
 };
 
-pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
+pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Response, AppError> {
     let (session_id, cookies) = session_id::get_or_create_session_id(cookies);
 
     let poll_is_live = LIVE_POLL_STORE.get_by_session_id(&session_id).is_some();
@@ -40,7 +42,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
         html! {
             script src=(static_file::get_path("qrcode.js")) {}
             @if poll_is_live { script { "document.pollAlreadyLive = true;" } }
-            (render_header(html! { a href="/p" ."text-slate-500 text-sm underline" { "Join presentation" } }))
+            (render_header(html! {}))
             div x-data="poll" id="fullscreen-container" "@fullscreenchange"="if (document.fullscreenElement == null) isFullscreen = false; else isFullscreen = true; $dispatch('fontsizechange');"
                 ":class"="isFullscreen ? 'bg-slate-700 h-full flex flex-col justify-center' : 'bg-white'"
             {
@@ -207,7 +209,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                 }
                                                 div x-show="isLive" x-cloak ."sm:translate-x-[1.5em] -translate-y-[1em] flex flex-col items-center" {
                                                     div x-data="qrCode" x-effect="if (slideIndex == poll.activeSlide) render($el, code)" ."mb-[0.75em] w-[4em] sm:w-[6em]" {}
-                                                    div x-text="code !== null ? code : ''" ."text-[1.25em] text-slate-600 tracking-wide font-bold" {}
+                                                    div x-text="code !== null ? '#' + code : ''" ."text-[1.25em] text-slate-600 tracking-wide font-bold" {}
                                                     a x-show="code !== null" ."text-center text-[0.75em] text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
                                                 }
                                             }
@@ -243,7 +245,7 @@ pub async fn get_poll_page(cookies: CookieJar) -> Result<Response, AppError> {
                                                 }
                                                 div x-show="isLive" x-cloak ."sm:translate-x-[1.5em] -translate-y-[1em] flex flex-col items-center" {
                                                     div x-data="qrCode" x-effect="if (slideIndex == poll.activeSlide) render($el, code)" ."mb-[0.75em] w-[6em]" {}
-                                                    div x-text="code !== null ? code : ''" ."text-[1.25em] text-slate-600 tracking-wide font-bold" {}
+                                                    div x-text="code !== null ? '#' + code : ''" ."text-[1.25em] text-slate-600 tracking-wide font-bold" {}
                                                     a x-show="code !== null" ."text-center text-[0.75em] text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
                                                 }
                                             }

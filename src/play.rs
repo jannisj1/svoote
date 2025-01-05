@@ -7,6 +7,7 @@ use crate::{
     live_poll_store::{ShortID, LIVE_POLL_STORE},
     session_id,
     slide::{Slide, SlideType, WordCloudTerm},
+    start_page::get_join_form,
     svg_icons::SvgIcon,
     wsmessage::WSMessage,
 };
@@ -32,6 +33,16 @@ use std::{
 };
 use tokio::select;
 
+pub async fn get_poll_exists(Path(poll_id): Path<ShortID>) -> Result<Response, AppError> {
+    let live_poll = LIVE_POLL_STORE.get(poll_id);
+
+    if live_poll.is_some() {
+        return Ok("true".into_response());
+    } else {
+        return Ok("false".into_response());
+    }
+}
+
 #[derive(Deserialize)]
 pub struct PlayPageParams {
     pub c: Option<SmartString<Compact>>,
@@ -53,22 +64,10 @@ pub async fn get_play_page(
         let html = html_page::render_html_page(
             "Svoote",
             html! {
-                div ."mt-6 mb-16 mx-8 sm:mx-14" {
-                    form ."w-full max-w-64 mx-auto" {
-                        div ."flex items-baseline justify-center gap-2 mb-12 text-3xl font-semibold tracking-tight" {
-                            "Svoote" ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
-                        }
-                        div ."mb-3 text-center text-sm text-slate-500" { "Enter the 4-digit code you see in front." }
-                        input name="c" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="Code" value=(poll_id_str)
-                            ."block w-full px-3 py-1.5 w-40 text-slate-700 text-lg font-medium ring-2 ring-slate-500 focus:ring-indigo-500 focus:ring-4 rounded-lg outline-none";
-                        @if let Some(c) = poll_id { div ."mt-2 text-sm text-red-500" { "No poll with code " (c) " found." } }
-                        button type="submit" ."w-full h-10 mt-6 flex items-center justify-center text-white font-bold bg-slate-700 hover:bg-slate-500 rounded-lg" { "Join" }
-                    }
-                    div ."mt-32 max-w-64 mx-auto" {
-                        div ."mb-4 mx-auto max-w-56" { (Illustrations::TeamCollaboration.render()) }
-                        h1 ."mb-5 text-2xl text-center font-bold tracking-tight" { "Want to create your own polls?" }
-                        a href="/" ."block w-fit mx-auto text-indigo-600 underline font-semibold hover:text-indigo-800" { "Start now →"}
-                    }
+                (render_header(html! {}))
+                (get_join_form())
+                div ."my-16 mx-8 sm:mx-14" {
+                    p ."text-center text-slate-500" { "This poll is finished." br; "Thank you for using svoote.com" }
                 }
             },
         );

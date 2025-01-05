@@ -65,9 +65,9 @@ pub fn render_html_page(title: &str, main_content: maud::Markup) -> maud::Markup
 pub fn render_header(top_right_content: Markup) -> Markup {
     return html! {
         header . "mx-6 sm:mx-14 mt-5 mb-6 flex justify-between" {
-            a href="/" ."z-10 flex items-baseline gap-1.5" {
-                span ."text-xl tracking-tight font-semibold" { "Svoote" }
-                ."size-4 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
+            a href="/" ."z-10 flex items-baseline gap-2.5 text-cyan-600" {
+                span ."text-3xl tracking-tight font-semibold" { "Svoote" }
+                ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
             }
             (top_right_content)
         }

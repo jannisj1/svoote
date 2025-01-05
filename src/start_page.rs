@@ -1,34 +1,44 @@
 use crate::{
     app_error::AppError,
+    choose_language,
     html_page::{self, render_header},
     svg_icons::SvgIcon,
 };
-use axum::response::{IntoResponse, Response};
-use maud::html;
+use axum::{
+    http::HeaderMap,
+    response::{IntoResponse, Response},
+};
+use axum_extra::extract::CookieJar;
+use maud::{html, Markup};
 
-pub async fn get_about_page() -> Result<Response, AppError> {
+pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Response, AppError> {
+    let l = choose_language(&cookies, &headers);
+
     return Ok(html_page::render_html_page("Svoote - About", html! {
-        (render_header(html!{
-            a href="/p" ."text-slate-500" { "Join presentation →" }
-        }))
+        (render_header(html! { }))
+        (get_join_form())
         div ."mt-24 mx-6 sm:mx-14" {
             div ."max-w-2xl mx-auto" {
-                h1 ."mb-8 text-center text-slate-800 text-5xl font-bold" { "Easy to use, cheap and privacy-friendly Mentimeter alternative" }
+                h1 ."mb-8 text-center text-slate-800 text-5xl font-bold leading-tight" {
+                    (t!("title_1", locale=l))
+                    span ."text-cyan-600" { "Svoote" div ."inline-block ml-1.5 size-8 translate-y-0.5" { (SvgIcon::Rss.render()) } }
+                    (t!("title_2", locale=l))
+                }
                 h2 ."mb-8 text-center text-slate-500 text-xl leading-8" {
                     "Svoote is intuitive, lightweight and open source live polling. "
-                    "Host unlimited numbers of live presentations for up to 100 participants without creating an account. "
-                    "Made and hosted in the EU 🇪🇺"
+                    "Host unlimited numbers of live polls for up to 100 participants without creating an account. "
+                    "Created and hosted in the EU 🇪🇺"
                 }
             }
             div ."mb-32 flex justify-center" {
-                a ."px-6 py-4 text-slate-50 text-lg font-medium bg-indigo-600 rounded-md hover:bg-indigo-700" href="/"
+                a ."px-8 py-4 text-white text-lg font-bold bg-cyan-600 rounded-full hover:bg-cyan-700" href="/host"
                 { "Create presentation" }
             }
             div ."mx-auto max-w-screen-lg" {
                 h3 ."mb-10 text-center text-slate-700 text-4xl font-bold" { "Why Svoote?" }
                 section ."mb-32 grid md:grid-cols-2 gap-10 text-slate-700" {
                     div ."flex flex-col gap-10" {
-                        div ."p-6 bg-white rounded-lg border shadow" {
+                        div ."p-6 bg-cyan-100 rounded-lg" {
                             h4 ."mb-2 text-xl font-semibold flex items-center gap-2"
                                 { ."size-5" { (SvgIcon::Lock.render()) } "Privacy friendly" }
                             p ."" {
@@ -42,7 +52,7 @@ pub async fn get_about_page() -> Result<Response, AppError> {
 
                     }
                     div ."flex flex-col gap-10" {
-                        div ."p-6 bg-white rounded-lg border shadow" {
+                        div ."p-6 bg-orange-100 rounded-lg" {
                             h4 ."mb-2 text-xl font-semibold flex items-center gap-2"
                                 { ."size-5" { (SvgIcon::Image.render()) } "Ad-free" }
                             p ."" {
@@ -50,7 +60,7 @@ pub async fn get_about_page() -> Result<Response, AppError> {
                                 "To support the operation and development of this website, you can subscribe to the Pro-version in the future (not availabe yet)."
                             }
                         }
-                        ."p-6 bg-white rounded-lg border shadow" {
+                        ."p-6 bg-rose-100 rounded-lg" {
                             h4 ."mb-2 text-xl font-semibold flex items-center gap-2"
                                 { ."size-5" { (SvgIcon::Github.render()) } "Open source" }
                             p ."" {
@@ -61,7 +71,7 @@ pub async fn get_about_page() -> Result<Response, AppError> {
                         }
                     }
                 }
-                h3 ."mb-10 text-center text-slate-700 text-4xl font-bold" { "Plans and pricing" }
+                /*h3 ."mb-10 text-center text-slate-700 text-4xl font-bold" { "Plans and pricing" }
                 section ."mb-8 flex justify-center gap-10 sm:gap-20 flex-wrap" {
                     div ."w-64 p-8 bg-white rounded-lg border shadow" {
                         ."mb-6 text-2xl text-slate-900 font-medium tracking-tight" { "Free" }
@@ -105,8 +115,21 @@ pub async fn get_about_page() -> Result<Response, AppError> {
                             li ."flex items-center gap-2" { ."size-4" { (SvgIcon::Check.render()) } "Number range slides" }
                         }
                     }
-                }
+                }*/
             }
         }
     }).into_response());
+}
+
+pub fn get_join_form() -> Markup {
+    return html! {
+        form onsubmit="event.preventDefault(); joinPoll(); return false;" ."mx-6 sm:mx-14 block px-6 py-3 flex justify-center items-center gap-4 bg-cyan-100 rounded-xl" {
+            label ."text-slate-500 font-medium" for="poll-id-input" { "Enter code to join a presentation: " }
+            div."flex items-center gap-1 text-slate-500 text-lg font-bold" {
+                "#" input id="poll-id-input" name="c" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="1234"
+                ."w-24 px-3 py-1 border-2 border-slate-400 rounded-lg outline-none";
+            }
+            button ."px-6 py-1.5 text-slate-600 font-bold bg-white hover:bg-slate-100 shadow rounded-full" { "Join" }
+       }
+    };
 }
