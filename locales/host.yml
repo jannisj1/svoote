@@ -58,3 +58,18 @@ add_answer_btn:
 answer:
   en: "Answer"
   de: "Antwort"
+open_ended_explanation:
+  en: "Open-ended: Answers will show up here in a word cloud."
+  de: "Offene Frage: Die Antworten werden hier in einer Wortwolke erscheinen."
+saved_locally:
+  en: "Saved locally"
+  de: "Lokal gespeichert"
+import_presentation:
+  en: "Open Presentation (.json)"
+  de: "Präsentation öffnen (.json)"
+download_copy:
+  en: "Save Presentation (.json)"
+  de: "Präsentation speichern (.json)"
+svoote_short_description:
+  en: "Svoote is a new and growing open-source project. Please leave your feedback and issues on "
+  de: "Svoote ist ein neues und wachsenden Open Source-Projekt. Hinterlasse dein Feedback auf "

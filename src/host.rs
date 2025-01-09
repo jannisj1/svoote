@@ -238,6 +238,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                         div ."h-full flex flex-col" {
                                             div ."flex gap-[1em]" {
                                                 div ."flex-1" {
+                                                    div ."absolute pointer-events-none px-[0.5em] text-[1.25em] text-slate-300" x-show="slide.question.trim() === ''" { (t!("question_placeholder", locale=l)) }
                                                     span x-init="$el.innerText = slide.question"
                                                         "@input"="slide.question = $el.innerText; save();"
                                                         ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
@@ -259,7 +260,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                 { }
                                             div x-show="(slide.stats !== null ? slide.stats.terms : []).length == 0"
                                                 ."absolute size-full inset-0 -z-10 p-[1.5em] flex items-center justify-center gap-[0.5em] text-slate-500 text-[0.875em]"
-                                                { div ."size-[1em]" { (SvgIcon::Edit3.render()) } "Open-ended: Answers will show up here in a word cloud." }
+                                                { div ."size-[1em]" { (SvgIcon::Edit3.render()) } (t!("open_ended_explanation", locale=l)) }
                                         }
                                     }
                                 }
@@ -268,21 +269,21 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                         }
                     }
                 }
-                div ."mx-6 sm:mx-14 mt-2 mb-6 grid grid-cols-3 items-center gap-4" {
+                div ."mx-6 sm:mx-14 mt-2 mb-8 grid grid-cols-3 items-center gap-4" {
                     div x-data="{ open: false }" ."relative" {
                         button ."py-1 px-3 flex items-center gap-1.5 text-sm text-slate-500 bg-slate-100 shadow hover:bg-slate-200 rounded-full"
                             "@click"="open = !open"
-                            { ."size-4" { (SvgIcon::Save.render()) } "Saved in browser" }
+                            { ."size-4" { (SvgIcon::Save.render()) } (t!("saved_locally", locale=l)) }
                         div x-show="open" x-cloak "@click.outside"="open = false"
                             ."absolute z-10 bg-white border rounded-lg shadow-xl" {
                             label ."px-3 py-1.5 flex gap-2 items-center text-sm text-slate-600 cursor-pointer hover:bg-slate-100" {
-                                ."size-4" { (SvgIcon::Folder.render()) } "Open presentation"
+                                ."size-4" { (SvgIcon::Folder.render()) } (t!("import_presentation", locale=l))
                                 input type="file" accept=".json" "@change"="importJsonFile($event);" ."hidden";
                             }
                             hr;
                             a download="poll.json" ":href"="'data:application/json;charset=utf-8,' + JSON.stringify(poll)"
                                 ."px-3 py-1.5 flex gap-2 items-center text-sm text-slate-600 hover:bg-slate-100"
-                                { ."size-4" { (SvgIcon::Download.render()) } "Download copy" }
+                                { ."size-4" { (SvgIcon::Download.render()) } (t!("download_copy", locale=l)) }
                         }
                     }
                     div ."flex justify-center items-center gap-4" {
@@ -301,30 +302,8 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                 }
             }
             p ."mx-6 mb-4 text-center text-sm text-slate-500" {
-                "Svoote is a new and growing open-source project. "
-                "Please leave your feedback and issues on "
-                a href="https://github.com/jannisj1/svoote" ."underline" { "Github" }
-                "."
-            }
-            div ."mx-6 flex justify-center flex-wrap gap-x-6 gap-y-4 items-center" {
-                button onclick="document.getElementById('help-dialog').showModal();"
-                    ."px-3 py-1 flex items-center gap-1.5 text-sm text-slate-500 border rounded-full hover:bg-slate-100"
-                    { "How to use Svoote" div ."size-5" { (SvgIcon::Help.render()) } }
-                a href="/about" ."px-3 py-1 flex items-center gap-1.5 text-sm text-slate-500 border rounded-full hover:bg-slate-100"
-                    { "About Svoote " div ."size-4" { (SvgIcon::Rss.render()) } }
-            }
-            dialog id="help-dialog" ."fixed inset-0" {
-                div ."max-w-96 px-8 py-6 rounded-lg" {
-                    form method="dialog" ."flex justify-end" { button ."size-6 text-red-500" { (SvgIcon::X.render()) } }
-                    h1 ."mb-6 text-xl text-slate-500 font-semibold" { "Help" }
-                    ul ."ml-6 list-disc text-slate-500 space-y-1" {
-                        li { "Add slides by clicking the plus button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Plus.render()) } ") in the top left and fill the slides with your content." }
-                        li { "To remove slides or change the order of them, go to the grid view via the grid view button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Grid.render()) } ") in the top left." }
-                        li { "Start the interactive presentation by clicking the start button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Play.render()) } ") in the top right. A QR-Code will show up on the slides to let participants join your presentation." }
-                        li { "When you are finished with your presentation, you can stop it by clicking on the stop button ( " div ."inline-block size-3 bg-slate-500 translate-y-[0.1rem]" {} " ) in the top right." }
-                        li { "Your slides are saved locally in your browser. If you wish to transfer them to another device or store them for a longer time, click on the settings button (" div ."inline-block size-4 translate-y-[0.2rem]" { (SvgIcon::Settings.render()) } ") in the top left and then on 'Save presentation'. You can later import the slides via 'Load presentation'." }
-                    }
-                }
+                (t!("svoote_short_description", locale=l))
+                a href="https://github.com/jannisj1/svoote" ."underline" { "Github" } "."
             }
         },
     );

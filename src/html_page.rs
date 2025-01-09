@@ -34,7 +34,7 @@ pub fn render_html_page(title: &str, l: &str, main_content: maud::Markup) -> mau
                     (main_content)
                 }
                 footer ."mt-4 px-4 py-8 text-xs text-slate-500 bg-slate-100" {
-                    div ."mb-4 flex justify-center items-center flex-wrap gap-4" {
+                    div ."mb-6 flex justify-center items-center flex-wrap gap-4" {
                         a href="/" ."flex items-baseline gap-1.5 text-cyan-600" {
                             span ."text-lg tracking-tight font-semibold" { "Svoote" }
                             ."size-4 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
