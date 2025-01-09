@@ -1,3 +1,60 @@
 _version: 2
-test:
-  en: Hello world!
+settings_btn_title:
+  en: "Settings"
+  de: "Einstellungen"
+reset_btn_text:
+  en: "Reset slides and settings"
+  de: "Folien zurücksetzen"
+grid_view_btn_title:
+  en: "Grid view"
+  de: "Folienübersicht"
+add_slide_btn_title:
+  en: "Add slide"
+  de: "Folie hinzufügen"
+
+text_size_medium:
+  en: "Text size Medium"
+  de: "Textgröße Normal"
+text_size_large:
+  en: "Text size Large"
+  de: "Textgröße Groß"
+text_size_xlarge:
+  en: "Text size Extra Large"
+  de: "Textgröße Extra Groß"
+
+start_poll_btn_title:
+  en: "Start poll"
+  de: "Umfrage starten"
+stop_poll_btn_title:
+  en: "Stop poll"
+  de: "Umfrage stoppen"
+fullscreen_btn_title:
+  en: "Toggle Fullscreen"
+  de: "Vollbild an/aus"
+no_slides_notice:
+  en: "Empty presentation. Add slides by clicking '+' in the top left."
+  de: "Leere Präsentation. Füge Folien mit '+' hinzu (oben links)."
+slide:
+  en: "Slide"
+  de: "Folie"
+delete_slide_btn_title:
+  en: "Delete slide"
+  de: "Folie löschen"
+choose_template_heading:
+  en: "Choose template:"
+  de: "Folientyp auswählen:"
+open_ended_question:
+  en: "Open ended"
+  de: "Offene Frage"
+question_placeholder:
+  en: "Question"
+  de: "Frage"
+allow_multiple_answers:
+  en: "Allow multiple answers per user"
+  de: "Mehrere Antworten pro Nutzer erlauben"
+add_answer_btn:
+  en: "Add answer"
+  de: "Antwort hinzufügen"
+answer:
+  en: "Answer"
+  de: "Antwort"

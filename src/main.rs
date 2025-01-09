@@ -84,7 +84,7 @@ async fn get_fallback() -> Response {
     return AppError::NotFound.into_response();
 }
 
-pub fn choose_language(cookies: &CookieJar, headers: &HeaderMap) -> SmartString<Compact> {
+pub fn select_language(cookies: &CookieJar, headers: &HeaderMap) -> SmartString<Compact> {
     let languages = ["en", "de"];
     if let Some(lang_cookie) = cookies.get("lang") {
         let lang_cookie = lang_cookie.value_trimmed();

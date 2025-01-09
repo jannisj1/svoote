@@ -1,3 +1,8 @@
+function setLang(lang) {
+  document.cookie = `lang=${lang}; path=/;`;
+  location.reload();
+}
+
 async function joinPoll() {
   let e = document.getElementById("poll-id-input");
   let res = await fetch("/poll_exists/" + e.value);

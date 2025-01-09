@@ -11,6 +11,7 @@ use crate::{
 pub async fn get_privacy_policy_page() -> Result<Response, AppError> {
     return Ok(html_page::render_html_page(
         "Privacy policy - Svoote",
+        "en",
         html! {
             (render_header(html!{}))
             div #"__enzuzo-root" {}
@@ -26,6 +27,7 @@ pub async fn get_privacy_policy_page() -> Result<Response, AppError> {
 pub async fn get_terms_of_service_page() -> Result<Response, AppError> {
     return Ok(html_page::render_html_page(
         "Terms of service - Svoote",
+        "en",
         html! {
             (render_header(html!{}))
             div #"__enzuzo-root" {}
@@ -41,6 +43,7 @@ pub async fn get_terms_of_service_page() -> Result<Response, AppError> {
 pub async fn get_cookie_policy_page() -> Result<Response, AppError> {
     return Ok(html_page::render_html_page(
         "Cookie policy - Svoote",
+        "en",
         html! {
             (render_header(html!{}))
             div #"__enzuzo-root" {}
@@ -56,6 +59,7 @@ pub async fn get_cookie_policy_page() -> Result<Response, AppError> {
 pub async fn get_contact_page() -> Result<Response, AppError> {
     return Ok(html_page::render_html_page(
         "Contact - Svoote",
+        "en",
         html! {
             (render_header(html!{}))
             ."mx-6 sm:mx-14 my-32 text-center text-slate-700" {
@@ -76,6 +80,7 @@ pub async fn get_contact_page() -> Result<Response, AppError> {
 pub async fn get_manage_cookies_page() -> Result<Response, AppError> {
     return Ok(html_page::render_html_page(
         "Manage cookies - Svoote",
+        "en",
         html! {
             (render_header(html!{}))
                 div ."mx-6 sm:mx-14 my-32 text-slate-700 text-center" {

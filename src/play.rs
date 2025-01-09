@@ -5,7 +5,7 @@ use crate::{
     illustrations::Illustrations,
     live_poll::LivePoll,
     live_poll_store::{ShortID, LIVE_POLL_STORE},
-    session_id,
+    select_language, session_id,
     slide::{Slide, SlideType, WordCloudTerm},
     start_page::get_join_form,
     svg_icons::SvgIcon,
@@ -17,6 +17,7 @@ use axum::{
         ws::{Message, WebSocket},
         Path, Query, WebSocketUpgrade,
     },
+    http::HeaderMap,
     response::{IntoResponse, Response},
     Form, Json,
 };
@@ -51,7 +52,9 @@ pub struct PlayPageParams {
 pub async fn get_play_page(
     Query(params): Query<PlayPageParams>,
     cookies: CookieJar,
+    headers: HeaderMap,
 ) -> Result<Response, AppError> {
+    let l = select_language(&cookies, &headers);
     let poll_id_str = params.c.clone().unwrap_or(SmartString::new());
     let poll_id: Option<ShortID> = params.c.map(|poll_id| poll_id.parse().ok()).flatten();
 
@@ -63,9 +66,10 @@ pub async fn get_play_page(
     if live_poll.is_none() {
         let html = html_page::render_html_page(
             "Svoote",
+            &l,
             html! {
                 (render_header(html! {}))
-                (get_join_form())
+                (get_join_form(&l))
                 div ."my-16 mx-8 sm:mx-14" {
                     p ."text-center text-slate-500" { "This poll is finished." br; "Thank you for using svoote.com" }
                 }
@@ -80,6 +84,7 @@ pub async fn get_play_page(
 
     let html = html_page::render_html_page(
         "Svoote",
+        &l,
         match live_poll.get_or_create_player(&session_id) {
             Some(player_index) => {
                 let _player = live_poll.get_player(player_index);
