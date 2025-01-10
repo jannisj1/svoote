@@ -37,7 +37,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
     let poll_is_live = LIVE_POLL_STORE.get_by_session_id(&session_id).is_some();
 
     let html = html_page::render_html_page(
-        "Svoote",
+        "Svoote - Create Poll",
         &l,
         html! {
             script src=(static_file::get_path("qrcode.js")) {}
@@ -174,7 +174,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                         div ."relative h-full flex flex-col gap-[3em] justify-between" {
                                             div ."flex gap-[1em]" {
                                                 div ."flex-1" {
-                                                    div ."absolute pointer-events-none px-[0.5em] text-[1.25em] text-slate-300" x-show="slide.question.trim() === ''" { (t!("question_placeholder", locale=l)) }
+                                                    div ."absolute pointer-events-none px-[0.55em] text-[1.25em] text-slate-300" x-show="slide.question.trim() === ''" { (t!("question_placeholder", locale=l)) }
                                                     span x-init="$el.innerText = slide.question"
                                                         "@input"="slide.question = $el.innerText; save();"
                                                         ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
@@ -238,7 +238,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                         div ."h-full flex flex-col" {
                                             div ."flex gap-[1em]" {
                                                 div ."flex-1" {
-                                                    div ."absolute pointer-events-none px-[0.5em] text-[1.25em] text-slate-300" x-show="slide.question.trim() === ''" { (t!("question_placeholder", locale=l)) }
+                                                    div ."absolute pointer-events-none px-[0.55em] text-[1.25em] text-slate-300" x-show="slide.question.trim() === ''" { (t!("question_placeholder", locale=l)) }
                                                     span x-init="$el.innerText = slide.question"
                                                         "@input"="slide.question = $el.innerText; save();"
                                                         ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
@@ -291,11 +291,13 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                             ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
                             "@click"="gotoSlide(poll.activeSlide - 1)"
                             ":disabled"="poll.activeSlide == 0"
+                            title=(t!("prev_slide_btn", locale=l))
                             { (SvgIcon::ArrowLeft.render()) }
                         button ."p-2 size-8 rounded-full shadow hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
                             ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
                             "@click"="gotoSlide(poll.activeSlide + 1)"
                             ":disabled"="poll.activeSlide == poll.slides.length - 1"
+                            title=(t!("next_slide_btn", locale=l))
                             { (SvgIcon::ArrowRight.render()) }
                     }
                     div ."" {}

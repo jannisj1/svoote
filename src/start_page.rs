@@ -14,7 +14,7 @@ use maud::{html, Markup};
 pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Response, AppError> {
     let l = select_language(&cookies, &headers);
 
-    return Ok(html_page::render_html_page("Svoote - About", &l, html! {
+    return Ok(html_page::render_html_page("Svoote", &l, html! {
         (render_header(html! { }))
         (get_join_form(&l))
         div ."mt-24 mx-6 sm:mx-14" {
@@ -29,6 +29,10 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
             div ."mb-32 flex justify-center" {
                 a ."px-8 py-4 text-white text-xl font-semibold bg-cyan-600 rounded-full hover:bg-cyan-700" href="/host"
                 { (t!("create_presentation_action_btn", locale=l)) }
+            }
+            div ."mx-auto max-w-screen-lg" {
+                img src="/img/multiple_choice.png" {}
+                img src="/img/word_cloud.png" {}
             }
             div ."mx-auto max-w-screen-lg" {
                 h3 ."mb-10 text-center text-slate-700 text-4xl font-bold" { (t!("why_svoote", locale=l)) }

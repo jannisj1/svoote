@@ -70,6 +70,12 @@ import_presentation:
 download_copy:
   en: "Save Presentation (.json)"
   de: "Präsentation speichern (.json)"
+next_slide_btn:
+  en: "Next slide"
+  de: "Nächste Folie"
+prev_slide_btn:
+  en: "Previous slide"
+  de: "Vorherige Folie"
 svoote_short_description:
   en: "Svoote is a new and growing open-source project. Please leave your feedback and issues on "
   de: "Svoote ist ein neues und wachsenden Open Source-Projekt. Hinterlasse dein Feedback auf "

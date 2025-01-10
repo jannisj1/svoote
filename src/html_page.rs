@@ -40,16 +40,15 @@ pub fn render_html_page(title: &str, l: &str, main_content: maud::Markup) -> mau
                             ."size-4 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
                         }
                         a href="/" ."hover:underline" { "Home" }
-                        a href="/about" ."hover:underline" { "About" }
-                        a href="/data-privacy" ."hover:underline" { "Data privacy" }
-                        a href="/terms-of-service" ."hover:underline" { "Terms of service" }
-                        a href="/cookie-policy" ."hover:underline" { "Cookie policy" }
-                        a href="/manage-cookies" ."hover:underline" { "Manage cookies" }
+                        a href="/host" ."hover:underline" { "Create Poll" }
+                        a href="/data-privacy" ."hover:underline" { "Data Privacy" }
+                        a href="/terms-of-service" ."hover:underline" { "Terms of Service" }
+                        a href="/cookie-policy" ."hover:underline" { "Cookie Policy" }
+                        a href="/manage-cookies" ."hover:underline" { "Manage Cookies" }
                         a href="/contact" ."hover:underline" { "Contact" }
                     }
                     div ."flex justify-center gap-4" {
                         div ."flex gap-2 items-center" { div ."size-4" { (SvgIcon::Globe.render()) } "Language preference:"}
-
                         button onclick="setLang('en')" ."hover:underline" { "English" }
                         button onclick="setLang('de')". "hover:underline" { "Deutsch" }
                     }
