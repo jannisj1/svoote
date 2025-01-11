@@ -21,6 +21,31 @@ function incrementChar(c, add) {
   return String.fromCharCode(c.charCodeAt(0) + add);
 }
 
+function homeFromTemplate(variant) {
+  let poll = null;
+  if (variant == "mc") {
+    let slide = createSlide("mc");
+    slide.question = "How do you feel about the upcoming exam?";
+    slide.mcAnswers = [
+      { text: "No problem", isCorrect: false },
+      { text: "Didn't learn enough", isCorrect: false },
+      { text: "We will see", isCorrect: false },
+    ];
+    poll = createPoll();
+    poll.slides = [slide];
+  }
+
+  if (variant == "ft") {
+    let slide = createSlide("ft");
+    slide.question = "What is your favorite movie character?";
+    poll = createPoll();
+    poll.slides = [slide];
+  }
+
+  localStorage.setItem("poll", JSON.stringify(poll));
+  location.href = "/host";
+}
+
 function createSlide(type) {
   return {
     type: type,

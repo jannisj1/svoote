@@ -30,7 +30,7 @@ pub fn render_html_page(title: &str, l: &str, main_content: maud::Markup) -> mau
                 }
             }
             body ."group min-h-screen flex flex-col text-slate-700" {
-                main ."flex-1 mx-auto w-full max-w-screen-xl" {
+                main ."flex-1 mx-auto w-full max-w-[1408px]" {
                     (main_content)
                 }
                 footer ."mt-4 px-4 py-8 text-xs text-slate-500 bg-slate-100" {

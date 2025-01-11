@@ -60,7 +60,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                             { }
                         }
                     }
-                    div ."pr-4 flex items-center gap-2 z-10" ":class"="isFullscreen ? 'bg-slate-700' : 'bg-white'" {
+                    div ."pr-4 flex items-center gap-1.5 z-10" ":class"="isFullscreen ? 'bg-slate-700' : 'bg-white'" {
                         div x-data="{ open: false }" ."relative size-[1.4rem]" {
                             button "@click"="open = !open"
                                 ":disabled"="isLive" ."size-[1.4rem]"
@@ -89,6 +89,10 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                             ":disabled"="isLive" ."size-6"
                             ":class"="gridView ? 'text-indigo-500' : (isFullscreen ? 'disabled:text-slate-500' : 'disabled:text-slate-300')"
                             title=(t!("grid_view_btn_title", locale=l)) { (SvgIcon::Grid.render()) }
+                        button "@click"="poll.slides.splice(poll.activeSlide, 1); gotoSlide(poll.activeSlide);"
+                            ":disabled"="isLive" ."size-6"
+                            title=(t!("delete_slide_btn_title", locale=l))
+                            { (SvgIcon::Trash2.render()) }
                         button "@click"="poll.slides.splice(poll.slides.length, 0, createSlide('mc')); $nextTick(() => { gotoSlide(poll.slides.length - 1) });"
                             ":disabled"={ "isLive || poll.slides.length >= " (POLL_MAX_SLIDES) }
                             ."-translate-x-1 size-6"
@@ -123,7 +127,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                 }
                 div x-ref="outerSlideContainer" ."px-4 pt-3 pb-2 sm:px-12 overflow-x-hidden overflow-y-scroll scrollbar-hidden"
                     ":class"="isFullscreen && ('flex-1 ' + (fontSize == 'large' ? 'text-[1.25rem]' : (fontSize == 'xlarge' ? 'text-[1.5rem]' : 'text-base')))" {
-                    div ."relative" ":class"="isFullscreen ? 'h-full' : 'h-[36rem]'" {
+                    div ."relative" ":class"="isFullscreen ? 'h-full' : 'h-[38rem]'" {
                         p x-show="poll.slides.length == 0" x-cloak ."absolute inset-0 px-6 size-full flex justify-center items-center text-slate-500 text-[0.875em]"
                             { (t!("no_slides_notice", locale=l)) }
                         template x-for="(slide, slideIndex) in poll.slides" {
@@ -148,10 +152,6 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                     button x-show="gridView && isReordering" x-cloak ."absolute h-full w-[14%] top-0 -right-[17%] z-40 rounded-lg bg-red-200 hover:bg-red-300"
                                         "@click"="$event.stopPropagation(); moveSlide(slideIndex, false); isReordering = false;"
                                         { }
-                                    button x-show="!gridView && !isLive" x-cloak ."absolute top-4 right-4 size-5 text-slate-400 hover:text-red-500"
-                                        "@click"="poll.slides.splice(slideIndex, 1); gotoSlide(poll.activeSlide);"
-                                        title=(t!("delete_slide_btn_title", locale=l))
-                                        { (SvgIcon::X.render()) }
                                     div ."absolute inset-0 size-full transition duration-300 z-10"
                                         ":class"="selectTemplate ? 'backdrop-blur-sm' : 'pointer-events-none'"
                                         x-show="!isLive"
@@ -164,7 +164,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                         "@click"="if (!selectTemplate) { selectTemplate = true; } else { selectTemplate = false; slide.type = 'mc'; } save();"
                                         ":class"="calculateSlideTypeButtonClasses(slide.type, 'mc', selectTemplate)"
                                         x-show="!isLive"
-                                        { ."size-6 p-1 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) } "Multiple choice" }
+                                        { ."size-6 p-1 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) } "Multiple Choice" }
                                     button
                                         "@click"="if (!selectTemplate) { selectTemplate = true; } else { selectTemplate = false; slide.type = 'ft'; } save();"
                                         ":class"="calculateSlideTypeButtonClasses(slide.type, 'ft', selectTemplate)"

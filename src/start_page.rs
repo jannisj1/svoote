@@ -26,43 +26,53 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
                 }
                 h2 ."mb-8 text-center text-slate-500 text-xl leading-8" { (t!("subtitle", locale=l)) }
             }
-            div ."mb-32 flex justify-center" {
+            div ."mb-40 flex justify-center" {
                 a ."px-8 py-4 text-white text-xl font-semibold bg-cyan-600 rounded-full hover:bg-cyan-700" href="/host"
                 { (t!("create_presentation_action_btn", locale=l)) }
             }
-            div ."mx-auto max-w-screen-lg" {
-                img src="/img/multiple_choice.png" {}
-                img src="/img/word_cloud.png" {}
+            div ."mb-40 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-16" {
+                div {
+                    h4 ."mb-2 flex items-center justify-center gap-1.5 text-slate-500" {
+                        ."size-6 p-1 bg-rose-500 text-white rounded-lg" { (SvgIcon::BarChart2.render()) } "Multiple Choice"
+                    }
+                    img ."mb-1 px-2 py-[0.45rem] bg-white rounded-lg" src="/img/multiple_choice.png" {}
+                    button ."block mx-auto text-slate-500 text-xs underline" onclick="homeFromTemplate('mc')" { (t!("start_from_here", locale=l)) }
+                }
+                div {
+                    h4 ."mb-2 flex items-center justify-center gap-1.5 text-slate-500" {
+                        ."size-6 p-1 bg-cyan-600 text-white rounded-lg" { (SvgIcon::Edit3.render()) } (t!("open_ended_question", locale=l))
+                    }
+                    img ."mb-1 px-2 py-[0.45rem] bg-white rounded-lg" src="/img/word_cloud.png" {}
+                    button ."block mx-auto text-slate-500 text-xs underline" onclick="homeFromTemplate('ft')" { (t!("start_from_here", locale=l)) }
+                }
             }
-            div ."mx-auto max-w-screen-lg" {
-                h3 ."mb-10 text-center text-slate-700 text-4xl font-bold" { (t!("why_svoote", locale=l)) }
-                section ."mb-32 grid md:grid-cols-2 gap-10 text-slate-700" {
-                    div ."flex flex-col gap-10" {
-                        div ."p-6 bg-cyan-100 rounded-lg" {
-                            h4 ."mb-2 text-xl font-semibold flex items-center gap-2"
-                                { ."size-5" { (SvgIcon::Lock.render()) } (t!("privacy_section_title", locale=l)) }
-                            p ."" {
-                                (t!("privacy_section_text_1", locale=l))
-                                a ."underline" href="https://plausible.io" { "Plausible" }
-                                (t!("privacy_section_text_2", locale=l))
-                            }
+            h3 ."mb-10 text-center text-slate-700 text-4xl font-bold" { (t!("why_svoote", locale=l)) }
+            section ."mb-32 grid md:grid-cols-2 gap-10 text-slate-700" {
+                div ."flex flex-col gap-10" {
+                    div ."p-6 bg-cyan-100 rounded-lg" {
+                        h4 ."mb-2 text-xl font-semibold flex items-center gap-2"
+                            { ."size-5" { (SvgIcon::Lock.render()) } (t!("privacy_section_title", locale=l)) }
+                        p ."" {
+                            (t!("privacy_section_text_1", locale=l))
+                            a ."underline" href="https://plausible.io" { "Plausible" }
+                            (t!("privacy_section_text_2", locale=l))
                         }
                     }
-                    div ."flex flex-col gap-10" {
-                        div ."p-6 bg-orange-100 rounded-lg" {
-                            h4 ."mb-2 text-xl font-semibold flex items-center gap-2"
-                                { ."size-5" { (SvgIcon::Image.render()) } (t!("ad_free_section_title", locale=l)) }
-                            p ."" {
-                                (t!("ad_free_section_text", locale=l))
-                            }
+                }
+                div ."flex flex-col gap-10" {
+                    div ."p-6 bg-orange-100 rounded-lg" {
+                        h4 ."mb-2 text-xl font-semibold flex items-center gap-2"
+                            { ."size-5" { (SvgIcon::Image.render()) } (t!("ad_free_section_title", locale=l)) }
+                        p ."" {
+                            (t!("ad_free_section_text", locale=l))
                         }
-                        ."p-6 bg-rose-100 rounded-lg" {
-                            h4 ."mb-2 text-xl font-semibold flex items-center gap-2"
-                                { ."size-5" { (SvgIcon::Github.render()) } (t!("open_source_section_title", locale=l)) }
-                            p ."" {
-                                (t!("open_source_section_text", locale=l))
-                                a ."underline" href="https://github.com/jannisj1/svoote" { "Github" } "."
-                            }
+                    }
+                    ."p-6 bg-rose-100 rounded-lg" {
+                        h4 ."mb-2 text-xl font-semibold flex items-center gap-2"
+                            { ."size-5" { (SvgIcon::Github.render()) } (t!("open_source_section_title", locale=l)) }
+                        p ."" {
+                            (t!("open_source_section_text", locale=l))
+                            a ."underline" href="https://github.com/jannisj1/svoote" { "Github" } "."
                         }
                     }
                 }
