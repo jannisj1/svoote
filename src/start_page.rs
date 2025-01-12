@@ -27,22 +27,22 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
                 h2 ."mb-8 text-center text-slate-500 text-xl leading-8" { (t!("subtitle", locale=l)) }
             }
             div ."mb-40 flex justify-center" {
-                a ."px-8 py-4 text-white text-xl font-semibold bg-cyan-600 rounded-full hover:bg-cyan-700" href="/host"
+                a ."px-8 py-4 text-white text-lg font-semibold bg-cyan-600 rounded-full hover:bg-cyan-700" href="/host"
                 { (t!("create_presentation_action_btn", locale=l)) }
             }
             div ."mb-40 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-16" {
                 div {
-                    h4 ."mb-2 flex items-center justify-center gap-1.5 text-slate-500" {
-                        ."size-6 p-1 bg-rose-500 text-white rounded-lg" { (SvgIcon::BarChart2.render()) } "Multiple Choice"
+                    h4 ."flex items-center justify-center gap-1.5 text-sm text-slate-500" {
+                        ."size-5 p-1 bg-rose-500 text-white rounded-lg" { (SvgIcon::BarChart2.render()) } "Multiple Choice"
                     }
-                    img ."mb-1 px-2 py-[0.45rem] bg-white rounded-lg" src="/img/multiple_choice.png" {}
+                    img ."px-2 py-[0.45rem] bg-white rounded-lg" src="/img/multiple_choice.png" {}
                     button ."block mx-auto text-slate-500 text-xs underline" onclick="homeFromTemplate('mc')" { (t!("start_from_here", locale=l)) }
                 }
                 div {
-                    h4 ."mb-2 flex items-center justify-center gap-1.5 text-slate-500" {
-                        ."size-6 p-1 bg-cyan-600 text-white rounded-lg" { (SvgIcon::Edit3.render()) } (t!("open_ended_question", locale=l))
+                    h4 ."flex items-center justify-center gap-1.5 text-sm text-slate-500" {
+                        ."size-5 p-1 bg-cyan-600 text-white rounded-lg" { (SvgIcon::Edit3.render()) } (t!("open_ended_question", locale=l))
                     }
-                    img ."mb-1 px-2 py-[0.45rem] bg-white rounded-lg" src="/img/word_cloud.png" {}
+                    img ."px-2 py-[0.45rem] bg-white rounded-lg" src="/img/word_cloud.png" {}
                     button ."block mx-auto text-slate-500 text-xs underline" onclick="homeFromTemplate('ft')" { (t!("start_from_here", locale=l)) }
                 }
             }

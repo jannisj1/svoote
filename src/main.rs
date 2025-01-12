@@ -10,7 +10,7 @@ mod compliance;
 mod config;
 mod host;
 mod html_page;
-mod illustrations;
+//mod illustrations;
 mod live_poll;
 mod live_poll_store;
 mod play;

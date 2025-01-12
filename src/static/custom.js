@@ -185,7 +185,7 @@ document.addEventListener("alpine:init", () => {
 
     calculateSlideTypeButtonClasses(slideType, buttonType, showSelection) {
       let classes =
-        "absolute left-1/2 top-[0.25em] -translate-x-1/2 px-[0.875em] py-[0.5em] flex justify-center items-center gap-[0.5em] rounded-full hover:shadow transition duration-300 ";
+        "absolute left-1/2 top-[0.25em] -translate-x-1/2 px-[0.875em] py-[0.5em] flex justify-center items-center gap-[0.5em] text-nowrap rounded-full hover:shadow transition duration-300 ";
 
       if (showSelection) {
         classes += "shadow z-10 bg-slate-700 text-slate-100 ";

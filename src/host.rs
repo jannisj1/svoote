@@ -136,7 +136,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                 ":style"="calculateSlideStyle(slideIndex, poll.activeSlide, gridView, isLive)"
                                 "@click"="if (slideIndex != poll.activeSlide) gotoSlide(slideIndex); if (gridView) { gridView = false; $refs.outerSlideContainer.scrollTo({ top: 0, behavior: 'smooth' }); }"
                             {
-                                div x-data="{ selectTemplate: false }" ."flex-1 flex flex-col" {
+                                div x-data="{ selectTemplate: false }" ."w-full flex-1 flex flex-col" {
                                     h1 x-show="gridView" x-cloak x-text={"'" (t!("slide", locale=l)) " ' + (slideIndex + 1)"} ."absolute text-5xl text-slate-500 -top-20 left-[45%]" {}
                                     button "@click"="isReordering = !isReordering; reorderedSlideIndex = slideIndex; $event.stopPropagation();"
                                         x-show="!isLive && gridView && (!isReordering || slideIndex == reorderedSlideIndex)" x-cloak
@@ -181,7 +181,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                         ":contenteditable"="!isLive"
                                                         ."block mb-3 px-[0.5em] text-[1.25em] text-slate-800 bg-transparent outline-none"
                                                         ":class"="!isLive && 'ring-1 ring-slate-200 ring-offset-4 rounded focus:ring-2 focus:ring-cyan-600'" { }
-                                                    label ."ml-[0.5em] mb-[0.5em] overflow-hidden flex gap-[0.5em] items-center text-slate-700 transition-all duration-500"
+                                                    label ."ml-[0.5em] mb-[0.5em] overflow-hidden flex gap-[0.5em] items-center text-slate-700 text-nowrap transition-all duration-500"
                                                         ":class"="isLive ? 'h-0 opacity-0' : 'h-[1.5em]'" {
                                                         input x-model="slide.allowMultipleMCAnswers" "@change"="save()" type="checkbox" ."accent-cyan-600";
                                                         (t!("allow_multiple_answers", locale=l))

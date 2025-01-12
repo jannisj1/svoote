@@ -3,7 +3,7 @@ These amazing illustrations were obtained from undraw.co.
 Be sure to check them out!
 */
 
-use maud::PreEscaped;
+/*use maud::PreEscaped;
 
 pub enum Illustrations {
     //InLove,
@@ -20,3 +20,4 @@ impl Illustrations {
         });
     }
 }
+*/
