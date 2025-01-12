@@ -94,7 +94,7 @@ pub async fn get_play_page(
                             template x-if="currentSlide.slideType == 'null'" { div {} }
                             template x-if="currentSlide.slideType == 'mc'" {
                                 div {
-                                    h1 x-init="$el.innerText = currentSlide.question" x-effect="$el.innerText = currentSlide.question" ."mb-3 text-slate-700 font-medium" {}
+                                    h1 x-init="$el.innerText = currentSlide.question" x-effect="$el.innerText = currentSlide.question" ."mb-4 text-lg text-slate-700 font-medium" {}
                                     template x-for="(answer, answerIndex) in currentSlide.answers" {
                                         label ."w-full mb-4 px-3 py-1.5 flex gap-2 items-center ring-2 ring-slate-500 has-[:checked]:ring-4 has-[:checked]:ring-cyan-600 rounded-lg" {
                                             input ":type"="currentSlide.allowMultipleMCAnswers ? 'checkbox' : 'radio'" x-model="currentSlide.selectedAnswer" ":disabled"="currentSlide.submitted" ":value"="answerIndex" ."accent-cyan-600";
@@ -115,14 +115,14 @@ pub async fn get_play_page(
                             }
                             template x-if="currentSlide.slideType == 'ft'" {
                                 div {
-                                    h1 x-init="$el.innerText = currentSlide.question" x-effect="$el.innerText = currentSlide.question" ."mb-3 text-slate-700 font-medium" {}
+                                    h1 x-init="$el.innerText = currentSlide.question" x-effect="$el.innerText = currentSlide.question" ."mb-5 text-lg text-slate-700 font-medium" {}
                                     input type="text"
                                         x-model="currentSlide.selectedAnswer"
                                         "@keyup.enter"="$refs.ftSubmitButton.click()"
                                         ":disabled"="currentSlide.submitted"
                                         placeholder=(t!("answer", locale=l))
-                                        ."w-full px-4 py-1.5 text-slate-600 font-medium border-[3px] border-cyan-600 rounded-lg outline-none";
-                                    div ."relative mt-4 h-10" {
+                                        ."w-full px-4 py-1.5 text-lg text-slate-700 font-medium ring-2 ring-slate-500 rounded-lg outline-none focus:ring-4 focus:ring-cyan-600";
+                                    div ."relative mt-5 h-10" {
                                     button x-show="!currentSlide.submitted"
                                         x-ref="ftSubmitButton"
                                         ":disabled"="currentSlide.selectedAnswer === ''"
