@@ -79,3 +79,6 @@ prev_slide_btn:
 svoote_short_description:
   en: "Svoote is a new and growing open-source project. Please leave your feedback and issues on "
   de: "Svoote ist ein neues und wachsendes Open Source-Projekt. Hinterlasse dein Feedback auf "
+screen_size_warning:
+  en: "We recommend a wider screen to host a live poll."
+  de: "Wir empfehlen einen breiteren Bildschirm zum Präsentieren von Live-Abstimmungen."

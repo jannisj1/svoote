@@ -43,8 +43,9 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
             script src=(static_file::get_path("qrcode.js")) {}
             @if poll_is_live { script { "document.pollAlreadyLive = true;" } }
             (render_header(html! {}))
+            div ."hidden [@media_(max-width:520px)]:block mx-6 mb-4 px-4 py-3 text-sm bg-orange-100 rounded-lg text-slate-500" { (t!("screen_size_warning", locale=l)) }
             div x-data="poll" id="fullscreen-container" "@fullscreenchange"="if (document.fullscreenElement == null) isFullscreen = false; else isFullscreen = true; $dispatch('fontsizechange');"
-                ":class"="isFullscreen ? 'bg-slate-700 h-full flex flex-col justify-center' : 'bg-white'"
+                ":class"="'min-w-[520px] ' + (isFullscreen ? 'bg-slate-700 h-full flex flex-col justify-center' : 'bg-white')"
             {
                 div ."relative mx-6 sm:mx-16 flex justify-between items-center"
                     ":class"="isFullscreen && 'mt-6'"
@@ -67,7 +68,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                 ":class"="isFullscreen ? 'disabled:text-slate-500' : 'disabled:text-slate-300'"
                                 title=(t!("settings_btn_title", locale=l))
                                 { (SvgIcon::Settings.render()) }
-                            div x-show="open" x-cloak "@click.outside"="open = false" ."absolute left-0 top-8 w-64 h-fit z-20 p-4 text-left bg-white border rounded-lg shadow-lg" {
+                            div x-show="open" x-cloak "@click.outside"="open = false" ."absolute left-0 top-8 w-72 h-fit z-20 px-4 py-3 bg-white border rounded-lg shadow-lg" {
                                 /*."mb-3 text-xl font-semibold text-slate-700" { "Options" }
                                 label ."flex items-center gap-2 text-slate-600 font-semibold" {
                                     input type="checkbox" x-model="poll.enableLeaderboard" ."size-4 accent-indigo-500";
@@ -79,6 +80,14 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                     "Custom names"
                                 }
                                 ."ml-6 mb-3 text-slate-400 text-sm" { "Allow participants to set a custom name." }*/
+                                label ."mb-3 flex gap-2 items-center text-slate-600 cursor-pointer hover:bg-slate-100" {
+                                    ."size-4" { (SvgIcon::Folder.render()) } (t!("import_presentation", locale=l))
+                                    input type="file" accept=".json" "@change"="importJsonFile($event);" ."hidden";
+                                }
+                                a download="poll.json" ":href"="'data:application/json;charset=utf-8,' + JSON.stringify(poll)"
+                                    ."mb-3 flex gap-2 items-center text-slate-600 hover:bg-slate-100"
+                                    { ."size-4" { (SvgIcon::Download.render()) } (t!("download_copy", locale=l)) }
+                                hr ."mb-3";
                                 button "@click"="reset()" ":disabled"="isLive" ."flex gap-2 items-center text-slate-600 disabled:text-slate-300" {
                                     ."size-4" { (SvgIcon::Refresh.render()) }
                                     (t!("reset_btn_text", locale=l))
@@ -181,7 +190,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                         ":contenteditable"="!isLive"
                                                         ."block mb-3 px-[0.5em] text-[1.25em] text-slate-800 bg-transparent outline-none"
                                                         ":class"="!isLive && 'ring-1 ring-slate-200 ring-offset-4 rounded focus:ring-2 focus:ring-cyan-600'" { }
-                                                    label ."ml-[0.5em] mb-[0.5em] overflow-hidden flex gap-[0.5em] items-center text-slate-700 text-nowrap transition-all duration-500"
+                                                    label ."ml-[0.5em] mb-[0.5em] overflow-hidden flex gap-[0.5em] items-center text-slate-700 transition-all duration-500"
                                                         ":class"="isLive ? 'h-0 opacity-0' : 'h-[1.5em]'" {
                                                         input x-model="slide.allowMultipleMCAnswers" "@change"="save()" type="checkbox" ."accent-cyan-600";
                                                         (t!("allow_multiple_answers", locale=l))
@@ -259,7 +268,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                 "@slidechange.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
                                                 { }
                                             div x-show="(slide.stats !== null ? slide.stats.terms : []).length == 0"
-                                                ."absolute size-full inset-0 -z-10 p-[1.5em] flex items-center justify-center gap-[0.5em] text-slate-500 text-[0.875em]"
+                                                ."absolute size-full inset-0 -z-10 p-[3em] flex items-center justify-center gap-[0.75em] text-slate-500 text-[0.875em]"
                                                 { div ."size-[1em]" { (SvgIcon::Edit3.render()) } (t!("open_ended_explanation", locale=l)) }
                                         }
                                     }
@@ -270,22 +279,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                     }
                 }
                 div ."mx-6 sm:mx-14 mt-2 mb-8 grid grid-cols-3 items-center gap-4" {
-                    div x-data="{ open: false }" ."relative" {
-                        button ."py-1 px-3 flex items-center gap-1.5 text-sm text-slate-500 bg-slate-100 shadow hover:bg-slate-200 rounded-full"
-                            "@click"="open = !open"
-                            { ."size-4" { (SvgIcon::Save.render()) } (t!("saved_locally", locale=l)) }
-                        div x-show="open" x-cloak "@click.outside"="open = false"
-                            ."absolute z-10 bg-white border rounded-lg shadow-xl" {
-                            label ."px-3 py-1.5 flex gap-2 items-center text-sm text-slate-600 cursor-pointer hover:bg-slate-100" {
-                                ."size-4" { (SvgIcon::Folder.render()) } (t!("import_presentation", locale=l))
-                                input type="file" accept=".json" "@change"="importJsonFile($event);" ."hidden";
-                            }
-                            hr;
-                            a download="poll.json" ":href"="'data:application/json;charset=utf-8,' + JSON.stringify(poll)"
-                                ."px-3 py-1.5 flex gap-2 items-center text-sm text-slate-600 hover:bg-slate-100"
-                                { ."size-4" { (SvgIcon::Download.render()) } (t!("download_copy", locale=l)) }
-                        }
-                    }
+                    div { }
                     div ."flex justify-center items-center gap-4" {
                         button ."p-2 size-8 rounded-full shadow hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
                             ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
