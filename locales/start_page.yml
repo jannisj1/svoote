@@ -6,21 +6,21 @@ join_btn_desc:
   en: "Join"
   de: "Beitreten"
 
-title_1:
-  en: "Ask your audience with "
-  de: "Befrage dein Publikum mit "
-title_2:
-  en: " live polling"
-  de: " Live-Umfragen"
+title:
+  en: "Live polling made simple."
+  de: "Live Umfragen leicht gemacht."
 subtitle:
-  en: "Svoote is intuitive, lightweight and open source live polling. Host unlimited numbers of live polls for up to 100 participants without creating an account. Created and hosted in the EU 🇪🇺"
-  de: "Svoote ist eine intuitive, einfach gebaute und open-source entwickelte Webseite für Live-Umfragen. Veranstalte unbegrenzt viele Live-Umfragen mit je bis zu 100 Teilnehmern kostenlos und ohne Registrierung. Erstellt und gehostet in der EU 🇪🇺"
+  en: "Intuitive. Open Source. Made in Germany."
+  de: "Intuitiv. Open Source. Made in Germany."
 create_presentation_action_btn:
   en: "Create presentation"
   de: "Präsentation erstellen"
-make_interactive:
-  en: "Make your presentation interactive"
-  de: "Mach deinen Vortrag interaktiv"
+sub_action_btn_1:
+  en: "No Registration needed."
+  de: "Keine Registrierung nötig."
+sub_action_btn_2:
+  en: "Unlimited polls for 100 participants."
+  de: "Unbegrenzte Umfragen für 100 Teilnehmer."
 
 why_svoote:
   en: "Why Svoote?"

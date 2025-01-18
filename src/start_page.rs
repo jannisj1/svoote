@@ -19,35 +19,27 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
         (get_join_form(&l))
         div ."mt-16 mx-6 sm:mx-14" {
             div ."max-w-2xl mx-auto" {
-                h1 ."mb-8 text-center text-slate-800 text-5xl font-bold leading-tight" {
-                    (t!("title_1", locale=l))
-                    span ."text-cyan-600 whitespace-nowrap" { "Svoote" div ."inline-block ml-1.5 size-8 translate-y-0.5" { (SvgIcon::Rss.render()) } }
-                    (t!("title_2", locale=l))
+                h1 ."mb-1 text-center text-slate-800 text-5xl font-bold leading-tight" { (t!("title", locale=l)) }
+                h2 ."mb-8 text-center text-slate-500 leading-8" { (t!("subtitle", locale=l)) }
+                div ."mb-6 px-2 py-1.5 bg-slate-700 rounded-lg" {
+                    div ."mb-2 flex justify-between gap-1" {
+                        div ."flex-1 mt-0.5 ml-1 text-xs text-white font-semibold" { "Svoote" div ."inline-block ml-1 size-2.5 translate-y-[1px]" { (SvgIcon::Rss.render()) } }
+                        div ."size-2 rounded-full bg-green-500" {}
+                        div ."size-2 rounded-full bg-orange-400" {}
+                        div ."size-2 rounded-full bg-rose-500" {}
+                    }
+                    video autoplay loop muted playsinline ."appearance-none rounded" {
+                        source src="/img/svoote_demo.webm" type="video/webm";
+                        "Your browser does not support video playback."
+                    }
                 }
-                h2 ."mb-8 text-center text-slate-500 text-xl leading-8" { (t!("subtitle", locale=l)) }
-                video autoplay loop muted playsinline ."appearance-none" {
-                    source src="/img/svoote_demo.webm" type="video/webm";
-                    "Your browser does not support video playback."
-                }
-                div ."mb-40 flex justify-center" {
-                    a ."px-8 py-4 text-white text-lg font-semibold bg-cyan-600 rounded-full hover:bg-cyan-700" href="/host"
+                div ."mb-3 flex justify-center" {
+                    a ."px-6 py-2 text-white text-lg font-semibold bg-cyan-600 rounded-full hover:bg-cyan-700" href="/host"
                     { (t!("create_presentation_action_btn", locale=l)) }
                 }
-            }
-            div ."mb-40 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-16" {
-                div {
-                    h4 ."flex items-center justify-center gap-1.5 text-sm text-slate-500" {
-                        ."size-5 p-1 bg-rose-500 text-white rounded-lg" { (SvgIcon::BarChart2.render()) } "Multiple Choice"
-                    }
-                    img ."px-2 py-[0.45rem] bg-white rounded-lg" src="/img/multiple_choice.png" {}
-                    button ."block mx-auto text-slate-500 text-xs underline" onclick="homeFromTemplate('mc')" { (t!("start_from_here", locale=l)) }
-                }
-                div {
-                    h4 ."flex items-center justify-center gap-1.5 text-sm text-slate-500" {
-                        ."size-5 p-1 bg-cyan-600 text-white rounded-lg" { (SvgIcon::Edit3.render()) } (t!("open_ended_question", locale=l))
-                    }
-                    img ."px-2 py-[0.45rem] bg-white rounded-lg" src="/img/word_cloud.png" {}
-                    button ."block mx-auto text-slate-500 text-xs underline" onclick="homeFromTemplate('ft')" { (t!("start_from_here", locale=l)) }
+                h3 ."mb-40 text-xs text-center text-slate-500" {
+                    (t!("sub_action_btn_1", locale=l)) br;
+                    (t!("sub_action_btn_2", locale=l))
                 }
             }
             h3 ."mb-10 text-center text-slate-700 text-4xl font-bold" { (t!("why_svoote", locale=l)) }
