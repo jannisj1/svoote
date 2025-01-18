@@ -47,6 +47,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
             div x-data="poll" id="fullscreen-container" "@fullscreenchange"="if (document.fullscreenElement == null) isFullscreen = false; else isFullscreen = true; $dispatch('fontsizechange');"
                 ":class"="'min-w-[520px] ' + (isFullscreen ? 'bg-slate-700 h-full flex flex-col justify-center' : 'bg-white')"
             {
+                @if cfg!(debug_assertions) { button "@click"="runDemo()" { "Run demo" } }
                 div ."relative mx-6 sm:mx-16 flex justify-between items-center"
                     ":class"="isFullscreen && 'mt-6'"
                 {
@@ -99,7 +100,9 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                             ":class"="gridView ? 'text-indigo-500' : (isFullscreen ? 'disabled:text-slate-500' : 'disabled:text-slate-300')"
                             title=(t!("grid_view_btn_title", locale=l)) { (SvgIcon::Grid.render()) }
                         button "@click"="poll.slides.splice(poll.activeSlide, 1); gotoSlide(poll.activeSlide);"
-                            ":disabled"="isLive" ."size-6"
+                            ":disabled"="isLive"
+                            ."size-6"
+                            ":class"="isFullscreen ? 'disabled:text-slate-500' : 'disabled:text-slate-300'"
                             title=(t!("delete_slide_btn_title", locale=l))
                             { (SvgIcon::Trash2.render()) }
                         button "@click"="poll.slides.splice(poll.slides.length, 0, createSlide('mc')); $nextTick(() => { gotoSlide(poll.slides.length - 1) });"
@@ -135,7 +138,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                     }
                 }
                 div x-ref="outerSlideContainer" ."px-4 pt-3 pb-2 sm:px-12 overflow-x-hidden overflow-y-scroll scrollbar-hidden"
-                    ":class"="isFullscreen && ('flex-1 ' + (fontSize == 'large' ? 'text-[1.25rem]' : (fontSize == 'xlarge' ? 'text-[1.5rem]' : 'text-base')))" {
+                    ":class"="isFullscreen && ('flex-1 ' + (fontSize == 'large' ? 'text-[1.4rem]' : (fontSize == 'xlarge' ? 'text-[1.8rem]' : 'text-base')))" {
                     div ."relative" ":class"="isFullscreen ? 'h-full' : 'h-[38rem]'" {
                         p x-show="poll.slides.length == 0" x-cloak ."absolute inset-0 px-6 size-full flex justify-center items-center text-slate-500 text-[0.875em]"
                             { (t!("no_slides_notice", locale=l)) }

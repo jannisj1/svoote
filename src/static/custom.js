@@ -212,60 +212,115 @@ document.addEventListener("alpine:init", () => {
 
     renderWordCloud(slideIndex) {
       let container = document.getElementById("word-cloud-" + slideIndex);
-      if (
-        container == null ||
-        this.poll.slides[slideIndex].stats == null ||
-        this.gridView
-      )
+      if (!container || !this.poll.slides[slideIndex].stats || this.gridView)
         return;
 
-      let stats = this.poll.slides[slideIndex].stats;
+      const stats = this.poll.slides[slideIndex].stats;
+      const { width: containerWidth, height: containerHeight } =
+        container.getBoundingClientRect();
+      const HORIZONTAL_GAP = 36 * this.getFontScale();
+      const VERTICAL_GAP = 20 * this.getFontScale();
 
-      let containerHeight = container.getBoundingClientRect().height;
-      let containerWidth = container.getBoundingClientRect().width;
-      const HORIZONTAL_GAP = 32;
-      const VERTICAL_GAP = 12;
+      const sortedTerms = stats.terms
+        .map((term, index) => {
+          let c = container.children[index] || document.createElement("div");
+          if (!container.children[index]) {
+            c.className =
+              "absolute size-fit left-1/2 top-full leading-none whitespace-nowrap transition-all duration-500 ease-out invisible";
+            c.classList.add(
+              [
+                "text-rose-600",
+                "text-cyan-600",
+                "text-lime-600",
+                "text-fuchsia-600",
+                "text-slate-600",
+                "text-teal-600",
+              ][index % 6],
+            );
+            container.appendChild(c);
+          }
 
-      let sortedTerms = [];
-
-      for (i = 0; i < stats.terms.length; i++) {
-        const term = stats.terms[i];
-        let c = container.children[i];
-        if (c == null) {
-          c = document.createElement("div");
-          c.className =
-            "absolute size-fit left-1/2 top-full leading-none whitespace-nowrap transition-all duration-500 ease-out invisible";
-          c.classList.add(
-            [
-              "text-rose-600",
-              "text-cyan-600",
-              "text-lime-600",
-              "text-fuchsia-600",
-              "text-slate-600",
-              "text-teal-600",
-            ][i % 6],
-          );
+          c.innerText = term[0];
+          c.title = `${term[0]}: ${term[1]}`;
+          c.style.fontSize = `${0.5 + (2.25 * term[1]) / stats.maxCount}em`;
+          c.style.opacity = `${0.7 + (0.3 * term[1]) / stats.maxCount}`;
+          c.style.letterSpacing = `${0.02 - 0.04 * (term[1] / stats.maxCount)}em`;
           c.style.fontWeight = "500";
-          container.appendChild(c);
-        }
 
-        c.innerText = term[0];
-        c.title = `${term[0]}: ${term[1]}`;
-        c.style.fontSize = `${0.5 + (2.25 * term[1]) / stats.maxCount}em`;
-        c.style.opacity = `${0.7 + (0.3 * term[1]) / stats.maxCount}`;
-        c.style.letterSpacing = `${0.02 - 0.04 * (term[1] / stats.maxCount)}em`;
-
-        sortedTerms.push({
-          term: term,
-          element: c,
-          width: c.getBoundingClientRect().width,
-          height: c.getBoundingClientRect().height,
-        });
-      }
-
-      sortedTerms.sort((a, b) => b.term[1] - a.term[1]);
+          return {
+            term,
+            element: c,
+            width: c.offsetWidth,
+            height: c.offsetHeight,
+          };
+        })
+        .sort((a, b) => b.term[1] - a.term[1]);
 
       let rows = [];
+      let rowHeightSum = 0;
+
+      // Place terms into rows, prioritizing less filled rows but keeping middle rows denser.
+      for (let termIndex = 0; termIndex < sortedTerms.length; termIndex++) {
+        const term = sortedTerms[termIndex];
+        let placed = false;
+        term.element.classList.remove("invisible");
+
+        // Try placing the term into the least filled row
+        rows.sort((a, b) => a.width - b.width); // Sort rows by width (ascending)
+        for (let row of rows) {
+          if (
+            row.width + term.width + HORIZONTAL_GAP <= containerWidth &&
+            rows.length > 1 &&
+            !(rows.length < 3 && termIndex >= 6)
+          ) {
+            if (row.terms.length % 2 == 1) row.terms.push(term);
+            else row.terms.unshift(term);
+            row.width += term.width + HORIZONTAL_GAP;
+            placed = true;
+            break;
+          }
+        }
+
+        // If no suitable row, create a new one if there's vertical space
+        if (!placed) {
+          if (rowHeightSum + term.height + VERTICAL_GAP <= containerHeight) {
+            const newRow = {
+              terms: [term],
+              width: term.width,
+              height: term.height + VERTICAL_GAP,
+            };
+            rows.push(newRow);
+            rowHeightSum += newRow.height;
+          } else {
+            term.element.classList.add("invisible"); // Hide terms if no space
+          }
+        }
+      }
+
+      // Sort rows for rendering: middle rows first, alternate outward
+      rows.sort((a, b) => b.height - a.height); // Sort rows by width (ascending)
+      let rowSequence = [];
+      let addBack = true;
+      for (i = 0; i < rows.length; i++) {
+        if (addBack) rowSequence.push(i);
+        else rowSequence.unshift(i);
+        addBack = !addBack;
+      }
+
+      // Position terms in the container
+      let top = (containerHeight - rowHeightSum) / 2;
+      for (const rowIndex of rowSequence) {
+        const row = rows[rowIndex];
+        let leftOffset = containerWidth / 2 - row.width / 2;
+        for (const term of row.terms) {
+          term.element.style.top = `${top + (row.height - term.height) / 2}px`;
+          term.element.style.left = `${leftOffset}px`;
+          leftOffset += term.width + HORIZONTAL_GAP;
+        }
+        top += row.height;
+      }
+
+      /*let rows = [];
       let rowHeightSum = 0;
 
       for (termIndex = 0; termIndex < sortedTerms.length; termIndex++) {
@@ -321,7 +376,7 @@ document.addEventListener("alpine:init", () => {
         }
 
         top += row.height;
-      }
+        }*/
     },
 
     gotoSlide(slideIndex) {
@@ -422,6 +477,118 @@ document.addEventListener("alpine:init", () => {
         document.getElementById("fullscreen-container").requestFullscreen();
         document.activeElement?.blur(); // Remove focus from fullscreen-button so the user goes to the next slide on pressing space next
       } else if (document.exitFullscreen) document.exitFullscreen();
+    },
+
+    getFontScale() {
+      if (this.isFullscreen)
+        return this.fontSize == "large"
+          ? 1.4
+          : this.fontSize == "xlarge"
+            ? 1.8
+            : 1.0;
+      else return 1.0;
+    },
+
+    async runDemo() {
+      function sleep(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      let slide1 = createSlide("mc");
+      slide1.question = "How do you feel about the upcoming exam?";
+      slide1.mcAnswers = [
+        { text: "No problem", isCorrect: false },
+        { text: "Didn't learn enough", isCorrect: false },
+        { text: "We will see", isCorrect: false },
+      ];
+
+      let slide2 = createSlide("ft");
+      slide2.question = "What is your favorite movie character?";
+
+      poll = createPoll();
+      poll.slides = [slide1, slide2];
+      this.poll = poll;
+      this.isLive = true;
+      this.code = 1234;
+
+      await sleep(1000);
+      this.poll.slides[0].stats = {
+        percentages: [100, 2, 2],
+        counts: [1, 0, 0],
+      };
+      await sleep(1200);
+
+      let s = this.poll.slides[0].stats;
+
+      const sequence = [
+        [2, 1200],
+        [2, 1300],
+        [0, 1000],
+        [0, 1500],
+        [1, 1500],
+        [0, 700],
+        [2, 1200],
+        [0, 400],
+        [2, 600],
+      ];
+      for (const el of sequence) {
+        s.counts[el[0]] += 1;
+
+        let max = Math.max(...s.counts);
+        for (i = 0; i < s.counts.length; i++) {
+          s.percentages[i] = s.counts[i] == 0 ? 2 : (s.counts[i] / max) * 100;
+        }
+        await sleep(el[1]);
+      }
+
+      await sleep(1500);
+      this.poll.activeSlide = 1;
+      await sleep(2500);
+
+      this.poll.slides[1].stats = { terms: [], maxCount: 1 };
+      s = this.poll.slides[1].stats;
+
+      const sequenceFt = [
+        "Wonder Woman",
+        "Indiana Jones",
+        "Yoda",
+        "Wonder Woman",
+        "Neo",
+        "Harley Quinn",
+        "Wonder Woman",
+        "Yoda",
+        "Indiana Jones",
+        "Shrek",
+        "Severus Snape",
+        "Batman",
+        "Neo",
+        "Harley Quinn",
+        "Lara Croft",
+        "Iron Man",
+        "Indiana Jones",
+        "Darth Vader",
+        "James Bond",
+        "Gandalf",
+        "Katniss Everdeen",
+        "Katniss Everdeen",
+      ];
+
+      for (newTerm of sequenceFt) {
+        let found = false;
+        for (t of s.terms) {
+          if (t[0] == newTerm) {
+            found = true;
+            t[1] += 1;
+            if (t[1] > s.maxCount) s.maxCount = t[1];
+          }
+        }
+        if (!found) s.terms.push([newTerm, 1]);
+
+        this.renderWordCloud(1);
+        await sleep(600);
+        this.renderWordCloud(1);
+        await sleep(200 + Math.random() * 600);
+      }
     },
   }));
 

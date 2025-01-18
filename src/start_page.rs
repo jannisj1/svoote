@@ -17,7 +17,7 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
     return Ok(html_page::render_html_page("Svoote", &l, html! {
         (render_header(html! { }))
         (get_join_form(&l))
-        div ."mt-24 mx-6 sm:mx-14" {
+        div ."mt-16 mx-6 sm:mx-14" {
             div ."max-w-2xl mx-auto" {
                 h1 ."mb-8 text-center text-slate-800 text-5xl font-bold leading-tight" {
                     (t!("title_1", locale=l))
@@ -25,10 +25,14 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
                     (t!("title_2", locale=l))
                 }
                 h2 ."mb-8 text-center text-slate-500 text-xl leading-8" { (t!("subtitle", locale=l)) }
-            }
-            div ."mb-40 flex justify-center" {
-                a ."px-8 py-4 text-white text-lg font-semibold bg-cyan-600 rounded-full hover:bg-cyan-700" href="/host"
-                { (t!("create_presentation_action_btn", locale=l)) }
+                video autoplay loop muted playsinline ."appearance-none" {
+                    source src="/img/svoote_demo.webm" type="video/webm";
+                    "Your browser does not support video playback."
+                }
+                div ."mb-40 flex justify-center" {
+                    a ."px-8 py-4 text-white text-lg font-semibold bg-cyan-600 rounded-full hover:bg-cyan-700" href="/host"
+                    { (t!("create_presentation_action_btn", locale=l)) }
+                }
             }
             div ."mb-40 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-16" {
                 div {
@@ -128,14 +132,19 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
 
 pub fn get_join_form(l: &str) -> Markup {
     return html! {
-        form onsubmit="event.preventDefault(); joinPoll(); return false;" ."mx-6 sm:mx-14 block px-6 py-4 flex flex-wrap justify-center items-center gap-x-4 gap-y-3 bg-cyan-100 rounded-xl" {
-            label ."text-slate-600 font-medium" for="poll-id-input"
-                { (t!("enter_poll_desc", locale=l)) }
-            div."flex items-center gap-1 text-slate-600 text-lg font-semibold" {
-                "#" input id="poll-id-input" name="c" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="1234"
-                ."w-24 px-3 py-1 border-2 border-slate-400 rounded-lg outline-none";
+        div ."mx-6 sm:mx-14" {
+            form onsubmit="event.preventDefault(); joinPoll(); return false;"
+                ."mx-auto w-fit px-5 py-3 flex flex-wrap justify-center items-center gap-x-4 gap-y-3 text-sm bg-cyan-100 rounded-xl"
+            {
+                label ."text-slate-600 font-medium" for="poll-id-input"
+                    { (t!("enter_poll_desc", locale=l)) }
+                div."flex items-center gap-1 text-slate-600 font-semibold" {
+                    "#" input id="poll-id-input" name="c" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="1234"
+                    ."w-20 px-3 py-1 border-2 border-slate-400 rounded-lg outline-none";
+                    button ."ml-3 px-6 py-1.5 text-white font-semibold bg-slate-600 rounded-full hover:bg-slate-500"
+                        { (t!("join_btn_desc", locale=l)) }
+                }
             }
-            button ."px-6 py-1.5 text-white font-semibold bg-slate-600 rounded-full hover:bg-slate-500" { (t!("join_btn_desc", locale=l)) }
-       }
+        }
     };
 }
