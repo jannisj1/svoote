@@ -438,6 +438,14 @@ document.addEventListener("alpine:init", () => {
               this.renderWordCloud(msg.data.slideIndex);
               setTimeout(() => this.renderWordCloud(msg.data.slideIndex), 500);
               break;
+            case "setEmojiCounts":
+              console.log(msg);
+              this.poll.slides[msg.data.slideIndex].emojis = msg.data.emojis;
+              break;
+            case "newEmoji":
+              console.log(msg);
+              this.poll.slides[msg.data.slideIndex].emojis[msg.data.emoji] += 1;
+              break;
           }
         };
       }
@@ -464,6 +472,7 @@ document.addEventListener("alpine:init", () => {
     clearStatistics() {
       for (i = 0; i < this.poll.slides.length; i++) {
         this.poll.slides[i].stats = null;
+        this.poll.slides[i].emojis = null;
         let wc = document.getElementById(`word-cloud-${i}`);
         if (wc != null) {
           wc.innerHTML = "";
@@ -664,6 +673,20 @@ document.addEventListener("alpine:init", () => {
       });
 
       if (res.ok) this.currentSlide.submitted = true;
+    },
+
+    async submitEmoji(poll_id, emoji) {
+      this.currentSlide.emoji = emoji;
+      let res = await fetch("/submit_emoji/" + poll_id, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          emoji: emoji,
+          slide_index: this.slideIndex,
+        }),
+      });
+
+      if (!res.ok) this.currentSlide.emoji = null;
     },
   }));
 });

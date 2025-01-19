@@ -1,0 +1,10 @@
+_version: 2
+your_reaction:
+  en: "Your reaction:"
+  de: "Deine Reaktion:"
+submit:
+  en: "Submit"
+  de: "Antwort senden"
+answer_submitted:
+  en: "Your answer has been submitted"
+  de: "Deine Antwort wurde gesendet"

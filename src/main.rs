@@ -61,6 +61,7 @@ fn main() {
             .route("/ws/p/:poll_id", get(play::play_socket))
             .route("/submit_mc_answer/:poll_id", post(play::post_mc_answer))
             .route("/submit_ft_answer/:poll_id", post(play::post_ft_answer))
+            .route("/submit_emoji/:poll_id", post(play::post_emoji))
             //.route("/name_avatar/:poll_id", post(play::post_name_avatar))
             .route("/static/:file_name", get(static_file::http_get_static_file))
             .route("/data-privacy", get(compliance::get_privacy_policy_page))

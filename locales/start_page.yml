@@ -48,7 +48,7 @@ open_source_section_title:
   de: "Open source"
 open_source_section_text:
   en: "Svoote is an open source website published under the GNU Affero General Public License 3 (AGPLv3). You can check out the code, file issues or commit changes on "
-  de: "Svoote ist eine Open Source Webseite. Der in Rust geschriebene Source Code ist unter der GNU Affero General Public License 3 (AGPLv3) veröffentlicht. Einsehen des Source Codes und Verbesserungsvorschläge auf "
+  de: "Svoote ist eine Open Source Webseite. Der Source Code ist unter der GNU Affero General Public License 3 (AGPLv3) veröffentlicht. Einsehen des Source Codes und Verbesserungsvorschläge auf "
 
 start_from_here:
   en: "Start with this template"

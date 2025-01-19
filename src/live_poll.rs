@@ -1,3 +1,4 @@
+use smartstring::{Compact, SmartString};
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tokio::select;
@@ -23,6 +24,8 @@ pub struct LivePoll {
     pub slide_change_notification_channel_receiver: broadcast::Receiver<usize>,
     pub stats_change_notification_channel_sender: broadcast::Sender<usize>,
     pub stats_change_notification_channel_receiver: broadcast::Receiver<usize>,
+    pub emoji_channel_sender: broadcast::Sender<(usize, SmartString<Compact>)>,
+    pub emoji_channel_receiver: broadcast::Receiver<(usize, SmartString<Compact>)>,
     pub exit_poll_channel_sender: mpsc::Sender<()>,
     //pub leaderboard_enabled: bool,
     //pub allow_custom_player_names: bool,
@@ -42,6 +45,7 @@ impl LivePoll {
             broadcast::channel(16);
         let (stats_change_notification_channel_sender, stats_change_notification_channel_receiver) =
             broadcast::channel(16);
+        let (emoji_channel_sender, emoji_channel_receiver) = broadcast::channel(16);
         let (exit_poll_channel_sender, mut exit_poll_channel_receiver) = mpsc::channel(16);
 
         let (poll_id, live_poll) = LIVE_POLL_STORE.insert(LivePoll {
@@ -57,6 +61,8 @@ impl LivePoll {
             stats_change_notification_channel_sender: stats_change_notification_channel_sender
                 .clone(),
             stats_change_notification_channel_receiver,
+            emoji_channel_sender,
+            emoji_channel_receiver,
             exit_poll_channel_sender,
             //leaderboard_enabled,
             //allow_custom_player_names,

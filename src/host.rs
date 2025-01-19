@@ -297,7 +297,17 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                             title=(t!("next_slide_btn", locale=l))
                             { (SvgIcon::ArrowRight.render()) }
                     }
-                    div ."" {}
+                    div {
+                        template x-if="isLive && poll.slides[poll.activeSlide].emojis" {
+                            div ."flex justify-end items-center gap-2" {
+                                div x-show="poll.slides[poll.activeSlide].emojis.heart > 0" x-text="'❤️ ' + poll.slides[poll.activeSlide].emojis.heart" ."px-2 py-1 text-xs text-slate-500 border rounded-full" {}
+                                div x-show="poll.slides[poll.activeSlide].emojis.thumbsUp > 0" x-text="'👍 ' + poll.slides[poll.activeSlide].emojis.thumbsUp" ."px-2 py-1 text-xs text-slate-500 border rounded-full" {}
+                                div x-show="poll.slides[poll.activeSlide].emojis.thumbsDown > 0" x-text="'👎 ' + poll.slides[poll.activeSlide].emojis.thumbsDown" ."px-2 py-1 text-xs text-slate-500 border rounded-full" {}
+                                div x-show="poll.slides[poll.activeSlide].emojis.smileyFace > 0" x-text="'😀 ' + poll.slides[poll.activeSlide].emojis.smileyFace" ."px-2 py-1 text-xs text-slate-500 border rounded-full" {}
+                                div x-show="poll.slides[poll.activeSlide].emojis.sadFace > 0" x-text="'🙁 ' + poll.slides[poll.activeSlide].emojis.sadFace" ."px-2 py-1 text-xs text-slate-500 border rounded-full" {}
+                            }
+                        }
+                    }
                 }
             }
             p ."mx-6 mb-4 text-center text-sm text-slate-500" {
@@ -363,6 +373,12 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
                                     .unwrap_or(false),
                             }),
                             player_scores: Vec::new(),
+                            player_emojis: Vec::new(),
+                            heart_emojis: 0,
+                            thumbs_up_emojis: 0,
+                            thumbs_down_emojis: 0,
+                            smiley_face_emojis: 0,
+                            sad_face_emojis: 0,
                         });
                     }
                     "ft" => {
@@ -391,12 +407,24 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
                                 max_term_count: 1usize,
                             }),
                             player_scores: Vec::new(),
+                            player_emojis: Vec::new(),
+                            heart_emojis: 0,
+                            thumbs_up_emojis: 0,
+                            thumbs_down_emojis: 0,
+                            smiley_face_emojis: 0,
+                            sad_face_emojis: 0,
                         });
                     }
                     _ => slides.push(Slide {
                         question: String::new(),
                         slide_type: SlideType::Undefined,
                         player_scores: Vec::new(),
+                        player_emojis: Vec::new(),
+                        heart_emojis: 0,
+                        thumbs_up_emojis: 0,
+                        thumbs_down_emojis: 0,
+                        smiley_face_emojis: 0,
+                        sad_face_emojis: 0,
                     }),
                 }
             }
@@ -406,6 +434,12 @@ pub async fn post_start_poll(cookies: CookieJar, body: String) -> Result<Respons
                     question: String::new(),
                     slide_type: SlideType::Undefined,
                     player_scores: Vec::new(),
+                    player_emojis: Vec::new(),
+                    heart_emojis: 0,
+                    thumbs_up_emojis: 0,
+                    thumbs_down_emojis: 0,
+                    smiley_face_emojis: 0,
+                    sad_face_emojis: 0,
                 });
             }
 
@@ -454,13 +488,22 @@ pub async fn host_socket(
 }
 
 async fn handle_host_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll>>) {
-    let (mut stats_updated_receiver, slide_index_sender) = {
+    let (
+        mut stats_updated_receiver,
+        mut slide_change_notification_receiver,
+        mut emoji_receiver,
+        slide_index_sender,
+    ) = {
         let live_poll = live_poll.lock().unwrap();
 
         (
             live_poll
                 .stats_change_notification_channel_receiver
                 .resubscribe(),
+            live_poll
+                .slide_change_notification_channel_receiver
+                .resubscribe(),
+            live_poll.emoji_channel_receiver.resubscribe(),
             live_poll.set_slide_index_channel_sender.clone(),
         )
     };
@@ -495,46 +538,89 @@ async fn handle_host_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll
             }
             slide_index = stats_updated_receiver.recv() => {
                 if let Ok(slide_index) = slide_index {
-                    let stats = match &live_poll.lock().unwrap().get_current_slide().slide_type {
-                        SlideType::MultipleChoice(answers) => {
-                            let max = *answers.answer_counts.iter().max().unwrap_or(&1usize);
-                            let percentages: Vec<f32> = answers.answer_counts.iter()
-                                .map(|count| (*count as f32 / max as f32 * 100f32).max(2f32))
-                                .collect();
+                    if slide_index < live_poll.lock().unwrap().slides.len() {
+                        let stats = match &live_poll.lock().unwrap().slides[slide_index].slide_type {
+                            SlideType::MultipleChoice(answers) => {
+                                let max = *answers.answer_counts.iter().max().unwrap_or(&1usize);
+                                let percentages: Vec<f32> = answers.answer_counts.iter()
+                                    .map(|count| (*count as f32 / max as f32 * 100f32).max(2f32))
+                                    .collect();
 
-                            json!({
-                                "counts": answers.answer_counts,
-                                "percentages": percentages,
-                            })
-                        }
-                        SlideType::FreeText(answers) => {
-                            json!({
-                                "terms": answers.word_cloud_terms
-                                    .iter()
-                                    .map(|term| (term.preferred_spelling.clone(), term.count))
-                                    .collect::<Vec<_>>(),
-                                "maxCount": answers.max_term_count,
-                            })
-                        }
-                        _ => Value::Null
-                    };
+                                json!({
+                                    "counts": answers.answer_counts,
+                                    "percentages": percentages,
+                                })
+                            }
+                            SlideType::FreeText(answers) => {
+                                json!({
+                                    "terms": answers.word_cloud_terms
+                                        .iter()
+                                        .map(|term| (term.preferred_spelling.clone(), term.count))
+                                        .collect::<Vec<_>>(),
+                                    "maxCount": answers.max_term_count,
+                                })
+                            }
+                            _ => Value::Null
+                        };
 
+                        let msg = WSMessage {
+                            cmd: SmartString::from("updateStats"),
+                            data: json!({
+                                "slideIndex": slide_index,
+                                "stats": stats,
+                            })
+                        }.into();
+
+                        if throttled_msg.is_none() &&
+                            tokio::time::Instant::now() - last_sent_timepoint > STATS_UPDATE_THROTTLE {
+                            let _  = socket.send(msg).await;
+                            last_sent_timepoint = tokio::time::Instant::now();
+                            throttled_msg = None;
+                        } else {
+                            throttled_msg = Some(msg);
+                        }
+                    }
+                } else {
+                    return;
+                }
+            }
+            slide_index = slide_change_notification_receiver.recv() => {
+                if let Ok(slide_index) = slide_index {
+                    if slide_index < live_poll.lock().unwrap().slides.len() {
+                        let msg = {
+                            let slide = &live_poll.lock().unwrap().slides[slide_index];
+                            WSMessage {
+                                cmd: SmartString::from("setEmojiCounts"),
+                                data: json!({
+                                    "slideIndex": slide_index,
+                                    "emojis": {
+                                        "heart": slide.heart_emojis,
+                                        "thumbsUp": slide.thumbs_up_emojis,
+                                        "thumbsDown": slide.thumbs_down_emojis,
+                                        "smileyFace": slide.smiley_face_emojis,
+                                        "sadFace": slide.sad_face_emojis,
+                                    },
+                                })
+                            }.into()
+                        };
+
+                        let _  = socket.send(msg).await;
+                    }
+                } else {
+                    return;
+                }
+            }
+            emoji = emoji_receiver.recv() => {
+                if let Ok((slide_index, emoji)) = emoji {
                     let msg = WSMessage {
-                        cmd: SmartString::from("updateStats"),
+                        cmd: SmartString::from("newEmoji"),
                         data: json!({
                             "slideIndex": slide_index,
-                            "stats": stats,
+                            "emoji": emoji,
                         })
                     }.into();
 
-                    if throttled_msg.is_none() &&
-                        tokio::time::Instant::now() - last_sent_timepoint > STATS_UPDATE_THROTTLE {
-                        let _  = socket.send(msg).await;
-                        last_sent_timepoint = tokio::time::Instant::now();
-                        throttled_msg = None;
-                    } else {
-                        throttled_msg = Some(msg);
-                    }
+                    let _  = socket.send(msg).await;
                 } else {
                     return;
                 }

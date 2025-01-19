@@ -89,7 +89,7 @@ pub async fn get_play_page(
                 html! {
                     script { "document.code = " (poll_id.unwrap_or(0)) ";" }
                     (render_header(html! {}))
-                    div x-data="participant" ."my-12 mx-6 sm:mx-14" {
+                    div x-data="participant" ."mt-12 mb-20 mx-6 sm:mx-14" {
                         div ."w-full max-w-96 mx-auto" {
                             template x-if="currentSlide.slideType == 'null'" { div {} }
                             template x-if="currentSlide.slideType == 'mc'" {
@@ -106,10 +106,10 @@ pub async fn get_play_page(
                                             ":disabled"="currentSlide.selectedAnswer === ''"
                                             "@click"={ "submitMCAnswer(" (poll_id_str) ")" }
                                             ."absolute size-full inset-0 flex items-center justify-center text-white font-bold bg-cyan-600 rounded-full hover:bg-cyan-700 disabled:bg-slate-300"
-                                            { "Submit" }
+                                                { (t!("submit", locale=l)) }
                                         div x-show="currentSlide.submitted"
                                             ."absolute size-full inset-0 flex items-center justify-center text-slate-500 text-sm"
-                                            { "Your answer has been submitted" }
+                                                { (t!("answer_submitted", locale=l)) }
                                     }
                                 }
                             }
@@ -135,13 +135,36 @@ pub async fn get_play_page(
                                     }
                                 }
                             }
+                            hr ."mt-12 mb-5";
+                            p ."mb-3 text-xs text-center text-slate-500" { (t!("your_reaction", locale=l)) }
+                            div ."flex justify-center gap-4" {
+                                button "@click"={ "submitEmoji(" (poll_id_str) ", 'heart')" }
+                                    ."p-2 text-sm rounded-full border shadow hover:bg-slate-100 disabled:pointer-events-none transition"
+                                    ":class"="currentSlide.emoji == 'heart' ? 'disabled:scale-110 disabled:bg-cyan-600 disabled:bg-opacity-70' : 'disabled:shadow-none disabled:opacity-50'"
+                                    ":disabled"="currentSlide.emoji != null"
+                                    { span ."block translate-y-[1px]" { "❤️" } }
+                                button "@click"={ "submitEmoji(" (poll_id_str) ", 'thumbsUp')" }
+                                    ."p-2 text-sm rounded-full border shadow hover:bg-slate-100 disabled:pointer-events-none transition"
+                                    ":class"="currentSlide.emoji == 'thumbsUp' ? 'disabled:scale-110 disabled:bg-cyan-600 disabled:bg-opacity-70' : 'disabled:shadow-none disabled:opacity-50'"
+                                    ":disabled"="currentSlide.emoji != null"
+                                    { "👍" }
+                                button "@click"={ "submitEmoji(" (poll_id_str) ", 'thumbsDown')" }
+                                    ."p-2 text-sm rounded-full border shadow hover:bg-slate-100 disabled:pointer-events-none transition"
+                                    ":class"="currentSlide.emoji == 'thumbsDown' ? 'disabled:scale-110 disabled:bg-cyan-600 disabled:bg-opacity-70' : 'disabled:shadow-none disabled:opacity-50'"
+                                    ":disabled"="currentSlide.emoji != null"
+                                    { "👎" }
+                                button "@click"={ "submitEmoji(" (poll_id_str) ", 'smileyFace')" }
+                                    ."p-2 text-sm rounded-full border shadow hover:bg-slate-100 disabled:pointer-events-none transition"
+                                    ":class"="currentSlide.emoji == 'smileyFace' ? 'disabled:scale-110 disabled:bg-cyan-600 disabled:bg-opacity-70' : 'disabled:shadow-none disabled:opacity-50'"
+                                    ":disabled"="currentSlide.emoji != null"
+                                    { "😀" }
+                                button "@click"={ "submitEmoji(" (poll_id_str) ", 'sadFace')" }
+                                    ."p-2 text-sm rounded-full border shadow hover:bg-slate-100 disabled:pointer-events-none transition"
+                                    ":class"="currentSlide.emoji == 'sadFace' ? 'disabled:scale-110 disabled:bg-cyan-600 disabled:bg-opacity-70' : 'disabled:shadow-none disabled:opacity-50'"
+                                    ":disabled"="currentSlide.emoji != null"
+                                    { "🙁" }
+                            }
                         }
-                        /*hr ."mt-32 mx-auto max-w-96";
-                        div ."mt-16 mx-auto max-w-64" {
-                            div ."mb-4 mx-auto max-w-56" { (Illustrations::TeamCollaboration.render()) }
-                            h1 ."mb-5 text-2xl text-center font-bold tracking-tight" { "Want to create your own polls?" }
-                            a href="/" ."block w-fit mx-auto text-indigo-600 underline font-semibold hover:text-indigo-800" { "Start now →"}
-                        }*/
                     }
                 }
             }
@@ -402,73 +425,52 @@ pub async fn post_ft_answer(
     return Ok("Answer submitted".into_response());
 }
 
-/*
-fn render_name_avatar_button(
-    leaderboard_enabled: bool,
-    player_name: &SmartString<Compact>,
-    avatar_svg: PreEscaped<&str>,
-) -> Markup {
-    return html! {
-        button
-            #name-avatar-button
-            ."px-3 py-1 flex items-center gap-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:bg-slate-100"
-            onclick="document.getElementById('participant-dialog').showModal()"
-            disabled[!leaderboard_enabled]
-        {
-            ."text-slate-600" {
-                @if leaderboard_enabled {
-                    (player_name)
-                } @else {
-                    "Anonymous"
-                }
-            }
-            ."size-6 text-slate-500" {
-                @if leaderboard_enabled {
-                    (avatar_svg)
-                } @else {
-                    (SvgIcon::User.render())
-                }
-            }
-        }
-    };
-}*/
-
-/*#[derive(Deserialize)]
-pub struct NameAvatarParams {
-    pub name: Option<SmartString<Compact>>,
-    pub avatar: usize,
+#[derive(Deserialize)]
+pub struct PostEmojiForm {
+    pub emoji: SmartString<Compact>,
+    pub slide_index: usize,
 }
 
-pub async fn post_name_avatar(
+pub async fn post_emoji(
     Path(poll_id): Path<ShortID>,
     cookies: CookieJar,
-    Form(params): Form<NameAvatarParams>,
+    Form(form): Form<PostEmojiForm>,
 ) -> Result<Response, AppError> {
     let live_poll = LIVE_POLL_STORE.get(poll_id).ok_or(AppError::NotFound)?;
     let (session_id, _cookies) = session_id::get_or_create_session_id(cookies);
 
     let mut live_poll = live_poll.lock().unwrap();
     let player_index = live_poll.get_player_index(&session_id)?;
+    if form.slide_index >= live_poll.slides.len() {
+        return Err(AppError::BadRequest(
+            "slide_index out of bounds".to_string(),
+        ));
+    }
 
-    let leaderboard_enabled = live_poll.leaderboard_enabled;
-    let allow_custom_player_names = live_poll.allow_custom_player_names;
-
-    let (player_name, avatar_svg) = {
-        let player = live_poll.get_player_mut(player_index);
-
-        if allow_custom_player_names {
-            player.set_name(params.name.unwrap_or(SmartString::new()))?;
+    let slide = &mut live_poll.slides[form.slide_index];
+    if let Some(emoji) = slide.player_emojis.get_mut(player_index) {
+        if emoji.is_some() {
+            return Err(AppError::BadRequest("Emoji already submitted".to_string()));
         }
 
-        player.set_avatar_index(params.avatar)?;
+        match form.emoji.as_str() {
+            "heart" => slide.heart_emojis += 1,
+            "thumbsUp" => slide.thumbs_up_emojis += 1,
+            "thumbsDown" => slide.thumbs_down_emojis += 1,
+            "smileyFace" => slide.smiley_face_emojis += 1,
+            "sadFace" => slide.sad_face_emojis += 1,
+            _ => return Err(AppError::BadRequest("Unknown emoji".to_string())),
+        }
 
-        (player.get_name(), player.get_avatar_svg())
-    };
+        *emoji = Some(form.emoji.clone());
 
-    return Ok(
-        render_name_avatar_button(leaderboard_enabled, player_name, avatar_svg).into_response(),
-    );
-}*/
+        let _ = live_poll
+            .emoji_channel_sender
+            .send((form.slide_index, form.emoji));
+    }
+
+    return Ok("Emoji submitted".into_response());
+}
 
 pub async fn play_socket(
     ws: WebSocketUpgrade,
@@ -534,6 +536,11 @@ async fn handle_play_socket(
 }
 
 fn create_slide_ws_message(slide_index: usize, slide: &Slide, player_index: usize) -> WSMessage {
+    let emoji = match &slide.player_emojis[player_index] {
+        Some(emoji) => json! { emoji },
+        None => Value::Null,
+    };
+
     let slide_json = match &slide.slide_type {
         SlideType::MultipleChoice(answers) => {
             let selected_answer = if answers.allow_multiple_answers {
@@ -549,6 +556,7 @@ fn create_slide_ws_message(slide_index: usize, slide: &Slide, player_index: usiz
                     })
                     .unwrap_or(SmartString::new()) }
             };
+
             json!({
                 "slideType": "mc",
                 "question": slide.question,
@@ -556,6 +564,7 @@ fn create_slide_ws_message(slide_index: usize, slide: &Slide, player_index: usiz
                 "submitted": answers.player_answers[player_index].is_some(),
                 "selectedAnswer": selected_answer,
                 "allowMultipleMCAnswers": answers.allow_multiple_answers,
+                "emoji": emoji,
             })
         }
         SlideType::FreeText(answers) => {
@@ -564,6 +573,7 @@ fn create_slide_ws_message(slide_index: usize, slide: &Slide, player_index: usiz
                 "question": slide.question,
                 "selectedAnswer": answers.player_answers[player_index].as_ref().unwrap_or(&SmartString::new()),
                 "submitted": answers.player_answers[player_index].is_some(),
+                "emoji": emoji,
             })
         }
         _ => {

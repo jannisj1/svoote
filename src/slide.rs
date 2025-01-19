@@ -10,6 +10,12 @@ pub struct Slide {
     pub question: String,
     pub slide_type: SlideType,
     pub player_scores: Vec<usize>,
+    pub player_emojis: Vec<Option<SmartString<Compact>>>,
+    pub heart_emojis: usize,
+    pub thumbs_up_emojis: usize,
+    pub thumbs_down_emojis: usize,
+    pub smiley_face_emojis: usize,
+    pub sad_face_emojis: usize,
 }
 
 pub enum SlideType {
@@ -44,6 +50,7 @@ pub struct WordCloudTerm {
 impl Slide {
     pub fn add_player(&mut self) {
         self.player_scores.push(0usize);
+        self.player_emojis.push(None);
 
         match &mut self.slide_type {
             SlideType::Undefined => {}
