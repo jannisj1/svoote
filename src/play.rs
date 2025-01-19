@@ -106,10 +106,10 @@ pub async fn get_play_page(
                                             ":disabled"="currentSlide.selectedAnswer === ''"
                                             "@click"={ "submitMCAnswer(" (poll_id_str) ")" }
                                             ."absolute size-full inset-0 flex items-center justify-center text-white font-bold bg-cyan-600 rounded-full hover:bg-cyan-700 disabled:bg-slate-300"
-                                                { (t!("submit", locale=l)) }
+                                            { (t!("submit", locale=l)) }
                                         div x-show="currentSlide.submitted"
                                             ."absolute size-full inset-0 flex items-center justify-center text-slate-500 text-sm"
-                                                { (t!("answer_submitted", locale=l)) }
+                                            { (t!("answer_submitted", locale=l)) }
                                     }
                                 }
                             }
@@ -128,10 +128,10 @@ pub async fn get_play_page(
                                         ":disabled"="currentSlide.selectedAnswer === ''"
                                         "@click"={ "submitFTAnswer(" (poll_id_str) ")" }
                                         ."absolute size-full inset-0 flex items-center justify-center text-white font-bold bg-cyan-600 rounded-full hover:bg-cyan-700 disabled:bg-slate-300"
-                                        { "Submit" }
+                                        { (t!("submit", locale=l)) }
                                     div x-show="currentSlide.submitted"
                                         ."absolute size-full inset-0 flex items-center justify-center text-slate-500 text-sm"
-                                        { "Your answer has been submitted" }
+                                        { (t!("answer_submitted", locale=l)) }
                                     }
                                 }
                             }

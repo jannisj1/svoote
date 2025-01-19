@@ -439,12 +439,57 @@ document.addEventListener("alpine:init", () => {
               setTimeout(() => this.renderWordCloud(msg.data.slideIndex), 500);
               break;
             case "setEmojiCounts":
-              console.log(msg);
               this.poll.slides[msg.data.slideIndex].emojis = msg.data.emojis;
               break;
             case "newEmoji":
-              console.log(msg);
               this.poll.slides[msg.data.slideIndex].emojis[msg.data.emoji] += 1;
+              function showFloatingEmoji() {
+                const emojiMap = {
+                  heart: "❤️",
+                  thumbsUp: "👍",
+                  thumbsDown: "👎",
+                  smileyFace: "😀",
+                  sadFace: "🙁",
+                };
+
+                let el = document.getElementById(
+                  "emoji-counter-" + msg.data.emoji,
+                );
+
+                const floatingDiv = document.createElement("div");
+                floatingDiv.innerText = emojiMap[msg.data.emoji] || "";
+                floatingDiv.classList.add(
+                  "absolute",
+                  "left-2",
+                  "top-1",
+                  "text-xs",
+                  "pointer-events-none",
+                  "transition",
+                  "duration-500",
+                  "opacity-0",
+                );
+
+                //const rect = el.getBoundingClientRect();
+                //floatingDiv.style.left = `${rect.left + window.scrollX}px`;
+                //floatingDiv.style.top = `${rect.top + window.scrollY}px`;
+
+                el.appendChild(floatingDiv);
+
+                requestAnimationFrame(() => {
+                  floatingDiv.style.transform = "translateY(-3rem)";
+                  floatingDiv.style.opacity = "1";
+                });
+
+                setTimeout(() => {
+                  floatingDiv.style.opacity = "0";
+                }, 500);
+
+                setTimeout(() => {
+                  floatingDiv.remove();
+                }, 1500);
+              }
+
+              setTimeout(showFloatingEmoji, 50);
               break;
           }
         };

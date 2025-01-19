@@ -300,11 +300,21 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                     div {
                         template x-if="isLive && poll.slides[poll.activeSlide].emojis" {
                             div ."flex justify-end items-center gap-2" {
-                                div x-show="poll.slides[poll.activeSlide].emojis.heart > 0" x-text="'❤️ ' + poll.slides[poll.activeSlide].emojis.heart" ."px-2 py-1 text-xs text-slate-500 border rounded-full" {}
-                                div x-show="poll.slides[poll.activeSlide].emojis.thumbsUp > 0" x-text="'👍 ' + poll.slides[poll.activeSlide].emojis.thumbsUp" ."px-2 py-1 text-xs text-slate-500 border rounded-full" {}
-                                div x-show="poll.slides[poll.activeSlide].emojis.thumbsDown > 0" x-text="'👎 ' + poll.slides[poll.activeSlide].emojis.thumbsDown" ."px-2 py-1 text-xs text-slate-500 border rounded-full" {}
-                                div x-show="poll.slides[poll.activeSlide].emojis.smileyFace > 0" x-text="'😀 ' + poll.slides[poll.activeSlide].emojis.smileyFace" ."px-2 py-1 text-xs text-slate-500 border rounded-full" {}
-                                div x-show="poll.slides[poll.activeSlide].emojis.sadFace > 0" x-text="'🙁 ' + poll.slides[poll.activeSlide].emojis.sadFace" ."px-2 py-1 text-xs text-slate-500 border rounded-full" {}
+                                div id="emoji-counter-heart" x-show="poll.slides[poll.activeSlide].emojis.heart > 0" ."relative px-2 py-1 text-xs text-slate-500 border rounded-full" {
+                                    "❤️ "  span x-text="poll.slides[poll.activeSlide].emojis.heart" {}
+                                }
+                                div id="emoji-counter-thumbsUp" x-show="poll.slides[poll.activeSlide].emojis.thumbsUp > 0" ."relative px-2 py-1 text-xs text-slate-500 border rounded-full" {
+                                    "👍 "  span x-text="poll.slides[poll.activeSlide].emojis.thumbsUp" {}
+                                }
+                                div id="emoji-counter-thumbsDown" x-show="poll.slides[poll.activeSlide].emojis.thumbsDown > 0" ."relative px-2 py-1 text-xs text-slate-500 border rounded-full" {
+                                    "👎 "  span x-text="poll.slides[poll.activeSlide].emojis.thumsDown" {}
+                                }
+                                div id="emoji-counter-smileyFace" x-show="poll.slides[poll.activeSlide].emojis.smileyFace > 0" ."relative px-2 py-1 text-xs text-slate-500 border rounded-full" {
+                                    "😀 "  span x-text="poll.slides[poll.activeSlide].emojis.smileyFace" {}
+                                }
+                                div id="emoji-counter-sadFace" x-show="poll.slides[poll.activeSlide].emojis.sadFace > 0" ."relative px-2 py-1 text-xs text-slate-500 border rounded-full" {
+                                    "🙁 "  span x-text="poll.slides[poll.activeSlide].emojis.sadFace" {}
+                                }
                             }
                         }
                     }
