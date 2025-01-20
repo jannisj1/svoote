@@ -16,7 +16,7 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
 
     return Ok(html_page::render_html_page("Svoote", &l, html! {
         (render_header(html! { }))
-        (get_join_form(&l))
+        (render_join_form(&l))
         div ."mt-16 mx-6 sm:mx-14" {
             div ."max-w-2xl mx-auto" {
                 h1 ."mb-1 text-center text-slate-800 text-5xl font-bold leading-tight" { (t!("title", locale=l)) }
@@ -122,11 +122,11 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
     }).into_response());
 }
 
-pub fn get_join_form(l: &str) -> Markup {
+pub fn render_join_form(l: &str) -> Markup {
     return html! {
         div ."mx-6 sm:mx-14" {
             form onsubmit="event.preventDefault(); joinPoll(); return false;"
-                ."mx-auto w-fit px-5 py-3 flex flex-wrap justify-center items-center gap-x-4 gap-y-3 text-sm bg-cyan-100 rounded-xl"
+                ."mx-auto w-fit px-6 py-4 flex flex-wrap justify-center items-center gap-x-4 gap-y-3 text-base bg-cyan-100 rounded-xl"
             {
                 label ."text-slate-600 font-medium" for="poll-id-input"
                     { (t!("enter_poll_desc", locale=l)) }

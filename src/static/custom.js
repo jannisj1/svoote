@@ -443,7 +443,7 @@ document.addEventListener("alpine:init", () => {
               break;
             case "newEmoji":
               this.poll.slides[msg.data.slideIndex].emojis[msg.data.emoji] += 1;
-              function showFloatingEmoji() {
+              setTimeout(() => {
                 const emojiMap = {
                   heart: "❤️",
                   thumbsUp: "👍",
@@ -460,18 +460,14 @@ document.addEventListener("alpine:init", () => {
                 floatingDiv.innerText = emojiMap[msg.data.emoji] || "";
                 floatingDiv.classList.add(
                   "absolute",
-                  "left-2",
-                  "top-1",
-                  "text-xs",
+                  "left-[0.5em]",
+                  "top-[0.25em]",
+                  "text-[0.75em]",
                   "pointer-events-none",
                   "transition",
                   "duration-500",
                   "opacity-0",
                 );
-
-                //const rect = el.getBoundingClientRect();
-                //floatingDiv.style.left = `${rect.left + window.scrollX}px`;
-                //floatingDiv.style.top = `${rect.top + window.scrollY}px`;
 
                 el.appendChild(floatingDiv);
 
@@ -487,9 +483,7 @@ document.addEventListener("alpine:init", () => {
                 setTimeout(() => {
                   floatingDiv.remove();
                 }, 1500);
-              }
-
-              setTimeout(showFloatingEmoji, 50);
+              }, 50);
               break;
           }
         };

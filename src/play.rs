@@ -6,7 +6,7 @@ use crate::{
     live_poll_store::{ShortID, LIVE_POLL_STORE},
     select_language, session_id,
     slide::{Slide, SlideType, WordCloudTerm},
-    start_page::get_join_form,
+    start_page::render_join_form,
     wsmessage::WSMessage,
 };
 use arrayvec::ArrayVec;
@@ -67,7 +67,7 @@ pub async fn get_play_page(
             &l,
             html! {
                 (render_header(html! {}))
-                (get_join_form(&l))
+                (render_join_form(&l))
                 div ."my-16 mx-8 sm:mx-14" {
                     p ."text-center text-slate-500" { "This poll is finished." br; "Thank you for using svoote.com" }
                 }
@@ -138,31 +138,13 @@ pub async fn get_play_page(
                             hr ."mt-12 mb-5";
                             p ."mb-3 text-xs text-center text-slate-500" { (t!("your_reaction", locale=l)) }
                             div ."flex justify-center gap-4" {
-                                button "@click"={ "submitEmoji(" (poll_id_str) ", 'heart')" }
-                                    ."p-2 text-sm rounded-full border shadow hover:bg-slate-100 disabled:pointer-events-none transition"
-                                    ":class"="currentSlide.emoji == 'heart' ? 'disabled:scale-110 disabled:bg-cyan-600 disabled:bg-opacity-70' : 'disabled:shadow-none disabled:opacity-50'"
-                                    ":disabled"="currentSlide.emoji != null"
-                                    { span ."block translate-y-[1px]" { "❤️" } }
-                                button "@click"={ "submitEmoji(" (poll_id_str) ", 'thumbsUp')" }
-                                    ."p-2 text-sm rounded-full border shadow hover:bg-slate-100 disabled:pointer-events-none transition"
-                                    ":class"="currentSlide.emoji == 'thumbsUp' ? 'disabled:scale-110 disabled:bg-cyan-600 disabled:bg-opacity-70' : 'disabled:shadow-none disabled:opacity-50'"
-                                    ":disabled"="currentSlide.emoji != null"
-                                    { "👍" }
-                                button "@click"={ "submitEmoji(" (poll_id_str) ", 'thumbsDown')" }
-                                    ."p-2 text-sm rounded-full border shadow hover:bg-slate-100 disabled:pointer-events-none transition"
-                                    ":class"="currentSlide.emoji == 'thumbsDown' ? 'disabled:scale-110 disabled:bg-cyan-600 disabled:bg-opacity-70' : 'disabled:shadow-none disabled:opacity-50'"
-                                    ":disabled"="currentSlide.emoji != null"
-                                    { "👎" }
-                                button "@click"={ "submitEmoji(" (poll_id_str) ", 'smileyFace')" }
-                                    ."p-2 text-sm rounded-full border shadow hover:bg-slate-100 disabled:pointer-events-none transition"
-                                    ":class"="currentSlide.emoji == 'smileyFace' ? 'disabled:scale-110 disabled:bg-cyan-600 disabled:bg-opacity-70' : 'disabled:shadow-none disabled:opacity-50'"
-                                    ":disabled"="currentSlide.emoji != null"
-                                    { "😀" }
-                                button "@click"={ "submitEmoji(" (poll_id_str) ", 'sadFace')" }
-                                    ."p-2 text-sm rounded-full border shadow hover:bg-slate-100 disabled:pointer-events-none transition"
-                                    ":class"="currentSlide.emoji == 'sadFace' ? 'disabled:scale-110 disabled:bg-cyan-600 disabled:bg-opacity-70' : 'disabled:shadow-none disabled:opacity-50'"
-                                    ":disabled"="currentSlide.emoji != null"
-                                    { "🙁" }
+                                @for emoji in [("heart", "❤️"), ("thumbsUp", "👍"), ("thumbsDown", "👎"), ("smileyFace", "😀"), ("sadFace", "🙁")] {
+                                    button "@click"={ "submitEmoji(" (poll_id_str) ", '" (emoji.0) "')" }
+                                        ."relative size-10 rounded-full border shadow hover:bg-slate-100 disabled:pointer-events-none transition"
+                                        ":class"={ "currentSlide.emoji == '" (emoji.0) "' ? 'disabled:scale-[1.2] disabled:bg-cyan-600 disabled:bg-opacity-70' : 'disabled:shadow-none disabled:opacity-50'" }
+                                        ":disabled"="currentSlide.emoji != null"
+                                        { div ."absolute left-1/2 top-1/2 translate-x-[-50%] translate-y-[-50%] text-base" { (emoji.1) } }
+                                }
                             }
                         }
                     }
