@@ -19,9 +19,9 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
         (render_join_form(&l))
         div ."mt-16 mx-6 sm:mx-14" {
             div ."max-w-2xl mx-auto" {
-                h1 ."mb-1 text-center text-slate-800 text-5xl font-bold leading-tight" { (t!("title", locale=l)) }
-                h2 ."mb-8 text-center text-slate-500 leading-8" { (t!("subtitle", locale=l)) }
-                div ."mb-6 px-2 py-1.5 bg-slate-700 rounded-lg" {
+                h1 ."mx-auto max-w-xl mb-3 text-center text-slate-800 text-5xl font-bold leading-tight" { (t!("title", locale=l)) }
+                h2 ."mb-8 text-sm text-center text-slate-500 leading-8 tracking-wide" { (t!("subtitle", locale=l)) }
+                div ."mb-8 px-2 py-1.5 bg-slate-700 rounded-lg" {
                     div ."mb-2 flex justify-between gap-1" {
                         div ."flex-1 mt-0.5 ml-1 text-xs text-white font-semibold" { "Svoote" div ."inline-block ml-1 size-2.5 translate-y-[1px]" { (SvgIcon::Rss.render()) } }
                         div ."size-2 rounded-full bg-green-500" {}
@@ -33,6 +33,7 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
                         "Your browser does not support video playback."
                     }
                 }
+                h2 ."mb-4 text-center text-slate-600 text-sm font-bold" { (t!("what_do_you_ask", locale=l)) }
                 div ."mb-3 flex justify-center" {
                     a ."px-6 py-2 text-white text-lg font-semibold bg-cyan-600 rounded-full hover:bg-cyan-700" href="/host"
                     { (t!("create_presentation_action_btn", locale=l)) }
