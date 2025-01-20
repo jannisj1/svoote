@@ -281,7 +281,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                         }
                     }
                 }
-                div ."mx-6 sm:mx-14 mt-2 mb-8 grid grid-cols-3 items-center gap-4" {
+                div ."h-12 mx-6 sm:mx-14 mt-2 mb-8 grid grid-cols-3 items-center gap-4" { // The fixed height stops ugly re-layout when a reaction smiley is first sent
                     div { }
                     div ."flex justify-center items-center gap-4" {
                         button ."p-2 size-8 rounded-full shadow hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"

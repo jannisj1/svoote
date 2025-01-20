@@ -462,7 +462,7 @@ document.addEventListener("alpine:init", () => {
                   "absolute",
                   "left-[0.5em]",
                   "top-[0.25em]",
-                  "text-[0.75em]",
+                  "text-[1em]",
                   "pointer-events-none",
                   "transition",
                   "duration-500",
@@ -472,7 +472,7 @@ document.addEventListener("alpine:init", () => {
                 el.appendChild(floatingDiv);
 
                 requestAnimationFrame(() => {
-                  floatingDiv.style.transform = "translateY(-3rem)";
+                  floatingDiv.style.transform = "translateY(-4.5rem)";
                   floatingDiv.style.opacity = "1";
                 });
 
