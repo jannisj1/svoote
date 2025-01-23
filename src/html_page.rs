@@ -54,17 +54,25 @@ pub fn render_html_page(title: &str, l: &str, main_content: maud::Markup) -> mau
                 }
                 div x-cloak x-data="{ cookiesAccepted: false }" x-show="!cookiesAccepted"
                     x-init="let local = JSON.parse(localStorage.getItem('cookiesAccepted')); cookiesAccepted = local !== null ? local : false;"
-                    ."fixed max-w-2xl mx-8 bottom-12 right-8 px-7 py-5 bg-white border border-cyan-600 shadow-xl"
+                    ."fixed max-w-2xl mx-8 bottom-12 right-0 sm:right-8 px-7 py-4 bg-white border border-cyan-600 shadow-xl"
                 {
-                    h1 ."mb-1 text-slate-700 text-xl font-semibold tracking-tight" { "Cookies" }
-                    p ."mb-5 text-slate-500" {
+                    h1 ."mb-3 flex items-center gap-2 text-slate-700 text-xl font-medium"
+                        { div ."size-5" { (SvgIcon::Cookie.render()) } "Cookies" }
+                    p ."mb-4 text-slate-500 text-sm" {
                         "Svoote.com only uses necessary cookies. We don't use cookies to track users across sites or show ads. "
                         "For more information see our " a href="/cookie-policy" ."underline" { "Cookie Policy"} "."
                     }
-                    div ."flex flex-wrap justify-end gap-4" {
-                        a href="/manage-cookies" ."px-4 py-1 bg-slate-200 text-slate-700 font-semibold hover:bg-slate-300" { "Customize" }
+                    div class="mb-6 sm:mb-0 flex gap-2" {
+                        input type="checkbox" id="disabled-switch" class="peer hidden" disabled {}
+                        label for="disabled-switch"
+                            class="w-10 h-6 flex items-center bg-gray-300 rounded-full p-1"
+                            { div class="w-4 h-4 bg-gray-500 rounded-full shadow-md translate-x-4" {} }
+                            span class="text-gray-500" { "Necessary Cookies" }
+                    }
+                    div ."flex flex-wrap sm:justify-end gap-4" {
                         button "@click"="cookiesAccepted = true; localStorage.setItem('cookiesAccepted', 'true');"
-                            ."px-4 py-1 bg-cyan-700 text-white font-semibold shadow-xl hover:bg-cyan-600" { "Accept necessary cookies" }
+                            ."w-full sm:w-auto px-4 py-1 bg-cyan-700 text-white font-semibold shadow-xl hover:bg-cyan-600"
+                            { "Accept necessary cookies" }
                     }
                 }
             }

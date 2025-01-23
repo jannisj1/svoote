@@ -20,7 +20,7 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
         div ."mt-16 mx-6 sm:mx-14" {
             div ."max-w-2xl mx-auto" {
                 h1 ."mx-auto max-w-xl mb-3 text-center text-slate-800 text-5xl font-bold leading-tight" { (t!("title", locale=l)) }
-                h2 ."mb-8 text-sm text-center text-slate-500 leading-8 tracking-wide" { (t!("subtitle", locale=l)) }
+                h2 ."mb-8 text-sm text-center text-slate-500 leading-8" { (t!("subtitle", locale=l)) }
                 div ."mb-8 px-2 py-1.5 bg-slate-700 rounded-lg" {
                     div ."mb-2 flex justify-between gap-1" {
                         div ."flex-1 mt-0.5 ml-1 text-xs text-white font-semibold" { "Svoote" div ."inline-block ml-1 size-2.5 translate-y-[1px]" { (SvgIcon::Rss.render()) } }
