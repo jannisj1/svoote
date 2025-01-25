@@ -96,7 +96,7 @@ pub async fn get_play_page(
                                 div {
                                     h1 x-init="$el.innerText = currentSlide.question" x-effect="$el.innerText = currentSlide.question" ."mb-4 text-lg text-slate-700 font-medium" {}
                                     template x-for="(answer, answerIndex) in currentSlide.answers" {
-                                        label ."w-full mb-4 px-3 py-1.5 flex gap-2 items-center ring-2 ring-slate-500 has-[:checked]:ring-4 has-[:checked]:ring-cyan-600 rounded-lg transition" {
+                                        label ."w-full mb-4 px-3 py-1.5 flex gap-2 items-center ring-2 ring-slate-500 has-checked:ring-4 has-checked:ring-cyan-600 rounded-lg transition" {
                                             input ":type"="currentSlide.allowMultipleMCAnswers ? 'checkbox' : 'radio'" x-model="currentSlide.selectedAnswer" ":disabled"="currentSlide.submitted" ":value"="answerIndex" ."accent-cyan-600";
                                             div ."text-slate-700 font-medium" x-text="answer.text" {}
                                         }
@@ -121,7 +121,7 @@ pub async fn get_play_page(
                                         "@keyup.enter"="$refs.ftSubmitButton.click()"
                                         ":disabled"="currentSlide.submitted"
                                         placeholder=(t!("answer", locale=l))
-                                        ."w-full px-4 py-1.5 text-lg text-slate-700 font-medium ring-2 ring-slate-500 rounded-lg outline-none focus:ring-4 focus:ring-cyan-600 transition";
+                                        ."w-full px-4 py-1.5 text-lg text-slate-700 font-medium ring-2 ring-slate-500 rounded-lg outline-hidden focus:ring-4 focus:ring-cyan-600 transition";
                                     div ."relative mt-5 h-10" {
                                     button x-show="!currentSlide.submitted"
                                         x-ref="ftSubmitButton"
@@ -140,7 +140,7 @@ pub async fn get_play_page(
                             div ."flex justify-center gap-4" {
                                 @for emoji in [("heart", "❤️"), ("thumbsUp", "👍"), ("thumbsDown", "👎"), ("smileyFace", "😀"), ("sadFace", "🙁")] {
                                     button "@click"={ "submitEmoji(" (poll_id_str) ", '" (emoji.0) "')" }
-                                        ."relative size-10 rounded-full border shadow hover:bg-slate-100 disabled:pointer-events-none transition"
+                                        ."relative size-10 rounded-full border shadow-xs hover:bg-slate-100 disabled:pointer-events-none transition"
                                         ":class"={ "currentSlide.emoji == '" (emoji.0) "' ? 'disabled:scale-[1.2] disabled:bg-cyan-600 disabled:bg-opacity-70' : 'disabled:shadow-none disabled:opacity-50'" }
                                         ":disabled"="currentSlide.emoji != null"
                                         { div ."absolute left-1/2 top-1/2 translate-x-[-50%] translate-y-[-50%] text-base" { (emoji.1) } }

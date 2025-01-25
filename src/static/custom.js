@@ -142,7 +142,7 @@ document.addEventListener("alpine:init", () => {
 
     calculateSlideClasses(slideIndex, activeSlide, gridView) {
       let classes =
-        "absolute inset-0 size-full px-[1.5em] sm:px-[3.5em] pb-[2.5em] pt-[3.5em] flex gap-[3.5em] bg-white border rounded transition-transform duration-500 ease-out transform-gpu ";
+        "absolute inset-0 size-full px-[1.5em] sm:px-[3.5em] pb-[2.5em] pt-[3.5em] flex gap-[3.5em] bg-white border rounded-xs transition-transform duration-500 ease-out transform-gpu ";
 
       if (gridView) {
         classes +=
@@ -185,10 +185,10 @@ document.addEventListener("alpine:init", () => {
 
     calculateSlideTypeButtonClasses(slideType, buttonType, showSelection) {
       let classes =
-        "absolute left-1/2 top-[0.25em] -translate-x-1/2 px-[0.875em] py-[0.5em] flex justify-center items-center gap-[0.5em] text-nowrap rounded-full hover:shadow transition duration-300 ";
+        "absolute left-1/2 top-[0.25em] -translate-x-1/2 px-[0.875em] py-[0.5em] flex justify-center items-center gap-[0.5em] text-nowrap rounded-full hover:shadow-xs transition duration-300 ";
 
       if (showSelection) {
-        classes += "shadow z-10 bg-slate-700 text-slate-100 ";
+        classes += "shadow-xs z-10 bg-slate-700 text-slate-100 ";
         switch (buttonType) {
           case "mc":
             classes += "translate-y-[3em] ";

@@ -115,13 +115,13 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                         div x-show="isFullscreen" x-cloak x-effect="$dispatch('fontsizechange', { size: fontSize })"
                             ."mr-2 flex items-baseline gap-2 text-slate-500 font-mono font-bold"
                         {
-                            label ."text-sm cursor-pointer has-[:checked]:text-slate-100" title=(t!("text_size_medium", locale=l)) { "Aa" input type="radio" ."hidden" x-model="fontSize" name="fontSize" value="medium"; }
-                            label ."text-large cursor-pointer has-[:checked]:text-slate-100" title=(t!("text_size_large", locale=l)) { "Aa" input type="radio" ."hidden" x-model="fontSize" name="fontSize" value="large"; }
-                            label ."text-xl cursor-pointer has-[:checked]:text-slate-100" title=(t!("text_size_xlarge", locale=l)) { "Aa" input type="radio" ."hidden" x-model="fontSize" name="fontSize" value="xlarge"; }
+                            label ."text-sm cursor-pointer has-checked:text-slate-100" title=(t!("text_size_medium", locale=l)) { "Aa" input type="radio" ."hidden" x-model="fontSize" name="fontSize" value="medium"; }
+                            label ."text-large cursor-pointer has-checked:text-slate-100" title=(t!("text_size_large", locale=l)) { "Aa" input type="radio" ."hidden" x-model="fontSize" name="fontSize" value="large"; }
+                            label ."text-xl cursor-pointer has-checked:text-slate-100" title=(t!("text_size_xlarge", locale=l)) { "Aa" input type="radio" ."hidden" x-model="fontSize" name="fontSize" value="xlarge"; }
                         }
                         button x-show="!isLive" "@click"="startPoll()"
                             ":disabled"="poll.slides.length == 0"
-                            ."p-2 text-slate-50 bg-green-500 rounded-full shadow shadow-slate-400 hover:bg-green-600 hover:shadow-none disabled:bg-green-200 disabled:shadow-none"
+                            ."p-2 text-slate-50 bg-green-500 rounded-full shadow-xs shadow-slate-400 hover:bg-green-600 hover:shadow-none disabled:bg-green-200 disabled:shadow-none"
                             title=(t!("start_poll_btn_title", locale=l))
                             { ."size-5 translate-x-0.5 translate-y-[0.05rem]" { (SvgIcon::Play.render()) } }
                         button x-show="isLive" x-cloak "@click"="stopPoll()"
@@ -129,7 +129,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                             title=(t!("stop_poll_btn_title", locale=l))
                             { ."size-3 bg-slate-50" {} }
                         button "@click"="toggleFullscreen()" ":disabled"="!isLive" x-show="document.documentElement.requestFullscreen != null"
-                            ."p-2 bg-white border rounded-full shadow hover:bg-slate-200 hover:shadow-none disabled:shadow-none disabled:text-slate-300 disabled:bg-white"
+                            ."p-2 bg-white border rounded-full shadow-xs hover:bg-slate-200 hover:shadow-none disabled:shadow-none disabled:text-slate-300 disabled:bg-white"
                             title=(t!("fullscreen_btn_title", locale=l))
                         {
                             template x-if="!isFullscreen" { div ."size-5" { (SvgIcon::Maximize.render()) } }
@@ -165,7 +165,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                         "@click"="$event.stopPropagation(); moveSlide(slideIndex, false); isReordering = false;"
                                         { }
                                     div ."absolute inset-0 size-full transition duration-300 z-10"
-                                        ":class"="selectTemplate ? 'backdrop-blur-sm' : 'pointer-events-none'"
+                                        ":class"="selectTemplate ? 'backdrop-blur-xs' : 'pointer-events-none'"
                                         x-show="!isLive"
                                         "@click"="selectTemplate = false" {}
                                             h2 ."absolute left-1/2 top-[1em] -translate-x-1/2 z-10 text-[0.875em] text-slate-500 transition duration-300 "
@@ -176,12 +176,12 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                         "@click"="if (!selectTemplate) { selectTemplate = true; } else { selectTemplate = false; slide.type = 'mc'; } save();"
                                         ":class"="calculateSlideTypeButtonClasses(slide.type, 'mc', selectTemplate)"
                                         x-show="!isLive"
-                                        { ."size-6 p-1 text-slate-100 rounded" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) } "Multiple Choice" }
+                                        { ."size-6 p-1 text-slate-100 rounded-xs" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) } "Multiple Choice" }
                                     button
                                         "@click"="if (!selectTemplate) { selectTemplate = true; } else { selectTemplate = false; slide.type = 'ft'; } save();"
                                         ":class"="calculateSlideTypeButtonClasses(slide.type, 'ft', selectTemplate)"
                                         x-show="!isLive"
-                                        { ."size-6 p-1 text-slate-100 rounded" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) } (t!("open_ended_question", locale=l)) }
+                                        { ."size-6 p-1 text-slate-100 rounded-xs" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) } (t!("open_ended_question", locale=l)) }
                                     template x-if="slide.type == 'mc'" {
                                         div ."relative h-full flex flex-col gap-[3em] justify-between" {
                                             div ."flex gap-[1em]" {
@@ -191,8 +191,8 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                         "@input"="slide.question = $el.innerText; save();"
                                                         ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                         ":contenteditable"="!isLive"
-                                                        ."block mb-3 px-[0.5em] text-[1.25em] text-slate-800 bg-transparent outline-none"
-                                                        ":class"="!isLive && 'ring-1 ring-slate-200 ring-offset-4 rounded focus:ring-2 focus:ring-cyan-600'" { }
+                                                        ."block mb-3 px-[0.5em] text-[1.25em] text-slate-800 bg-transparent outline-hidden"
+                                                        ":class"="!isLive && 'ring-1 ring-slate-200 ring-offset-4 rounded-xs focus:ring-2 focus:ring-cyan-600'" { }
                                                     label ."ml-[0.5em] mb-[0.5em] overflow-hidden flex gap-[0.5em] items-center text-slate-700 transition-all duration-500"
                                                         ":class"="isLive ? 'h-0 opacity-0' : 'h-[1.5em]'" {
                                                         input x-model="slide.allowMultipleMCAnswers" "@change"="save()" type="checkbox" ."accent-cyan-600";
@@ -206,8 +206,8 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                                 ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                                 ":id"="(answer_index == 0) && 's-' + slideIndex + '-mc-answer-0'"
                                                                 ":disabled"="isLive"
-                                                                ."w-full px-[0.25em] py-[0.125em] text-slate-700 bg-transparent outline-none"
-                                                                ":class"="!isLive && 'focus:ring-2 ring-cyan-600 ring-offset-2 rounded'";
+                                                                ."w-full px-[0.25em] py-[0.125em] text-slate-700 bg-transparent outline-hidden"
+                                                                ":class"="!isLive && 'focus:ring-2 ring-cyan-600 ring-offset-2 rounded-xs'";
                                                             //button x-show="!isLive" "@click"="answer.isCorrect = !answer.isCorrect; save()" ":class"="answer.isCorrect ? 'text-green-600' : 'text-slate-300 hover:text-green-600'" ."size-6" { (SvgIcon::CheckSquare.render()) }
                                                             button x-show="!isLive" "@click"="slide.mcAnswers.splice(answer_index, 1); save();" ."size-[1.5em] text-slate-300 hover:text-slate-500" { (SvgIcon::Trash2.render()) }
                                                         }
@@ -255,8 +255,8 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                         "@input"="slide.question = $el.innerText; save();"
                                                         ":id"="'question-input-' + slideIndex" ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                         ":contenteditable"="!isLive"
-                                                        ."block mb-[0.75em] px-[0.5em] text-[1.25em] text-slate-800 bg-transparent outline-none"
-                                                        ":class"="!isLive && 'ring-1 ring-slate-200 ring-offset-4 rounded focus:ring-2 focus:ring-cyan-600'" {}
+                                                        ."block mb-[0.75em] px-[0.5em] text-[1.25em] text-slate-800 bg-transparent outline-hidden"
+                                                        ":class"="!isLive && 'ring-1 ring-slate-200 ring-offset-4 rounded-xs focus:ring-2 focus:ring-cyan-600'" {}
                                                 }
                                                 div x-show="isLive" x-cloak ."sm:translate-x-[1.5em] -translate-y-[1em] flex flex-col items-center" {
                                                     div x-data="qrCode" x-effect="if (slideIndex == poll.activeSlide) render($el, code)" ."mb-[0.75em] w-[6em]" {}
@@ -284,13 +284,13 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                 div ."h-12 mx-6 sm:mx-14 mt-2 mb-8 grid grid-cols-3 items-center gap-4" { // The fixed height stops ugly re-layout when a reaction smiley is first sent
                     div { }
                     div ."flex justify-center items-center gap-4" {
-                        button ."p-2 size-8 rounded-full shadow hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
+                        button ."p-2 size-8 rounded-full shadow-xs hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
                             ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
                             "@click"="gotoSlide(poll.activeSlide - 1)"
                             ":disabled"="poll.activeSlide == 0"
                             title=(t!("prev_slide_btn", locale=l))
                             { (SvgIcon::ArrowLeft.render()) }
-                        button ."p-2 size-8 rounded-full shadow hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
+                        button ."p-2 size-8 rounded-full shadow-xs hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
                             ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
                             "@click"="gotoSlide(poll.activeSlide + 1)"
                             ":disabled"="poll.activeSlide == poll.slides.length - 1"
@@ -732,7 +732,7 @@ pub async fn get_stats() -> Result<Response, AppError> {
             "en",
             html! {
                 (render_header(html!{}))
-                div ."my-32 mx-auto max-w-96 p-4 text-center border rounded-lg shadow" {
+                div ."my-32 mx-auto max-w-96 p-4 text-center border rounded-lg shadow-xs" {
                     h1 ."text-xl font-bold text-slate-600" { "Svoote live statistics" }
                     p ."" { "Number of live polls: " (stats.num_live_polls) }
                     p ."" { "Number of participants: " (stats.num_participants) }

@@ -28,7 +28,7 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
                         div ."size-2 rounded-full bg-orange-400" {}
                         div ."size-2 rounded-full bg-rose-500" {}
                     }
-                    video autoplay loop muted playsinline ."appearance-none rounded" {
+                    video autoplay loop muted playsinline ."appearance-none rounded-xs" {
                         source src="/img/svoote_demo.webm" type="video/webm";
                         "Your browser does not support video playback."
                     }
@@ -75,7 +75,7 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
                 }
                 /*h3 ."mb-10 text-center text-slate-700 text-4xl font-bold" { "Plans and pricing" }
                 section ."mb-8 flex justify-center gap-10 sm:gap-20 flex-wrap" {
-                    div ."w-64 p-8 bg-white rounded-lg border shadow" {
+                    div ."w-64 p-8 bg-white rounded-lg border shadow-xs" {
                         ."mb-6 text-2xl text-slate-900 font-medium tracking-tight" { "Free" }
                         ."mb-10 text-slate-800 tracking-wide leading-normal" { "Everything you need to get started." }
                         //."mb-3 text-slate-800" { "Starting at" }
@@ -95,7 +95,7 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
                             li ."flex items-center gap-2" { ."size-4" { (SvgIcon::Check.render()) } "Word cloud slides" }
                         }
                     }
-                    div ."w-64 p-8 bg-white rounded-lg border shadow" {
+                    div ."w-64 p-8 bg-white rounded-lg border shadow-xs" {
                         ."mb-6 text-2xl text-slate-900 font-medium tracking-tight" { "Pro" }
                         ."mb-10 text-slate-800 tracking-wide leading-normal" { "More slide templates, built for large audiences." }
                         //."mb-3 text-slate-800" { "Starting at" }
@@ -133,7 +133,7 @@ pub fn render_join_form(l: &str) -> Markup {
                     { (t!("enter_poll_desc", locale=l)) }
                 div."flex items-center gap-1 text-slate-600 font-semibold" {
                     "#" input id="poll-id-input" name="c" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="1234"
-                    ."w-20 px-3 py-1 border-2 border-slate-400 rounded-lg outline-none";
+                    ."w-20 px-3 py-1 border-2 border-slate-400 rounded-lg outline-hidden";
                     button ."ml-3 px-6 py-1.5 text-white font-semibold bg-slate-600 rounded-full hover:bg-slate-500"
                         { (t!("join_btn_desc", locale=l)) }
                 }
