@@ -13,9 +13,7 @@ pub fn render_html_page(title: &str, l: &str, main_content: maud::Markup) -> mau
                 meta name="description" content="Svoote is the fastest way to create free live polls. No account needed.";
                 meta name="google-site-verification" content="43Qm55o4cXLfJSwfb_7gvXUUFYiYzs7zvKqUX46pk1c";
                 title { (title) }
-                @if cfg!(debug_assertions) {
-                    script src="https://cdn.tailwindcss.com" {}
-                }
+                @if cfg!(debug_assertions) { script src="https://unpkg.com/@tailwindcss/browser@4" {} }
                 link rel="stylesheet" href=(static_file::get_path("bundle.css"));
                 script defer src=(static_file::get_path("app.js")) {}
                 link rel="icon" type="image/png" href="/img/svoote_icon_t.png";
@@ -23,9 +21,7 @@ pub fn render_html_page(title: &str, l: &str, main_content: maud::Markup) -> mau
                     @if !cfg!(debug_assertions) { script defer data-domain=(domain) src="https://plausible.io/js/script.js" {} }
                 }
                 script {
-                    "let colorPalette = ["
-                        @for color in COLOR_PALETTE { "'" (color) "'," }
-                    "];"
+                    "let colorPalette = [" @for color in COLOR_PALETTE { "'" (color) "'," } "];"
                 }
             }
             body ."group min-h-screen flex flex-col text-slate-700" {
@@ -59,20 +55,19 @@ pub fn render_html_page(title: &str, l: &str, main_content: maud::Markup) -> mau
                     h1 ."mb-3 flex items-center gap-2 text-slate-700 text-xl font-medium"
                         { div ."size-5" { (SvgIcon::Cookie.render()) } "Cookies" }
                     p ."mb-4 text-slate-500 text-sm" {
-                        "Svoote.com only uses necessary cookies. We don't use cookies to track users across sites or show ads. "
-                        "For more information see our " a href="/cookie-policy" ."underline" { "Cookie Policy"} "."
+                        (t!("cookie_banner_text", locale=l)) a href="/cookie-policy" ."underline" { "Cookie Policy"} "."
                     }
                     div class="mb-6 sm:mb-0 flex gap-2" {
                         input type="checkbox" id="disabled-switch" class="peer hidden" disabled {}
                         label for="disabled-switch"
                             class="w-10 h-6 flex items-center bg-gray-300 rounded-full p-1"
                             { div class="w-4 h-4 bg-gray-500 rounded-full shadow-md translate-x-4" {} }
-                            span class="text-gray-500" { "Necessary Cookies" }
+                            span class="text-gray-500" { (t!("necessary_cookies", locale=l)) }
                     }
                     div ."flex flex-wrap sm:justify-end gap-4" {
                         button "@click"="cookiesAccepted = true; localStorage.setItem('cookiesAccepted', 'true');"
-                            ."w-full sm:w-auto px-4 py-1 bg-cyan-700 text-white font-semibold shadow-xl hover:bg-cyan-600"
-                            { "Accept necessary cookies" }
+                            ."w-full sm:w-auto px-5 py-2 bg-cyan-700 text-white text-sm font-semibold shadow-xl cursor-pointer hover:bg-cyan-600"
+                            { (t!("cookie_banner_accept", locale=l)) }
                     }
                 }
             }

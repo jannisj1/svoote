@@ -134,7 +134,7 @@ pub fn render_join_form(l: &str) -> Markup {
                 div."flex items-center gap-1 text-slate-600 font-semibold" {
                     "#" input id="poll-id-input" name="c" type="text" pattern="[0-9]*" inputmode="numeric" placeholder="1234"
                     ."w-20 px-3 py-1 border-2 border-slate-400 rounded-lg outline-hidden";
-                    button ."ml-3 px-6 py-1.5 text-white font-semibold bg-slate-600 rounded-full hover:bg-slate-500"
+                    button ."ml-3 px-6 py-1.5 text-white font-semibold bg-slate-600 rounded-full cursor-pointer hover:bg-slate-500"
                         { (t!("join_btn_desc", locale=l)) }
                 }
             }

@@ -56,3 +56,15 @@ open_source_section_text:
 start_from_here:
   en: "Start with this template"
   de: "Mit dieser Vorlage starten"
+
+cookie_banner_text:
+  en: "Svoote.com only uses necessary cookies. We don't use cookies to track users across sites or show ads. For more information see our "
+  de: "Svoote.com verwendet nur notwendige Cookies. Wir verwenden keine Cookies, um Benutzer über Websitegrenzen hinweg zu verfolgen oder Werbeanzeigen zu schalten. Für weitere Informationen siehe unsere "
+
+cookie_banner_accept:
+  en: "Accept necessary cookies"
+  de: "Notwendige Cookies akzeptieren"
+
+necessary_cookies:
+  en: "Necessary cookies"
+  de: "Notwendige Cookies"
