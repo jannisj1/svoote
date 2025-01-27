@@ -103,9 +103,9 @@ pub async fn get_play_page(
                                     }
                                     div ."relative mt-7 h-10" {
                                         button x-show="!currentSlide.submitted"
-                                            ":disabled"="currentSlide.selectedAnswer === ''"
+                                            ":disabled"="(currentSlide.allowMultipleMCAnswers && currentSlide.selectedAnswer.length === 0) || (!currentSlide.allowMultipleMCAnswers && currentSlide.selectedAnswer === '')"
                                             "@click"={ "submitMCAnswer(" (poll_id_str) ")" }
-                                            ."absolute size-full inset-0 flex items-center justify-center text-white font-bold bg-cyan-600 rounded-full hover:bg-cyan-700 disabled:bg-slate-300"
+                                            ."absolute size-full inset-0 flex items-center justify-center text-white font-bold bg-cyan-600 rounded-full cursor-pointer disabled:cursor-default hover:bg-cyan-700 disabled:bg-slate-300"
                                             { (t!("submit", locale=l)) }
                                         div x-show="currentSlide.submitted"
                                             ."absolute size-full inset-0 flex items-center justify-center text-slate-500 text-sm"
@@ -127,7 +127,7 @@ pub async fn get_play_page(
                                         x-ref="ftSubmitButton"
                                         ":disabled"="currentSlide.selectedAnswer === ''"
                                         "@click"={ "submitFTAnswer(" (poll_id_str) ")" }
-                                        ."absolute size-full inset-0 flex items-center justify-center text-white font-bold bg-cyan-600 rounded-full hover:bg-cyan-700 disabled:bg-slate-300"
+                                        ."absolute size-full inset-0 flex items-center justify-center text-white font-bold bg-cyan-600 rounded-full cursor-pointer disabled:cursor-default hover:bg-cyan-700 disabled:bg-slate-300"
                                         { (t!("submit", locale=l)) }
                                     div x-show="currentSlide.submitted"
                                         ."absolute size-full inset-0 flex items-center justify-center text-slate-500 text-sm"
@@ -140,7 +140,7 @@ pub async fn get_play_page(
                             div ."flex justify-center gap-4" {
                                 @for emoji in [("heart", "❤️"), ("thumbsUp", "👍"), ("thumbsDown", "👎"), ("smileyFace", "😀"), ("sadFace", "🙁")] {
                                     button "@click"={ "submitEmoji(" (poll_id_str) ", '" (emoji.0) "')" }
-                                        ."relative size-10 rounded-full border shadow-xs hover:bg-slate-100 disabled:pointer-events-none transition"
+                                        ."relative size-10 rounded-full border shadow-xs cursor-pointer hover:bg-slate-100 disabled:pointer-events-none transition"
                                         ":class"={ "currentSlide.emoji == '" (emoji.0) "' ? 'disabled:scale-[1.2] disabled:bg-cyan-600 disabled:bg-opacity-70' : 'disabled:shadow-none disabled:opacity-50'" }
                                         ":disabled"="currentSlide.emoji != null"
                                         { div ."absolute left-1/2 top-1/2 translate-x-[-50%] translate-y-[-50%] text-base" { (emoji.1) } }

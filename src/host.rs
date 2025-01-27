@@ -284,13 +284,13 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                 div ."h-12 mx-6 sm:mx-14 mt-2 mb-8 grid grid-cols-3 items-center gap-4" { // The fixed height stops ugly re-layout when a reaction smiley is first sent
                     div { }
                     div ."flex justify-center items-center gap-4" {
-                        button ."p-2 size-8 rounded-full shadow-xs hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
+                        button ."p-2 size-8 rounded-full shadow-xs cursor-pointer hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
                             ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
                             "@click"="gotoSlide(poll.activeSlide - 1)"
                             ":disabled"="poll.activeSlide == 0"
                             title=(t!("prev_slide_btn", locale=l))
                             { (SvgIcon::ArrowLeft.render()) }
-                        button ."p-2 size-8 rounded-full shadow-xs hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
+                        button ."p-2 size-8 rounded-full shadow-xs cursor-pointer hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
                             ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
                             "@click"="gotoSlide(poll.activeSlide + 1)"
                             ":disabled"="poll.activeSlide == poll.slides.length - 1"

@@ -10,7 +10,7 @@ pub fn render_html_page(title: &str, l: &str, main_content: maud::Markup) -> mau
                 meta charset="UTF-8";
                 meta name="viewport" content="width=device-width, initial-scale=1.0";
                 meta http-equiv="X-UA-Compatible" content="ie=edge";
-                meta name="description" content="Svoote is the fastest way to create free live polls. No account needed.";
+                meta name="description" content=(t!("html_description_meta", locale=l));
                 meta name="google-site-verification" content="43Qm55o4cXLfJSwfb_7gvXUUFYiYzs7zvKqUX46pk1c";
                 title { (title) }
                 @if cfg!(debug_assertions) { script src="https://unpkg.com/@tailwindcss/browser@4" {} }
@@ -34,16 +34,17 @@ pub fn render_html_page(title: &str, l: &str, main_content: maud::Markup) -> mau
                             span ."text-lg tracking-tight font-semibold" { "Svoote" }
                             ."size-4 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
                         }
-                        a href="/" ."hover:underline" { "Home" }
-                        a href="/host" ."hover:underline" { "Create Poll" }
-                        a href="/data-privacy" ."hover:underline" { "Data Privacy" }
-                        a href="/terms-of-service" ."hover:underline" { "Terms of Service" }
-                        a href="/cookie-policy" ."hover:underline" { "Cookie Policy" }
-                        a href="/manage-cookies" ."hover:underline" { "Manage Cookies" }
-                        a href="/contact" ."hover:underline" { "Contact" }
+
+                        a href="/" ."hover:underline" { (t!("home", locale=l)) }
+                        a href="/host" ."hover:underline" { (t!("create_poll", locale=l)) }
+                        a href="/data-privacy" ."hover:underline" { (t!("data_privacy", locale=l)) }
+                        a href="/terms-of-service" ."hover:underline" { (t!("terms_of_service", locale=l)) }
+                        a href="/cookie-policy" ."hover:underline" { (t!("cookie_policy", locale=l)) }
+                        a href="/manage-cookies" ."hover:underline" { (t!("manage_cookies", locale=l)) }
+                        a href="/contact" ."hover:underline" { (t!("contact", locale=l)) }
                     }
                     div ."flex justify-center gap-4" {
-                        div ."flex gap-2 items-center" { div ."size-4" { (SvgIcon::Globe.render()) } "Language preference:"}
+                        div ."flex gap-2 items-center" { div ."size-4" { (SvgIcon::Globe.render()) } (t!("language_preference", locale=l)) }
                         button onclick="setLang('en')" ."hover:underline cursor-pointer" { "English" }
                         button onclick="setLang('de')". "hover:underline cursor-pointer" { "Deutsch" }
                     }

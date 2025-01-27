@@ -1,11 +1,17 @@
 use std::env;
 
-use axum::response::{IntoResponse, Response};
+use axum::{
+    http::HeaderMap,
+    response::{IntoResponse, Response},
+};
+use axum_extra::extract::CookieJar;
 use maud::html;
 
 use crate::{
     app_error::AppError,
     html_page::{self, render_header},
+    select_language,
+    svg_icons::SvgIcon,
 };
 
 pub async fn get_privacy_policy_page() -> Result<Response, AppError> {
@@ -77,16 +83,35 @@ pub async fn get_contact_page() -> Result<Response, AppError> {
     .into_response());
 }
 
-pub async fn get_manage_cookies_page() -> Result<Response, AppError> {
+pub async fn get_manage_cookies_page(
+    cookies: CookieJar,
+    headers: HeaderMap,
+) -> Result<Response, AppError> {
+    let l = select_language(&cookies, &headers);
     return Ok(html_page::render_html_page(
         "Manage cookies - Svoote",
-        "en",
+        &l,
         html! {
             (render_header(html!{}))
-                div ."mx-6 sm:mx-14 my-32 text-slate-700 text-center" {
-                    h1 ."mb-2 text-xl font-bold" { "Customize cookies" }
-                    p {
-                        "As stated in our " a href="/cookie-policy" ."underline" { "Cookie Policy" } ", we only use necessary cookies, which are set automatically on the first visit. This website can't be used without these cookies and therefore you cannot deactivate them. Do not use Svoote if you don't want to have these cookies set."
+                div ."mx-6 sm:mx-14 my-32" {
+                    div ."mx-auto max-w-lg" {
+                        h1 ."mb-3 flex items-center gap-2 text-slate-700 text-xl font-medium"
+                            { div ."size-5" { (SvgIcon::Cookie.render()) } "Cookies" }
+                        p ."mb-4 text-slate-500 text-sm" {
+                            (t!("cookie_banner_text", locale=l)) a href="/cookie-policy" ."underline" { "Cookie Policy"} "."
+                        }
+                        div class="mb-6 sm:mb-0 flex gap-2" {
+                            input type="checkbox" id="disabled-switch" class="peer hidden" disabled {}
+                            label for="disabled-switch"
+                                class="w-10 h-6 flex items-center bg-gray-300 rounded-full p-1"
+                                { div class="w-4 h-4 bg-gray-500 rounded-full shadow-md translate-x-4" {} }
+                                span class="text-gray-500" { (t!("necessary_cookies", locale=l)) }
+                        }
+                        div ."flex flex-wrap sm:justify-end gap-4" {
+                            button onclick="localStorage.setItem('cookiesAccepted', 'true'); window.location.href = '/';"
+                                ."w-full sm:w-auto px-5 py-2 bg-cyan-700 text-white text-sm font-semibold shadow-xl cursor-pointer hover:bg-cyan-600"
+                                { (t!("cookie_banner_accept", locale=l)) }
+                        }
                     }
                 }
         },

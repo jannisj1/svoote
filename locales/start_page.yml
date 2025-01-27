@@ -1,4 +1,7 @@
 _version: 2
+html_description_meta:
+  en: "Svoote simplifies live polling with its user-friendly website. No registration is required, ensuring a privacy-friendly experience without ads. Svoote supports up to 100 participants with unlimited polls, offering a seamless way to engage your audience."
+  de: "Svoote bietet benutzerfreundliche Live-Umfragen. Keine Registrierung erforderlich - für eine datenschutzfreundliches Erlebnis ohne Werbung. Svoote unterstützt bis zu 100 Teilnehmer mit unbegrenzten Umfragen und bietet eine nahtlose Möglichkeit, Ihr Publikum zu begeistern."
 enter_poll_desc:
   en: "Enter a presentation:"
   de: "Einer Umfrage beitreten:"
@@ -68,3 +71,35 @@ cookie_banner_accept:
 necessary_cookies:
   en: "Necessary cookies"
   de: "Notwendige Cookies"
+
+home:
+  en: "Home"
+  de: "Startseite"
+
+create_poll:
+  en: "Create Poll"
+  de: "Umfrage erstellen"
+
+data_privacy:
+  en: "Data Privacy"
+  de: "Datenschutz"
+
+terms_of_service:
+  en: "Terms of Service"
+  de: "Nutzungsbedingungen"
+
+cookie_policy:
+  en: "Cookie Policy"
+  de: "Cookie-Richtlinie"
+
+manage_cookies:
+  en: "Manage Cookies"
+  de: "Cookies verwalten"
+
+contact:
+  en: "Contact"
+  de: "Impressum"
+
+language_preference:
+  en: "Language preference:"
+  de: "Spracheinstellung:"
