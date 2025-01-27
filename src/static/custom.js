@@ -185,7 +185,7 @@ document.addEventListener("alpine:init", () => {
 
     calculateSlideTypeButtonClasses(slideType, buttonType, showSelection) {
       let classes =
-        "absolute left-1/2 top-[0.25em] -translate-x-1/2 px-[0.875em] py-[0.5em] flex justify-center items-center gap-[0.5em] text-nowrap rounded-full hover:shadow-xs transition duration-300 ";
+        "absolute left-1/2 top-[0.25em] -translate-x-1/2 px-[0.875em] py-[0.5em] flex justify-center items-center gap-[0.5em] text-nowrap rounded-full hover:shadow-xs transition duration-300 cursor-pointer ";
 
       if (showSelection) {
         classes += "shadow-xs z-10 bg-slate-700 text-slate-100 ";
@@ -319,64 +319,6 @@ document.addEventListener("alpine:init", () => {
         }
         top += row.height;
       }
-
-      /*let rows = [];
-      let rowHeightSum = 0;
-
-      for (termIndex = 0; termIndex < sortedTerms.length; termIndex++) {
-        let term = sortedTerms[termIndex];
-        let termFoundPlace = false;
-        term.element.classList.remove("invisible");
-
-        for (rowIndex = 0; rowIndex < rows.length; rowIndex++) {
-          let row = rows[rowIndex];
-          if (row.width + term.width + HORIZONTAL_GAP < containerWidth) {
-            if (row.terms.length % 2 == 1) row.terms.push(term);
-            else row.terms.unshift(term);
-            row.width += term.width + HORIZONTAL_GAP;
-            termFoundPlace = true;
-            break;
-          }
-        }
-
-        if (!termFoundPlace) {
-          if (rowHeightSum + term.height + VERTICAL_GAP <= containerHeight) {
-            let height = term.height + VERTICAL_GAP;
-            rows.push({
-              terms: [term],
-              height: height,
-              width: term.width,
-            });
-
-            rowHeightSum += height;
-          } else {
-            term.element.classList.add("invisible");
-          }
-        }
-      }
-
-      let rowSequence = [];
-      let addBack = true;
-      for (i = 0; i < rows.length; i++) {
-        if (addBack) rowSequence.push(i);
-        else rowSequence.unshift(i);
-        addBack = !addBack;
-      }
-
-      let top = (containerHeight - rowHeightSum) / 2;
-
-      for (i = 0; i < rows.length; i++) {
-        let row = rows[rowSequence[i]];
-
-        let leftOffset = containerWidth / 2 - row.width / 2;
-        for (term of row.terms) {
-          term.element.style.top = `${top + (row.height - term.height) / 2}px`;
-          term.element.style.left = `${leftOffset}px`;
-          leftOffset += term.width + HORIZONTAL_GAP;
-        }
-
-        top += row.height;
-        }*/
     },
 
     gotoSlide(slideIndex) {
@@ -434,9 +376,36 @@ document.addEventListener("alpine:init", () => {
 
           switch (msg.cmd) {
             case "updateStats":
-              this.poll.slides[msg.data.slideIndex].stats = msg.data.stats;
-              this.renderWordCloud(msg.data.slideIndex);
-              setTimeout(() => this.renderWordCloud(msg.data.slideIndex), 500);
+              let slide = this.poll.slides[msg.data.slideIndex];
+              const oldStats = slide.stats;
+              slide.stats = msg.data.stats;
+              if (slide.type === "mc") {
+                const hasMaxPercentageIncrease = oldStats.percentages.some(
+                  (percentage, i) =>
+                    percentage === 100 &&
+                    slide.stats.counts[i] > oldStats.counts[i],
+                );
+                if (hasMaxPercentageIncrease) {
+                  slide.stats.percentages = slide.stats.percentages.map(
+                    (percent) => percent * 1.2,
+                  );
+                  slide.stats.scaled = true;
+                  setTimeout(() => {
+                    if (slide.stats.scaled) {
+                      slide.stats.percentages = slide.stats.percentages.map(
+                        (percent) => percent / 1.2,
+                      );
+                      delete slide.stats.scaled;
+                    }
+                  }, 1000);
+                }
+              } else if (slide.type === "ft") {
+                this.renderWordCloud(msg.data.slideIndex);
+                setTimeout(
+                  () => this.renderWordCloud(msg.data.slideIndex),
+                  500,
+                );
+              }
               break;
             case "setEmojiCounts":
               this.poll.slides[msg.data.slideIndex].emojis = msg.data.emojis;

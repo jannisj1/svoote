@@ -54,7 +54,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                     div ."absolute size-0 left-1/2 top-1.5" {
                         template x-for="i in poll.slides.length" {
                             button x-text="i"
-                                ."absolute top-0 left-1/2 size-6 rounded-full text-sm font-mono transition-all duration-500 ease-out disabled:opacity-0"
+                                ."absolute top-0 left-1/2 size-6 rounded-full text-sm font-mono transition-all duration-500 ease-out cursor-pointer disabled:cursor-default disabled:opacity-0"
                                 ":style"="`transform: translateX(${ ((i - 1) - poll.activeSlide) * 24 - 12 }px);`"
                                 ":class"="i - 1 == poll.activeSlide ? 'bg-slate-500 text-slate-50' : (isFullscreen ? 'text-slate-100' : '')"
                                 ":disabled"="Math.abs((i - 1) - poll.activeSlide) > 6"
@@ -65,7 +65,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                     div ."pr-4 flex items-center gap-1.5 z-10" ":class"="isFullscreen ? 'bg-slate-700' : 'bg-white'" {
                         div x-data="{ open: false }" ."relative size-[1.4rem]" {
                             button "@click"="open = !open"
-                                ":disabled"="isLive" ."size-[1.4rem]"
+                                ":disabled"="isLive" ."size-[1.4rem] cursor-pointer disabled:cursor-default"
                                 ":class"="isFullscreen ? 'disabled:text-slate-500' : 'disabled:text-slate-300'"
                                 title=(t!("settings_btn_title", locale=l))
                                 { (SvgIcon::Settings.render()) }
@@ -89,25 +89,25 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                     ."mb-3 flex gap-2 items-center text-slate-600 hover:bg-slate-100"
                                     { ."size-4" { (SvgIcon::Download.render()) } (t!("download_copy", locale=l)) }
                                 hr ."mb-3";
-                                button "@click"="reset()" ":disabled"="isLive" ."flex gap-2 items-center text-slate-600 disabled:text-slate-300" {
+                                button "@click"="reset()" ":disabled"="isLive" ."flex gap-2 items-center text-slate-600 cursor-pointer disabled:cursor-default disabled:text-slate-300" {
                                     ."size-4" { (SvgIcon::Refresh.render()) }
                                     (t!("reset_btn_text", locale=l))
                                 }
                             }
                         }
                         button "@click"="gridView = !gridView;"
-                            ":disabled"="isLive" ."size-6"
+                            ":disabled"="isLive" ."size-6 cursor-pointer disabled:cursor-default"
                             ":class"="gridView ? 'text-indigo-500' : (isFullscreen ? 'disabled:text-slate-500' : 'disabled:text-slate-300')"
                             title=(t!("grid_view_btn_title", locale=l)) { (SvgIcon::Grid.render()) }
                         button "@click"="poll.slides.splice(poll.activeSlide, 1); gotoSlide(poll.activeSlide);"
                             ":disabled"="isLive"
-                            ."size-6"
+                            ."size-6 cursor-pointer disabled:cursor-default"
                             ":class"="isFullscreen ? 'disabled:text-slate-500' : 'disabled:text-slate-300'"
                             title=(t!("delete_slide_btn_title", locale=l))
                             { (SvgIcon::Trash2.render()) }
                         button "@click"="poll.slides.splice(poll.slides.length, 0, createSlide('mc')); $nextTick(() => { gotoSlide(poll.slides.length - 1) });"
                             ":disabled"={ "isLive || poll.slides.length >= " (POLL_MAX_SLIDES) }
-                            ."-translate-x-1 size-6"
+                            ."-translate-x-1 size-6 cursor-pointer disabled:cursor-default"
                             ":class"="isFullscreen ? 'disabled:text-slate-500' : 'disabled:text-slate-300'"
                             title=(t!("add_slide_btn_title", locale=l)) { (SvgIcon::Plus.render()) }
                     }
@@ -121,15 +121,15 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                         }
                         button x-show="!isLive" "@click"="startPoll()"
                             ":disabled"="poll.slides.length == 0"
-                            ."p-2 text-slate-50 bg-green-500 rounded-full shadow-xs shadow-slate-400 hover:bg-green-600 hover:shadow-none disabled:bg-green-200 disabled:shadow-none"
+                            ."p-2 text-slate-50 bg-green-500 rounded-full shadow-xs shadow-slate-400 cursor-pointer disabled:cursor-default hover:bg-green-600 hover:shadow-none disabled:bg-green-200 disabled:shadow-none"
                             title=(t!("start_poll_btn_title", locale=l))
                             { ."size-5 translate-x-0.5 translate-y-[0.05rem]" { (SvgIcon::Play.render()) } }
                         button x-show="isLive" x-cloak "@click"="stopPoll()"
-                            ."p-3 text-slate-50 bg-red-500 rounded-full hover:bg-red-700"
+                            ."p-3 text-slate-50 bg-red-500 rounded-full cursor-pointer disabled:cursor-default hover:bg-red-700"
                             title=(t!("stop_poll_btn_title", locale=l))
                             { ."size-3 bg-slate-50" {} }
                         button "@click"="toggleFullscreen()" ":disabled"="!isLive" x-show="document.documentElement.requestFullscreen != null"
-                            ."p-2 bg-white border rounded-full shadow-xs hover:bg-slate-200 hover:shadow-none disabled:shadow-none disabled:text-slate-300 disabled:bg-white"
+                            ."p-2 bg-white border rounded-full shadow-xs hover:bg-slate-200 cursor-pointer disabled:cursor-default hover:shadow-none disabled:shadow-none disabled:text-slate-300 disabled:bg-white"
                             title=(t!("fullscreen_btn_title", locale=l))
                         {
                             template x-if="!isFullscreen" { div ."size-5" { (SvgIcon::Maximize.render()) } }
@@ -230,10 +230,10 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                             div ."flex-1 max-h-[10em] flex items-start justify-center gap-[1em]" {
                                                 template x-for="(answer, answer_index) in slide.mcAnswers" {
                                                     div ."h-full w-[7em]" {
-                                                        div ."h-[calc(100%-2.5em)] flex flex-col justify-end items-center" {
+                                                        div ."relative h-[calc(100%-2.5em)] flex flex-col justify-end items-center" {
                                                             div ":class"="colorPalette[answer_index % colorPalette.length]"
                                                                 ":style"="`height: ${ Math.max(2, slide.stats !== null ? slide.stats.percentages[answer_index] : 2) }%;`"
-                                                                ."w-[4em] transition-all duration-300 relative shadow-lg"
+                                                                ."absolute w-[4em] transition-all duration-300 shadow-lg"
                                                             {
                                                                 div x-text="`${ slide.stats !== null ? slide.stats.counts[answer_index] : 0 }`"
                                                                     ."absolute w-full text-slate-600 text-center font-medium -translate-y-[1.75em]" {}

@@ -44,8 +44,8 @@ pub fn render_html_page(title: &str, l: &str, main_content: maud::Markup) -> mau
                     }
                     div ."flex justify-center gap-4" {
                         div ."flex gap-2 items-center" { div ."size-4" { (SvgIcon::Globe.render()) } "Language preference:"}
-                        button onclick="setLang('en')" ."hover:underline" { "English" }
-                        button onclick="setLang('de')". "hover:underline" { "Deutsch" }
+                        button onclick="setLang('en')" ."hover:underline cursor-pointer" { "English" }
+                        button onclick="setLang('de')". "hover:underline cursor-pointer" { "Deutsch" }
                     }
                 }
                 div x-cloak x-data="{ cookiesAccepted: false }" x-show="!cookiesAccepted"
