@@ -233,7 +233,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                         div ."relative h-[calc(100%-2.5em)] flex flex-col justify-end items-center" {
                                                             div ":class"="colorPalette[answer_index % colorPalette.length]"
                                                                 ":style"="`height: ${ Math.max(2, slide.stats !== null ? slide.stats.percentages[answer_index] : 2) }%;`"
-                                                                ."absolute w-[4em] transition-all duration-300 shadow-lg"
+                                                                ."absolute w-[4em] transition-all duration-400 shadow-lg"
                                                             {
                                                                 div x-text="`${ slide.stats !== null ? slide.stats.counts[answer_index] : 0 }`"
                                                                     ."absolute w-full text-slate-600 text-center font-medium -translate-y-[1.75em]" {}
