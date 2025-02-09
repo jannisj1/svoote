@@ -44,9 +44,9 @@ pub fn render_html_page(title: &str, l: &str, main_content: maud::Markup) -> mau
                         a href="/contact" ."hover:underline" { (t!("contact", locale=l)) }
                     }
                     div ."flex justify-center gap-4" {
-                        div ."flex gap-2 items-center" { div ."size-4" { (SvgIcon::Globe.render()) } (t!("language_preference", locale=l)) }
-                        button onclick="setLang('en')" ."hover:underline cursor-pointer" { "English" }
-                        button onclick="setLang('de')". "hover:underline cursor-pointer" { "Deutsch" }
+                        div ."flex gap-1.5 items-center" { div ."size-3.5" { (SvgIcon::Globe.render()) } (t!("language_preference", locale=l)) }
+                        button onclick="setLang('en')" ."hover:underline cursor-pointer" { "English 🇺🇸" }
+                        button onclick="setLang('de')". "hover:underline cursor-pointer" { "Deutsch 🇩🇪" }
                     }
                 }
                 div x-cloak x-data="{ cookiesAccepted: false }" x-show="!cookiesAccepted"

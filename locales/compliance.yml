@@ -1,0 +1,181 @@
+_version: 2
+cookies_title:
+  en: "Svoote Cookie Policy"
+  de: "Svoote Cookie-Richtlinie"
+cookies_last_updated:
+  en: "Last updated: 09 Feb. 2025"
+  de: "Zuletzt aktualisiert: 09.02.2025"
+what_are_cookies:
+  en: "What are Cookies?"
+  de: "Was sind Cookies?"
+what_are_cookies_p:
+  en: "A cookie is a small file with information that your browser stores on your device. Information in this file is shared with the owner of the site. The collection of this information may be used in the function of the site and/or to improve your experience."
+  de: "Ein Cookie ist eine kleine Datei mit Informationen, die Ihr Browser auf Ihrem Gerät speichert. Informationen in dieser Datei werden mit dem Eigentümer der Website geteilt. Die Sammlung dieser Informationen kann zur Funktion der Website und/oder zur Verbesserung Ihrer Erfahrung verwendet werden."
+how_we_use_cookies:
+  en: "How we use Cookies"
+  de: "Wie wir Cookies verwenden"
+how_we_use_cookies_p:
+  en: "To give you the best experience possible, we use the following types of cookies:"
+  de: "Um Ihnen die bestmögliche Erfahrung zu bieten, verwenden wir die folgenden Arten von Cookies:"
+strictly_necessary_cookies:
+  en: "Strictly Necessary: As a web application, we require certain necessary cookies to run our service. This is how we remeber that you already submitted an answer for the current poll item."
+  de: "Unbedingt erforderlich: Als Webanwendung benötigen wir bestimmte erforderliche Cookies, um unseren Service auszuführen. Auf diese Weise merken wir uns zum Beispiel, dass Sie bereits eine Antwort für den aktuellen Umfragepunkt eingereicht haben."
+preference_cookies:
+  en: "Preference: We use preference cookies to help us remember the way you like to use our service. For example we use a cookie to remember your language preference, if you set one."
+  de: "Präferenz: Wir verwenden Präferenz-Cookies, um uns daran zu erinnern, wie Sie unseren Service nutzen möchten. Zum Beispiel verwenden wir einen Cookie, um Ihre Spracheinstellung zu speichern, wenn Sie eine festgelegt haben."
+
+privacy_policy_title:
+  en: "Svoote Privacy Policy"
+  de: "Svoote Datenschutzrichtlinie"
+
+privacy_last_updated:
+  en: "Last updated: 09 Feb. 2025"
+  de: "Zuletzt aktualisiert: 09.02.2025"
+
+privacy_policy_tldr:
+  en: "TL;DR: For svoote.com visitors, we only use strictly necessary cookies and we do not collect any personal data. We are commited to comply with the EU GDPR. In this policy, we lay out what data we collect and why, how your data is handled and your rights to your data. We promise we never sell your data - we never have and we never will."
+  de: "TL;DR: Für Besucher von svoote.com verwenden wir nur unbedingt erforderliche Cookies und sammeln keine persönlichen Daten. Wir verpflichten uns, die EU-DSGVO einzuhalten. In dieser Richtlinie legen wir dar, welche Daten wir sammeln und warum, wie Ihre Daten verarbeitet werden und welche Rechte Sie an Ihren Daten haben. Wir versprechen, Ihre Daten niemals zu verkaufen - wir haben es nie getan und werden es niemals tun."
+
+what_data_we_collect:
+  en: "What data do we collect?"
+  de: "Welche Daten sammeln wir?"
+
+what_data_we_collect_p:
+  en: "We believe the web should be simple and privacy minded for the smoothest and simplest experience. As such, on svoote.com we do not collect personal information, only use strictly necessary cookies, we don't sent or sell information to third-parties, we don't share information with advertising companies, we don't analyze information for personal and behavioral trends and we don't monetize our data in any way."
+  de: "Wir glauben, dass das Web einfach und datenschutzorientiert sein sollte, um die reibungsloseste und einfachste Erfahrung zu bieten. Daher sammeln wir auf svoote.com keine persönlichen Informationen, verwenden nur unbedingt erforderliche Cookies, geben oder verkaufen keine Informationen an Dritte, teilen keine Informationen mit Werbeunternehmen, analysieren keine Informationen im Hinblick auf persönliche und Verhaltensmuster und monetarisieren unsere Daten in keiner Weise."
+
+what_data_we_collect_p2:
+  en: "We use Plausible Analytics to collect anonymous usage data for our website to improve our product. Users are not tracked across websites and no cookies are used. We only collect statistical data about how often our webpages are visited and for how long. All information is stored in Germany and Plausible is fully GDPR compliant - for more information see "
+  de: "Wir verwenden Plausible Analytics, um anonyme Nutzungsdaten für unsere Webseite zu sammeln und unser Produkt zu verbessern. Benutzer werden nicht über Websiten hinweg verfolgt und es werden keine Cookies verwendet. Wir sammeln nur statistische Daten darüber, wie oft unsere Webseiten besucht werden und wie lange. Alle Informationen werden in Deutschland gespeichert und Plausible ist vollständig DSGVO-konform - für weitere Informationen siehe "
+
+your_rights:
+  en: "Your Rights for your personal Data"
+  de: "Ihre Rechte bezüglich Ihrer persönlichen Daten"
+
+your_rights_p:
+  en: "You have several rights regarding your personal data. These rights include the ability to access, rectify, and erase your data: Right to Access, Right to Rectification, Right to Erasure, Right to Restrict Processing, Right to Data Portability, Right to Object. If you would like to exercise any of these rights, please contact us."
+  de: "Sie haben verschiedene Rechte bezüglich Ihrer persönlichen Daten. Diese Rechte umfassen die Möglichkeit, auf Ihre Daten zuzugreifen, sie zu berichtigen und zu löschen: Recht auf Zugang, Recht auf Berichtigung, Recht auf Löschung, Recht auf Einschränkung der Verarbeitung, Recht auf Datenübertragbarkeit, Recht auf Widerspruch. Wenn Sie eines dieser Rechte ausüben möchten, kontaktieren Sie uns bitte."
+
+changes_and_questions:
+  en: "Changes and questions"
+  de: "Änderungen und Fragen"
+
+changes_and_questions_p:
+  en: "We may update this policy as needed to comply with relevant regulations and reflect any new practices. Whenever we make a significant change to our policies, we will also announce them on our company blog or social media profiles."
+  de: "Wir können diese Richtlinie nach Bedarf aktualisieren, um den geltenden Vorschriften zu entsprechen und neue Praktiken widerzuspiegeln. Jedes Mal, wenn wir eine wesentliche Änderung an unseren Richtlinien vornehmen, werden wir dies auch auf unserem Unternehmensblog oder in unseren Social-Media-Profilen bekanntgeben."
+
+changes_and_questions_p2:
+  en: "Contact us at info@svoote.com if you have any questions, comments, or concerns about this privacy policy, your data, or your rights with respect to your information."
+  de: "Kontaktieren Sie uns unter info@svoote.com, wenn Sie Fragen, Kommentare oder Bedenken zu dieser Datenschutzrichtlinie, Ihren Daten oder Ihren Rechten in Bezug auf Ihre Informationen haben."
+
+tos_title:
+  en: "Svoote Terms of Service"
+  de: "Svoote Nutzungsbedingungen"
+
+tos_last_updated:
+  en: "Effective Date: 09 Feb. 2025"
+  de: "Gültigkeitsdatum: 09. Feb. 2025"
+
+tos_prelim:
+  en: 'Welcome to svoote.com ("Website," "we," "us," or "our"). By accessing or using our Website, you agree to these Terms of Service ("Terms"). If you do not agree, please do not use our services.'
+  de: 'Willkommen bei svoote.com ("Website", "wir", "uns" oder "unser"). Durch den Zugriff auf oder die Nutzung unserer Website stimmen Sie diesen Nutzungsbedingungen ("Bedingungen") zu. Wenn Sie nicht zustimmen, verwenden Sie bitte unsere Dienste nicht.'
+
+tos_1_title:
+  en: "1. Use of Our Website"
+  de: "1. Nutzung unserer Website"
+
+tos_1_0:
+  en: "Our Website provides live polling and allows users to participate by submitting responses."
+  de: "Unsere Website bietet Live-Umfragen und ermöglicht es den Nutzern, durch die Abgabe von Antworten teilzunehmen."
+
+tos_1_1:
+  en: "You may use our Website for lawful purposes only and must comply with all applicable laws and regulations."
+  de: "Sie dürfen unsere Website nur für rechtmäßige Zwecke nutzen und müssen alle geltenden Gesetze und Vorschriften einhalten."
+
+tos_1_2:
+  en: "You must not disrupt or interfere with the operation of the Website."
+  de: "Sie dürfen den Betrieb der Website nicht stören oder behindern."
+
+tos_2_title:
+  en: "2. User-Generated Content"
+  de: "2. Benutzer-generierte Inhalte"
+
+tos_2_0:
+  en: "You are solely responsible for any content you submit, including responses to polls, comments, or other user-generated content."
+  de: "Sie sind ausschließlich verantwortlich für alle Inhalte, die Sie einreichen, einschließlich Antworten auf Umfragen, Kommentare oder andere benutzergenerierte Inhalte."
+
+tos_2_1:
+  en: "You agree not to submit any content that is offensive, defamatory, hateful, abusive, illegal, or violates any third-party rights."
+  de: "Sie erklären sich damit einverstanden, keine Inhalte einzureichen, die beleidigend, verleumderisch, hasserfüllt, missbräuchlich, illegal oder gegen die Rechte Dritter verstoßen."
+
+tos_2_2:
+  en: "We reserve the right to remove or moderate any content at our discretion."
+  de: "Wir behalten uns das Recht vor, Inhalte nach eigenem Ermessen zu entfernen oder zu moderieren."
+
+tos_3_title:
+  en: "3. Intellectual Property"
+  de: "3. Geistiges Eigentum"
+
+tos_3_0:
+  en: "All Website content, including design, text, graphics, and logos, is owned by or licensed to us and is protected by intellectual property laws."
+  de: "Alle Inhalte der Website, einschließlich Design, Text, Grafiken und Logos, sind im Besitz von oder lizenziert an uns und durch Gesetze zum geistigen Eigentum geschützt."
+
+tos_3_1:
+  en: "By submitting content, you grant us a worldwide, non-exclusive, royalty-free license to use, display, and distribute your submitted content."
+  de: "Durch die Einreichung von Inhalten gewähren Sie uns eine weltweite, nicht-exklusive, lizenzfreie Erlaubnis zur Nutzung, Anzeige und Verbreitung Ihrer eingereichten Inhalte."
+
+tos_4_title:
+  en: "4. No User Accounts & Privacy"
+  de: "4. Keine Benutzerkonten & Datenschutz"
+
+tos_4_0:
+  en: "We do not require user accounts for participation."
+  de: "Wir verlangen keine Benutzerkonten für die Teilnahme."
+
+tos_4_1:
+  en: "While we do not collect personal data directly, we may use cookies or third-party analytics tools. Please refer to our Privacy Policy for more details."
+  de: "Obwohl wir keine persönlichen Daten direkt erheben, können wir Cookies oder Analyse-Tools von Drittanbietern verwenden. Bitte verweisen Sie auf unsere Datenschutzrichtlinie für nähere Informationen."
+
+tos_5_title:
+  en: "5. Disclaimers & Limitation of Liability"
+  de: "5. Haftungsausschlüsse & Haftungsbeschränkung"
+
+tos_5_0:
+  en: "The Website is provided 'as is' without warranties of any kind."
+  de: "Die Website wird 'wie sie ist' ohne jegliche Garantien bereitgestellt."
+
+tos_5_1:
+  en: "We do not guarantee the accuracy, reliability, or availability of any content on our Website."
+  de: "Wir garantieren nicht die Genauigkeit, Zuverlässigkeit oder Verfügbarkeit von Inhalten auf unserer Website."
+
+tos_5_2:
+  en: "We are not liable for any damages, including lost data, system failures, or third-party conduct resulting from your use of our Website."
+  de: "Wir sind nicht verantwortlich für Schäden, einschließlich Datenverlust, Systemausfällen oder dem Verhalten Dritter, das aus Ihrer Nutzung unserer Website resultiert."
+
+tos_6_title:
+  en: "6. Modifications to Terms"
+  de: "6. Änderungen der Bedingungen"
+
+tos_6_0:
+  en: "We reserve the right to update these Terms at any time. Changes will be posted on this page with an updated effective date."
+  de: "Wir behalten uns das Recht vor, diese Bedingungen jederzeit zu aktualisieren. Änderungen werden auf dieser Seite mit einem aktualisierten Gültigkeitsdatum veröffentlicht."
+
+tos_7_title:
+  en: "7. Governing Law"
+  de: "7. Anwendbares Recht"
+
+tos_7_0:
+  en: "These Terms are governed by the laws of the Federal Republic of Germany."
+  de: "Diese Bedingungen unterliegen dem Recht der Bundesrepublik Deutschland."
+
+tos_7_1:
+  en: "Any disputes arising under these Terms will be resolved in the courts of Göttingen, Germany."
+  de: "Alle Streitigkeiten, die aus diesen Bedingungen entstehen, werden vor den Gerichten in Göttingen, Deutschland, entschieden."
+
+tos_8_title:
+  en: "8. Contact Information"
+  de: "8. Kontaktinformationen"
+
+tos_8_0:
+  en: "If you have any questions about these Terms, please contact us at info@svoote.com."
+  de: "Wenn Sie Fragen zu diesen Bedingungen haben, kontaktieren Sie uns bitte unter info@svoote.com."

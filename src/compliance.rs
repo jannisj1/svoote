@@ -14,49 +14,138 @@ use crate::{
     svg_icons::SvgIcon,
 };
 
-pub async fn get_privacy_policy_page() -> Result<Response, AppError> {
+pub async fn get_privacy_policy_page(
+    cookies: CookieJar,
+    headers: HeaderMap,
+) -> Result<Response, AppError> {
+    let l = select_language(&cookies, &headers);
     return Ok(html_page::render_html_page(
         "Privacy policy - Svoote",
-        "en",
+        &l,
         html! {
             (render_header(html!{}))
-            div #"__enzuzo-root" {}
+            ."mx-6 sm:mx-14 my-24 text-slate-500" {
+                ."max-w-2xl mx-auto" {
+                    h1 ."mb-2 text-slate-700 text-4xl font-bold" { (t!("privacy_policy_title", locale=l)) }
+                    h3 ."mb-6 text-sm" { (t!("privacy_last_updated", locale=l)) }
+                    p ."mb-8" { (t!("privacy_policy_tldr", locale=l)) }
+
+                    h2 ."mb-4 text-slate-700 text-2xl font-semibold" { (t!("what_data_we_collect", locale=l)) }
+                    p ."mb-4" { (t!("what_data_we_collect_p", locale=l)) }
+                    p ."mb-8" {
+                        (t!("what_data_we_collect_p2", locale=l))
+                        a ."underline" href="https://plausible.io/data-policy" { "Plausible data policy" } "."
+                    }
+
+                    h2 ."mb-4 text-slate-700 text-2xl font-semibold" { (t!("your_rights", locale=l)) }
+                    p ."mb-8" { (t!("your_rights_p", locale=l)) }
+
+                    h2 ."mb-4 text-slate-700 text-2xl font-semibold" { (t!("changes_and_questions", locale=l)) }
+                    p ."mb-4" { (t!("changes_and_questions_p", locale=l)) }
+                    p ."mb-8" { (t!("changes_and_questions_p2", locale=l)) }
+                }
+            }
+            /*div #"__enzuzo-root" {}
             script
                 #"__enzuzo-root-script"
                 src="https://app.enzuzo.com/scripts/privacy/e569e7fe-436d-11ef-9615-cb709ba43f2f"
-            {}
+            {}*/
         },
     )
     .into_response());
 }
 
-pub async fn get_terms_of_service_page() -> Result<Response, AppError> {
+pub async fn get_terms_of_service_page(
+    cookies: CookieJar,
+    headers: HeaderMap,
+) -> Result<Response, AppError> {
+    let l = select_language(&cookies, &headers);
     return Ok(html_page::render_html_page(
         "Terms of service - Svoote",
-        "en",
+        &l,
         html! {
             (render_header(html!{}))
-            div #"__enzuzo-root" {}
+            ."mx-6 sm:mx-14 my-24 text-slate-500" {
+                ."max-w-2xl mx-auto" {
+
+                    h1 ."mb-2 text-slate-700 text-4xl font-bold" { (t!("tos_title", locale=l)) }
+                    h3 ."mb-6 text-sm" { (t!("tos_last_updated", locale=l)) }
+                    p ."mb-8" { (t!("tos_prelim", locale=l)) }
+
+                    h2 ."mb-4 text-slate-700 text-2xl font-semibold" { (t!("tos_1_title", locale=l)) }
+                    p ."mb-4" { (t!("tos_1_0", locale=l)) }
+                    p ."mb-4" { (t!("tos_1_1", locale=l)) }
+                    p ."mb-8" { (t!("tos_1_2", locale=l)) }
+
+                    h2 ."mb-4 text-slate-700 text-2xl font-semibold" { (t!("tos_2_title", locale=l)) }
+                    p ."mb-4" { (t!("tos_2_0", locale=l)) }
+                    p ."mb-4" { (t!("tos_2_1", locale=l)) }
+                    p ."mb-8" { (t!("tos_2_2", locale=l)) }
+
+                    h2 ."mb-4 text-slate-700 text-2xl font-semibold" { (t!("tos_3_title", locale=l)) }
+                    p ."mb-4" { (t!("tos_3_0", locale=l)) }
+                    p ."mb-8" { (t!("tos_3_1", locale=l)) }
+
+                    h2 ."mb-4 text-slate-700 text-2xl font-semibold" { (t!("tos_4_title", locale=l)) }
+                    p ."mb-4" { (t!("tos_4_0", locale=l)) }
+                    p ."mb-8" { (t!("tos_4_1", locale=l)) }
+
+                    h2 ."mb-4 text-slate-700 text-2xl font-semibold" { (t!("tos_5_title", locale=l)) }
+                    p ."mb-4" { (t!("tos_5_0", locale=l)) }
+                    p ."mb-4" { (t!("tos_5_1", locale=l)) }
+                    p ."mb-8" { (t!("tos_5_2", locale=l)) }
+
+                    h2 ."mb-4 text-slate-700 text-2xl font-semibold" { (t!("tos_6_title", locale=l)) }
+                    p ."mb-8" { (t!("tos_6_0", locale=l)) }
+
+                    h2 ."mb-4 text-slate-700 text-2xl font-semibold" { (t!("tos_7_title", locale=l)) }
+                    p ."mb-4" { (t!("tos_7_0", locale=l)) }
+                    p ."mb-8" { (t!("tos_7_1", locale=l)) }
+
+                    h2 ."mb-4 text-slate-700 text-2xl font-semibold" { (t!("tos_8_title", locale=l)) }
+                    p ."mb-8" { (t!("tos_8_0", locale=l)) }
+                }
+            }
+            /*div #"__enzuzo-root" {}
             script
                 #"__enzuzo-root-script"
                 src="https://app.enzuzo.com/scripts/tos/e569e7fe-436d-11ef-9615-cb709ba43f2f"
-            {}
+                {}*/
         },
     )
     .into_response());
 }
 
-pub async fn get_cookie_policy_page() -> Result<Response, AppError> {
+pub async fn get_cookie_policy_page(
+    cookies: CookieJar,
+    headers: HeaderMap,
+) -> Result<Response, AppError> {
+    let l = select_language(&cookies, &headers);
     return Ok(html_page::render_html_page(
         "Cookie policy - Svoote",
-        "en",
+        &l,
         html! {
             (render_header(html!{}))
-            div #"__enzuzo-root" {}
+            ."mx-6 sm:mx-14 my-24 text-slate-500" {
+                ."max-w-2xl mx-auto" {
+                    h1 ."mb-2 text-slate-700 text-4xl font-bold" { (t!("cookies_title", locale=l)) }
+                    h3 ."mb-6 text-sm" { (t!("cookies_last_updated", locale=l)) }
+                    h2 ."mb-4 text-slate-700 text-2xl font-semibold" { (t!("what_are_cookies", locale=l)) }
+                    p ."mb-6" { (t!("what_are_cookies_p", locale=l)) }
+
+                    h2 ."mb-4 text-slate-700 text-2xl font-semibold" { (t!("how_we_use_cookies", locale=l)) }
+                    p ."mb-4" { (t!("how_we_use_cookies_p", locale=l)) }
+                    ul ."mb-4 ml-2 list-disc list-inside" {
+                        li ."mb-2" { (t!("strictly_necessary_cookies", locale=l)) }
+                        li ."mb-2" { (t!("preference_cookies", locale=l)) }
+                    }
+                }
+            }
+            /*div #"__enzuzo-root" {}
             script
                 #"__enzuzo-root-script"
                 src="https://app.enzuzo.com/scripts/cookies/e569e7fe-436d-11ef-9615-cb709ba43f2f"
-            {}
+            {}*/
         },
     )
     .into_response());
