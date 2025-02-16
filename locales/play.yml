@@ -8,3 +8,12 @@ submit:
 answer_submitted:
   en: "Your answer has been submitted"
   de: "Deine Antwort wurde gesendet"
+poll_finished:
+  en: "This poll is finished, thank you for using Svoote."
+  de: "Diese Umfrage ist vorbei. Danke, dass Sie Svoote genutzt haben."
+enter_code_above:
+  en: "Enter a code above to join a svoote poll."
+  de: "Gib oben einen Code ein, um einer Svoote Umfrage beizutreten."
+goto_start_page:
+  en: "Go to start page"
+  de: "Zur Startseite gehen"

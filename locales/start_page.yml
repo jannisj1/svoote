@@ -2,6 +2,23 @@ _version: 2
 html_description_meta:
   en: "Svoote simplifies live polling with its user-friendly website. No registration is required, ensuring a privacy-friendly experience without ads. Svoote supports up to 100 participants with unlimited polls, offering a seamless way to engage your audience."
   de: "Svoote bietet benutzerfreundliche Live-Umfragen. Keine Registrierung erforderlich - für eine datenschutzfreundliches Erlebnis ohne Werbung. Svoote unterstützt bis zu 100 Teilnehmer mit unbegrenzten Umfragen und bietet eine nahtlose Möglichkeit, Ihr Publikum zu begeistern."
+
+why_svoote_nq:
+  en: "Why Svoote"
+  de: "Warum Svoote"
+
+pricing_short:
+  en: "Pricing"
+  de: "Preise"
+
+start_hosting:
+  en: "Host"
+  de: "Veranstalten"
+
+get_started:
+  en: "Get started"
+  de: "Starten"
+
 enter_poll_desc:
   en: "Enter a presentation:"
   de: "Einer Umfrage beitreten:"
@@ -13,8 +30,8 @@ title:
   en: "Live polling made simple."
   de: "Live Umfragen leicht gemacht."
 subtitle:
-  en: "Intuitive. Open Source. Made in Germany."
-  de: "Intuitiv. Open Source. Made in Germany."
+  en: "No Registration. Open Source."
+  de: "Keine Anmeldung. Open Source."
 what_do_you_ask:
   en: "What do you ask your audience?"
   de: "Was fragst du dein Publikum?"
@@ -32,33 +49,99 @@ why_svoote:
   en: "Why Svoote?"
   de: "Warum Svoote?"
 
+low_pricing_section_title:
+  en: "Free tier and pricing"
+  de: "Kostenlose Version und Preise"
+
+low_pricing_section_text:
+  en: "Svoote's free tier offers unlimited polls for up to 100 participants per poll. If you want to host more than 100 participants, make quiz competitions or just support the development of Svoote, you can subscribe to the Pro-Version in the future."
+  de: "Svootes kostenlose Version bietet unbegrenzte Umfragen für bis zu 100 Teilnehmer pro Umfrage. Wenn du mehr Nutzer, einen Publikums-Wettbewerb oder einfach die Entwicklung von Svoote unterstützen möchtest, kannst du in der Zukunft die Pro-Version abonnieren."
+
 privacy_section_title:
-  en: "Privacy friendly"
-  de: "Privatsphäre und Datenschutz"
+  en: "Simplicity and privacy"
+  de: "Einfachheit und Datenschutz"
+
 privacy_section_text_1:
-  en: "To be privacy friendly, the free tier of Svoote is avaible to everyone without creating an account. This protects your data and makes operating the website simpler. We don't use cookies to track users, neither the poll-hosters nor the participants. To analyze our website traffic, we use "
-  de: "Um das Erstellen von Umfragen einfach zu halten, ist die freie Version von Svoote ohne Registrierung nutzbar. Dies schützt auch Ihre Daten und hilft, das Betreiben der Webseite günstig zu machen. Nutzer von Svoote werden nicht getrackt und keine Daten bis auf das Nötigste zur Veranstaltung der Umfragen erhoben. Zur Analyse unseres Website-Traffics verwenden wir "
+  en: "The free tier of Svoote is available to everyone without creating an account. This protects your data and makes operating the website simpler. We don't track users or collect, share or monetize user data. To analyze our website traffic, we use "
+  de: "Die kostenlose Version von Svoote ist ohne Registrierung nutzbar. Dies schützt Ihre Daten und macht das Betreiben der Webseite einfacher. Nutzer von Svoote werden nicht getrackt und keine Nutzerdaten werden gesammelt, geteilt oder monetarisiert. Zur Analyse unseres Website-Traffics verwenden wir "
+
 privacy_section_text_2:
-  en: ", an EU-based privacy focused Google-analytics alternative, which does not track users accross websites."
-  de: ", eine in der EU gehostete Open-Source Google-Analytics Alternative, die Nutzer nicht über Website-Grenzen hinweg trackt."
+  en: ", an open source Google-analytics alternative. We only use strictly necessary cookies."
+  de: ", eine Open Source Google-Analytics Alternative. Nur technisch notwendige Cookies werden verwendet."
 
 ad_free_section_title:
   en: "Ad-free"
   de: "Keine Werbung"
 ad_free_section_text:
   en: "To be a good experience for everyone, we believe in serving Svoote ad-free, even in the free tier. To support the operation and development of this website, you can subscribe to the Pro-version in the future."
-  de: "Svoote zeigt keine Werbung, auch in der kostenlosen Variante. So kann es auch problemlos an Bildungseinrichtungen wie Schulen genutzt werden. Um die Entwicklung und das Betreiben von Svoote zu unterstützen, wird es in der Zukunft eine kostenpflichtige Pro-Version geben."
+  de: "Svoote zeigt keine Werbung, auch in der kostenlosen Version. Um die Entwicklung und das Betreiben von Svoote zu unterstützen, wird es in der Zukunft eine kostenpflichtige Pro-Version geben."
 
 open_source_section_title:
   en: "Open source"
   de: "Open source"
 open_source_section_text:
   en: "Svoote is an open source website published under the GNU Affero General Public License 3 (AGPLv3). You can check out the code, file issues or commit changes on "
-  de: "Svoote ist eine Open Source Webseite. Der Source Code ist unter der GNU Affero General Public License 3 (AGPLv3) veröffentlicht. Einsehen des Source Codes und Verbesserungsvorschläge auf "
+  de: "Svoote ist eine Open Source Webseite veröffentlicht unter der GNU Affero General Public License 3 (AGPLv3). Einsehen des Source Codes und Verbesserungsvorschläge können gemacht werden auf "
 
-start_from_here:
-  en: "Start with this template"
-  de: "Mit dieser Vorlage starten"
+pricing_and_limits:
+  en: "Pricing and usage limits"
+  de: "Preise und Nutzungsgrenzen"
+
+start_now:
+  en: "Start now"
+  de: "Jetzt starten"
+
+not_available_yet:
+  en: "Not available yet"
+  de: "Noch nicht verfügbar"
+
+usd_per_month:
+  en: "USD per month"
+  de: "USD pro Monat"
+
+whats_included_in:
+  en: "What's included in "
+  de: "Was enthalten ist in "
+
+unlimited_polls:
+  en: "Unlimited number of polls"
+  de: "Unbegrenzte Anzahl von Umfragen"
+
+up_to_100_users:
+  en: "Up to 100 live users per poll"
+  de: "Bis zu 100 Teilnehmer pro Umfrage"
+
+multiple_choice_slides:
+  en: "Multiple choice slides"
+  de: "Multiple-Choice Folien"
+
+word_cloud_slides:
+  en: "Word cloud slides"
+  de: "Wortwolken Folien"
+
+everything_in_free:
+  en: "Everything included in Free"
+  de: "Alles, was in Free enthalten ist"
+
+unlimited_users:
+  en: "Unlimited live users per poll"
+  de: "Unbegrenzte Zahl an Teilnehmern pro Umfrage"
+
+quiz_competition:
+  en: "Audience quiz competition"
+  de: "Publikums Wettbewerb"
+
+more_features_future:
+  en: "More features in the future"
+  de: "Mehr Features in der Zukunft"
+
+image_slides:
+  en: "image_slides"
+  de: "Bild Folien"
+
+number_scale_slides:
+  en: "Number scale slides"
+  de: "Zahlenskala Folien"
 
 cookie_banner_text:
   en: "Svoote.com only uses necessary cookies. We don't use cookies to track users across sites or show ads. For more information see our "

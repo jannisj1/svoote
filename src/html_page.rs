@@ -1,4 +1,5 @@
 use maud::{html, Markup, DOCTYPE};
+use smartstring::{Compact, SmartString};
 
 use crate::{config::COLOR_PALETTE, static_file, svg_icons::SvgIcon};
 
@@ -84,6 +85,21 @@ pub fn render_header(top_right_content: Markup) -> Markup {
                 ."size-5 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
             }
             (top_right_content)
+        }
+    };
+}
+
+pub fn render_start_page_menu_bar(l: &SmartString<Compact>) -> Markup {
+    return html! {
+        ."max-md:hidden md:flex items-center gap-8 text-sm text-slate-500 font-semibold" {
+            a href="/#why" { (t!("why_svoote_nq", locale=l)) }
+            a href="/#pricing" { (t!("pricing_short", locale=l)) }
+            a href="/host" { (t!("start_hosting", locale=l)) }
+        }
+        ."flex items-center" {
+            a href="/host"
+                ."px-4 py-1 text-sm text-slate-50 font-medium bg-cyan-600 rounded-lg"
+                { (t!("get_started", locale=l)) }
         }
     };
 }

@@ -54,7 +54,11 @@ pub async fn get_play_page(
 ) -> Result<Response, AppError> {
     let l = select_language(&cookies, &headers);
     let poll_id_str = params.c.clone().unwrap_or(SmartString::new());
-    let poll_id: Option<ShortID> = params.c.map(|poll_id| poll_id.parse().ok()).flatten();
+    let poll_id: Option<ShortID> = params
+        .c
+        .clone()
+        .map(|poll_id| poll_id.parse().ok())
+        .flatten();
 
     let (session_id, cookies) = session_id::get_or_create_session_id(cookies);
     let live_poll = poll_id
@@ -68,8 +72,18 @@ pub async fn get_play_page(
             html! {
                 (render_header(html! {}))
                 (render_join_form(&l))
-                div ."my-16 mx-8 sm:mx-14" {
-                    p ."text-center text-slate-500" { "This poll is finished." br; "Thank you for using svoote.com" }
+                div ."my-24 mx-6 sm:mx-14" {
+                    p ."mb-2 text-center text-sm text-slate-500" {
+                        @if params.c.is_some() {
+                            (t!("poll_finished", locale=l))
+                        } @else {
+                            (t!("enter_code_above", locale=l))
+                        }
+                    }
+                    ."flex justify-center" {
+                        a ."text-sm text-cyan-600 underline"
+                            href="/" { (t!("goto_start_page", locale=l)) " →" }
+                    }
                 }
             },
         );
