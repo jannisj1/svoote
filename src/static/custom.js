@@ -367,6 +367,15 @@ document.addEventListener("alpine:init", () => {
         const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws/host/${this.code}`;
         if (this.gridView) this.gridView = false;
 
+        let startBtn = document.getElementById("start-stop-button");
+        startBtn.style.width = `${startBtn.offsetWidth}px`;
+        this.startBtnWidth = startBtn.style.width;
+        startBtn.firstElementChild.style.display = "none";
+        requestAnimationFrame(() => {
+          startBtn.style.width = "2.25rem";
+          startBtn.style.paddingInline = "0.5rem";
+        });
+
         this.socket = new ReconnectingWebSocket(wsUrl);
         this.socket.onopen = (_e) => {
           this.gotoSlide(this.poll.activeSlide);
@@ -380,11 +389,14 @@ document.addEventListener("alpine:init", () => {
               const oldStats = slide.stats;
               slide.stats = msg.data.stats;
               if (slide.type === "mc") {
-                const hasMaxPercentageIncrease = oldStats.percentages.some(
-                  (percentage, i) =>
-                    percentage === 100 &&
-                    slide.stats.counts[i] > oldStats.counts[i],
-                );
+                const hasMaxPercentageIncrease =
+                  oldStats === null
+                    ? false
+                    : oldStats.percentages.some(
+                        (percentage, i) =>
+                          percentage === 100 &&
+                          slide.stats.counts[i] > oldStats.counts[i],
+                      );
                 if (hasMaxPercentageIncrease) {
                   slide.stats.percentages = slide.stats.percentages.map(
                     (percent) => percent * 1.2,
@@ -474,6 +486,17 @@ document.addEventListener("alpine:init", () => {
         if (this.isFullscreen) {
           this.toggleFullscreen();
         }
+
+        let startBtn = document.getElementById("start-stop-button");
+        startBtn.style.width = `${startBtn.offsetWidth}px`;
+        requestAnimationFrame(() => {
+          startBtn.style.width = this.startBtnWidth;
+          startBtn.style.paddingInline = "";
+        });
+        setTimeout(() => {
+          startBtn.style.width = "";
+          startBtn.firstElementChild.style.display = "inline-block";
+        }, 200);
       }
     },
 

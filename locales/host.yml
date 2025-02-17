@@ -33,7 +33,7 @@ fullscreen_btn_title:
   de: "Vollbild an/aus"
 no_slides_notice:
   en: "Empty presentation. Add slides by clicking '+' in the top left."
-  de: "Leere Präsentation. Füge Folien mit '+' hinzu (oben links)."
+  de: "Leere Präsentation. Füge Folien mit '+' hinzu."
 slide:
   en: "Slide"
   de: "Folie"

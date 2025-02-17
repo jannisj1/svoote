@@ -47,22 +47,11 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
             div x-data="poll" id="fullscreen-container" "@fullscreenchange"="if (document.fullscreenElement == null) isFullscreen = false; else isFullscreen = true; $dispatch('fontsizechange');"
                 ":class"="'min-w-[520px] ' + (isFullscreen ? 'bg-slate-700 h-full flex flex-col justify-center' : 'bg-white')"
             {
-                @if cfg!(debug_assertions) { button "@click"="runDemo()" { "Run demo" } }
+                //@if cfg!(debug_assertions) { button "@click"="runDemo()" { "Run demo" } }
                 div ."relative mx-6 sm:mx-16 flex justify-between items-center"
                     ":class"="isFullscreen && 'mt-6'"
                 {
-                    div ."absolute size-0 left-1/2 top-1.5" {
-                        template x-for="i in poll.slides.length" {
-                            button x-text="i"
-                                ."absolute top-0 left-1/2 size-6 rounded-full text-sm font-mono transition-all duration-500 ease-out cursor-pointer disabled:cursor-default disabled:opacity-0"
-                                ":style"="`transform: translateX(${ ((i - 1) - poll.activeSlide) * 24 - 12 }px);`"
-                                ":class"="i - 1 == poll.activeSlide ? 'bg-slate-500 text-slate-50' : (isFullscreen ? 'text-slate-100' : '')"
-                                ":disabled"="Math.abs((i - 1) - poll.activeSlide) > 6"
-                                "@click"="gotoSlide(i - 1)"
-                            { }
-                        }
-                    }
-                    div ."pr-4 flex items-center gap-1.5 z-10" ":class"="isFullscreen ? 'bg-slate-700' : 'bg-white'" {
+                    div ."pr-4 flex items-center gap-1.5 z-10 transition" ":class"="isFullscreen && 'opacity-0'" {
                         div x-data="{ open: false }" ."relative size-[1.4rem]" {
                             button "@click"="open = !open"
                                 ":disabled"="isLive" ."size-[1.4rem] cursor-pointer disabled:cursor-default"
@@ -119,15 +108,23 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                             label ."text-large cursor-pointer has-checked:text-slate-100" title=(t!("text_size_large", locale=l)) { "Aa" input type="radio" ."hidden" x-model="fontSize" name="fontSize" value="large"; }
                             label ."text-xl cursor-pointer has-checked:text-slate-100" title=(t!("text_size_xlarge", locale=l)) { "Aa" input type="radio" ."hidden" x-model="fontSize" name="fontSize" value="xlarge"; }
                         }
-                        button x-show="!isLive" "@click"="startPoll()"
+                        button #"start-stop-button"
+                            "@click"="if (!isLive) startPoll(); else stopPoll();"
                             ":disabled"="poll.slides.length == 0"
-                            ."p-2 text-slate-50 bg-green-500 rounded-full shadow-xs shadow-slate-400 cursor-pointer disabled:cursor-default hover:bg-green-600 hover:shadow-none disabled:bg-green-200 disabled:shadow-none"
-                            title=(t!("start_poll_btn_title", locale=l))
-                            { ."size-5 translate-x-0.5 translate-y-[0.05rem]" { (SvgIcon::Play.render()) } }
-                        button x-show="isLive" x-cloak "@click"="stopPoll()"
+                            ."px-3.5 py-2 flex items-center justify-end gap-1.5 text-sm text-slate-50 font-medium rounded-full shadow-xs shadow-slate-400 cursor-pointer transition-all duration-[200ms] disabled:cursor-default hover:shadow-none disabled:shadow-none"
+                            ":class"="isLive ? 'bg-red-500 hover:bg-red-700' : 'bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-300'"
+                            ":title"={ "!isLive ? '" (t!("start_poll_btn_title", locale=l)) "' : '" (t!("stop_poll_btn_title", locale=l)) "'" }
+                        {
+                            span { (t!("start_poll_btn_title", locale=l)) }
+                            div x-show="!isLive" ."size-5 translate-x-0.5 translate-y-[0.05rem]"
+                                { (SvgIcon::Play.render()) }
+                            div x-show="isLive" ."size-5 flex items-center justify-center"
+                                { ."size-3 bg-slate-50" {} }
+                        }
+                        /*button x-show="isLive" x-cloak "@click"="stopPoll()"
                             ."p-3 text-slate-50 bg-red-500 rounded-full cursor-pointer disabled:cursor-default hover:bg-red-700"
                             title=(t!("stop_poll_btn_title", locale=l))
-                            { ."size-3 bg-slate-50" {} }
+                            { ."size-3 bg-slate-50" {} }*/
                         button "@click"="toggleFullscreen()" ":disabled"="!isLive" x-show="document.documentElement.requestFullscreen != null"
                             ."p-2 bg-white border rounded-full shadow-xs hover:bg-slate-200 cursor-pointer disabled:cursor-default hover:shadow-none disabled:shadow-none disabled:text-slate-300 disabled:bg-white"
                             title=(t!("fullscreen_btn_title", locale=l))
@@ -283,13 +280,14 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                 }
                 div ."h-12 mx-6 sm:mx-14 mt-2 mb-8 grid grid-cols-3 items-center gap-4" { // The fixed height stops ugly re-layout when a reaction smiley is first sent
                     div { }
-                    div ."flex justify-center items-center gap-4" {
+                    div ."flex justify-center items-center gap-5" {
                         button ."p-2 size-8 rounded-full shadow-xs cursor-pointer hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
                             ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
                             "@click"="gotoSlide(poll.activeSlide - 1)"
                             ":disabled"="poll.activeSlide == 0"
                             title=(t!("prev_slide_btn", locale=l))
                             { (SvgIcon::ArrowLeft.render()) }
+                        div x-text={ "'" (t!("slide", locale=l)) " ' + (poll.activeSlide + 1)" } ."text-sm text-slate-500" {}
                         button ."p-2 size-8 rounded-full shadow-xs cursor-pointer hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
                             ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
                             "@click"="gotoSlide(poll.activeSlide + 1)"
