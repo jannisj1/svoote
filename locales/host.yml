@@ -43,6 +43,9 @@ delete_slide_btn_title:
 choose_template_heading:
   en: "Choose template:"
   de: "Folientyp auswählen:"
+close:
+  en: "Close"
+  de: "Schließen"
 open_ended_question:
   en: "Open ended"
   de: "Offene Frage"

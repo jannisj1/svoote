@@ -183,33 +183,6 @@ document.addEventListener("alpine:init", () => {
         );
     },
 
-    calculateSlideTypeButtonClasses(slideType, buttonType, showSelection) {
-      let classes =
-        "absolute left-1/2 top-[0.25em] -translate-x-1/2 px-[0.875em] py-[0.5em] flex justify-center items-center gap-[0.5em] text-nowrap rounded-full hover:shadow-xs transition duration-300 cursor-pointer ";
-
-      if (showSelection) {
-        classes += "shadow-xs z-10 bg-slate-700 text-slate-100 ";
-        switch (buttonType) {
-          case "mc":
-            classes += "translate-y-[3em] ";
-            break;
-          case "ft":
-            classes += "translate-y-[6.5em] ";
-            break;
-        }
-
-        if (slideType == buttonType) {
-          classes += "ring-4 ring-indigo-500 ";
-        }
-      } else if (slideType == buttonType) {
-        classes += "z-10 scale-75 bg-white text-slate-500 ";
-      } else {
-        classes += "opacity-0 pointer-events-none scale-75 bg-white ";
-      }
-
-      return classes;
-    },
-
     renderWordCloud(slideIndex) {
       let container = document.getElementById("word-cloud-" + slideIndex);
       if (!container || !this.poll.slides[slideIndex].stats || this.gridView)

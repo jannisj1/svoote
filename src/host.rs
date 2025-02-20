@@ -161,24 +161,59 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                     button x-show="gridView && isReordering" x-cloak ."absolute h-full w-[14%] top-0 -right-[17%] z-40 rounded-lg bg-red-200 hover:bg-red-300"
                                         "@click"="$event.stopPropagation(); moveSlide(slideIndex, false); isReordering = false;"
                                         { }
-                                    div ."absolute inset-0 size-full transition duration-300 z-10"
-                                        ":class"="selectTemplate ? 'backdrop-blur-xs' : 'pointer-events-none'"
-                                        x-show="!isLive"
-                                        "@click"="selectTemplate = false" {}
-                                            h2 ."absolute left-1/2 top-[1em] -translate-x-1/2 z-10 text-[0.875em] text-slate-500 transition duration-300 "
-                                        ":class"="selectTemplate ? '' : 'opacity-0'"
-                                        x-show="!isLive"
-                                            { (t!("choose_template_heading", locale=l)) }
                                     button
-                                        "@click"="if (!selectTemplate) { selectTemplate = true; } else { selectTemplate = false; slide.type = 'mc'; } save();"
-                                        ":class"="calculateSlideTypeButtonClasses(slide.type, 'mc', selectTemplate)"
+                                        "@click"="selectTemplate = true;"
+                                        ."absolute top-0 right-0 px-3 py-1 flex items-center gap-2 text-sm text-slate-500 bg-orange-100 border-b border-l rounded-bl-lg cursor-pointer hover:bg-orange-200"
                                         x-show="!isLive"
-                                        { ."size-6 p-1 text-slate-100 rounded-xs" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) } "Multiple Choice" }
-                                    button
-                                        "@click"="if (!selectTemplate) { selectTemplate = true; } else { selectTemplate = false; slide.type = 'ft'; } save();"
-                                        ":class"="calculateSlideTypeButtonClasses(slide.type, 'ft', selectTemplate)"
-                                        x-show="!isLive"
-                                        { ."size-6 p-1 text-slate-100 rounded-xs" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) } (t!("open_ended_question", locale=l)) }
+                                    {
+                                        template x-if="slide.type == 'mc'" { ."size-4 p-0.5 text-slate-100 rounded-xs" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) } }
+                                        template x-if="slide.type == 'ft'" { ."size-4 p-0.5 text-slate-100 rounded-xs" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) } }
+                                        template x-if="slide.type == 'mc'" { span { "Multiple Choice" } }
+                                        template x-if="slide.type == 'ft'" { span { (t!("open_ended_question", locale=l)) } }
+                                    }
+                                    div ."absolute size-full inset-0 z-10 bg-slate-200 transition-all" ":class"="selectTemplate ? 'opacity-25' : 'opacity-100 pointer-events-none'"
+                                        x-show="selectTemplate" "@click"="selectTemplate = false" {}
+                                    div ."absolute overflow-hidden top-0 right-0 w-64 h-full pointer-events-none"
+                                    {
+                                        div ."relative z-10 size-full pr-4.5 pl-2.5 pt-1.5 bg-white transition-all shadow-xl pointer-events-auto"
+                                            ":class"="selectTemplate ? 'translate-x-2' : 'translate-x-[calc(100%+0.5rem)]'"
+                                        {
+                                            div ."mb-6 flex justify-end" {
+                                                button "@click"="selectTemplate = false"
+                                                    ."flex items-center gap-1 text-xs text-slate-300 cursor-pointer hover:text-slate-500"
+                                                    { (t!("close", locale=l)) ."size-3.5" { (SvgIcon::X.render()) } }
+                                            }
+                                            h2 ."mb-2 px-3 text-sm text-slate-500" { (t!("choose_template_heading", locale=l)) }
+                                            div ."px-3 flex flex-col gap-2" {
+                                                button
+                                                    "@click"="slide.type = 'mc'; save();"
+                                                    ."w-full px-2 py-1.5 flex items-center gap-2 text-slate-500 text-sm rounded ring-cyan-600 transition-all duration-100"
+                                                    ":class"="slide.type == 'mc' ? 'ring-2' : 'ring-0 cursor-pointer hover:bg-slate-100'"
+                                                {
+                                                    div ."size-4 p-0.5 text-slate-100 rounded-xs"
+                                                        ":class"={ "slide.type == 'mc' ? '" (COLOR_PALETTE[0]) "' : 'bg-slate-400'" }
+                                                        { (SvgIcon::BarChart2.render()) }
+                                                    "Multiple Choice"
+                                                }
+                                                button
+                                                    "@click"="slide.type = 'ft'; save();"
+                                                    ."w-full px-2 py-1.5 flex items-center gap-2 text-slate-500 text-sm rounded ring-cyan-600 transition-all duration-100"
+                                                    ":class"="slide.type == 'ft' ? 'ring-2' : 'ring-0 cursor-pointer hover:bg-slate-100'"
+                                                {
+                                                    //div ."size-4 p-0.5 text-slate-100 rounded-xs" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
+                                                    div ."size-4 p-0.5 text-slate-100 rounded-xs"
+                                                        ":class"={ "slide.type == 'ft' ? '" (COLOR_PALETTE[1]) "' : 'bg-slate-400'" }
+                                                        { (SvgIcon::Edit3.render()) }
+                                                    (t!("open_ended_question", locale=l))
+                                                }
+                                            }
+                                            hr ."mx-3 my-4";
+                                            label ."mx-5 flex gap-2 items-center text-sm text-slate-700" {
+                                                input x-model="slide.allowMultipleMCAnswers" "@change"="save()" type="checkbox" ."accent-cyan-600";
+                                                (t!("allow_multiple_answers", locale=l))
+                                            }
+                                        }
+                                    }
                                     template x-if="slide.type == 'mc'" {
                                         div ."relative h-full flex flex-col gap-[3em] justify-between" {
                                             div ."flex gap-[1em]" {
@@ -190,11 +225,6 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                         ":contenteditable"="!isLive"
                                                         ."block mb-3 px-[0.5em] text-[1.25em] text-slate-800 bg-transparent outline-hidden"
                                                         ":class"="!isLive && 'ring-1 ring-slate-200 ring-offset-4 rounded-xs focus:ring-2 focus:ring-cyan-600'" { }
-                                                    label ."ml-[0.5em] mb-[0.5em] overflow-hidden flex gap-[0.5em] items-center text-slate-700 transition-all duration-500"
-                                                        ":class"="isLive ? 'h-0 opacity-0' : 'h-[1.5em]'" {
-                                                        input x-model="slide.allowMultipleMCAnswers" "@change"="save()" type="checkbox" ."accent-cyan-600";
-                                                        (t!("allow_multiple_answers", locale=l))
-                                                    }
                                                     template x-for="(answer, answer_index) in slide.mcAnswers" {
                                                         div ."mb-[0.375em] flex items-center gap-[0.5em]" {
                                                             div x-text="incrementChar('A', answer_index)" ."ml-[0.5em] text-[0.875em] text-slate-400" {}
@@ -206,7 +236,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                                 ."w-full px-[0.25em] py-[0.125em] text-slate-700 bg-transparent outline-hidden"
                                                                 ":class"="!isLive && 'focus:ring-2 ring-cyan-600 ring-offset-2 rounded-xs'";
                                                             //button x-show="!isLive" "@click"="answer.isCorrect = !answer.isCorrect; save()" ":class"="answer.isCorrect ? 'text-green-600' : 'text-slate-300 hover:text-green-600'" ."size-6" { (SvgIcon::CheckSquare.render()) }
-                                                            button x-show="!isLive" "@click"="slide.mcAnswers.splice(answer_index, 1); save();" ."size-[1.5em] text-slate-300 hover:text-slate-500" { (SvgIcon::Trash2.render()) }
+                                                            button x-show="!isLive" "@click"="slide.mcAnswers.splice(answer_index, 1); save();" ."size-[1.5em] text-slate-300 cursor-pointer hover:text-slate-500" { (SvgIcon::Trash2.render()) }
                                                         }
                                                     }
                                                     button
@@ -237,7 +267,8 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                             }
                                                         }
                                                         div x-text={ "answer.text != '' ? answer.text : '" (t!("answer", locale=l)) " ' + incrementChar('A', answer_index)" }
-                                                            ."h-[3.25em] my-[0.5em] text-slate-600 text-[0.875em] text-center break-words overflow-hidden" {}
+                                                            ."h-[3.25em] my-[0.5em] text-[0.875em] text-center break-words overflow-hidden"
+                                                            ":class"="answer.text != '' ? 'text-slate-600' : 'text-slate-400'" {}
                                                     }
                                                 }
                                             }
@@ -287,7 +318,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                             ":disabled"="poll.activeSlide == 0"
                             title=(t!("prev_slide_btn", locale=l))
                             { (SvgIcon::ArrowLeft.render()) }
-                        div x-text={ "'" (t!("slide", locale=l)) " ' + (poll.activeSlide + 1)" } ."text-sm text-slate-500" {}
+                        div x-text={ "'" (t!("slide", locale=l)) " ' + (poll.activeSlide + 1)" } ."text-sm" ":class"="isFullscreen ? 'text-slate-300' : 'text-slate-500'" {}
                         button ."p-2 size-8 rounded-full shadow-xs cursor-pointer hover:shadow-none disabled:pointer-events-none disabled:text-slate-400"
                             ":class"="isFullscreen ? 'bg-slate-300 hover:bg-slate-100' : 'bg-slate-100 hover:bg-slate-200'"
                             "@click"="gotoSlide(poll.activeSlide + 1)"
