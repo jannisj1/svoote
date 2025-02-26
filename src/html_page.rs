@@ -1,7 +1,11 @@
 use maud::{html, Markup, DOCTYPE};
 use smartstring::{Compact, SmartString};
 
-use crate::{config::COLOR_PALETTE, static_file, svg_icons::SvgIcon};
+use crate::{
+    config::{COLOR_PALETTE, COLOR_PALETTE_RGB},
+    static_file,
+    svg_icons::SvgIcon,
+};
 
 pub fn render_html_page(title: &str, l: &str, main_content: maud::Markup) -> maud::Markup {
     html! {
@@ -23,6 +27,7 @@ pub fn render_html_page(title: &str, l: &str, main_content: maud::Markup) -> mau
                 }
                 script {
                     "let colorPalette = [" @for color in COLOR_PALETTE { "'" (color) "'," } "];"
+                    "let colorPaletteRGB = [" @for color in COLOR_PALETTE_RGB { "'" (color) "'," } "];"
                 }
             }
             body ."group min-h-screen flex flex-col text-slate-700" {

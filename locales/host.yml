@@ -43,6 +43,18 @@ delete_slide_btn_title:
 choose_template_heading:
   en: "Choose template:"
   de: "Folientyp auswählen:"
+choose_mc_chart_type:
+  en: "Result chart type"
+  de: "Darstellung der Ergebnisse"
+other_options:
+  en: "Other options"
+  de: "Weitere Optionen"
+bar_chart:
+  en: "Bar chart"
+  de: "Balkendiagramm"
+pie_chart:
+  en: "Pie chart"
+  de: "Kuchendiagramm"
 close:
   en: "Close"
   de: "Schließen"

@@ -55,6 +55,7 @@ function createSlide(type) {
       { text: "", isCorrect: false },
     ],
     allowMultipleMCAnswers: false,
+    mcChartType: "bar",
     ftAnswers: [],
     stats: null,
   };
@@ -71,6 +72,11 @@ function createPoll() {
 
 function loadPollFromLocalStorage() {
   let poll = JSON.parse(localStorage.getItem("poll"));
+  for (const slide of poll.slides) {
+    if (slide.mcChartType === undefined) {
+      slide.mcChartType = "bar";
+    }
+  }
 
   if (poll !== null) {
     return poll;
@@ -292,6 +298,129 @@ document.addEventListener("alpine:init", () => {
         }
         top += row.height;
       }
+    },
+
+    renderPieChart(slideIndex) {
+      const canvas = document.getElementById("pie-chart-canvas-" + slideIndex);
+      const slide = this.poll.slides[slideIndex];
+      const stats = slide.stats;
+      if (!canvas || !canvas.getContext) return;
+
+      const oldPercentages = slide.oldPercentages;
+      let newPercentages, newAbsolutes;
+      if (stats !== null) {
+        newPercentages = stats.percentages;
+        newAbsolutes = stats.counts;
+      } else {
+        const mcAnswers = slide.mcAnswers;
+        const length = mcAnswers.length;
+        newPercentages = Array(length).fill(100 / length);
+        newAbsolutes = Array(length).fill(0);
+      }
+
+      const ctx = canvas.getContext("2d");
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+      const dpi = window.devicePixelRatio || 1;
+      canvas.width = width * dpi;
+      canvas.height = height * dpi;
+      ctx.scale(dpi, dpi);
+      const radius = Math.min(width, height) / 2 - 24;
+      const centerX = width / 2;
+      const centerY = height / 2;
+
+      function drawPieChart(percentages, absolutes) {
+        ctx.clearRect(0, 0, width, height);
+        let startAngle = -0.5 * Math.PI; // Start at the top
+        percentages.forEach((percent, index) => {
+          if (percent > 0) {
+            const sliceAngle = (percent / 100) * 2 * Math.PI;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(
+              centerX,
+              centerY,
+              radius,
+              startAngle,
+              startAngle + sliceAngle,
+            );
+            ctx.closePath();
+            ctx.fillStyle = colorPaletteRGB[index % colorPaletteRGB.length];
+            ctx.fill();
+
+            // Draw labels
+            const midAngle = startAngle + sliceAngle / 2;
+            const labelX = centerX + 0.7 * radius * Math.cos(midAngle);
+            const labelY = centerY + 0.7 * radius * Math.sin(midAngle);
+            ctx.fillStyle = "#EEE";
+            ctx.font = "18px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(absolutes[index], labelX, labelY);
+
+            startAngle += sliceAngle;
+          }
+        });
+
+        startAngle = -0.5 * Math.PI;
+        if (percentages.length > 1) {
+          percentages.forEach((percent, index) => {
+            if (percent > 0) {
+              const sliceAngle = (percent / 100) * 2 * Math.PI;
+              ctx.save();
+              ctx.translate(centerX, centerY);
+              ctx.rotate(startAngle + sliceAngle);
+              ctx.fillStyle = "FFF";
+              ctx.fillRect(0, -2, radius, 4);
+              ctx.restore();
+
+              startAngle += sliceAngle;
+            }
+          });
+
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, 2, 0, 2 * Math.PI);
+          ctx.fillStyle = "#FFF";
+          ctx.fill();
+        }
+      }
+
+      if (oldPercentages) {
+        const duration = 500;
+        const startTime = performance.now();
+        const initialPercentages = oldPercentages.slice();
+        while (initialPercentages.length < newPercentages.length)
+          initialPercentages.push(0);
+        if (initialPercentages.length > newPercentages.length)
+          initialPercentages.length = newPercentages.length;
+        const deltaPercentages = newPercentages.map(
+          (newVal, i) => newVal - initialPercentages[i],
+        );
+
+        function animate(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          // Bezier easing function for easeInOut
+          const ease =
+            progress < 0.5
+              ? 4 * progress * progress * progress
+              : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+          const currentPercentages = initialPercentages.map(
+            (start, i) => start + deltaPercentages[i] * ease,
+          );
+          drawPieChart(currentPercentages, newAbsolutes);
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          }
+        }
+
+        requestAnimationFrame(animate);
+      } else {
+        drawPieChart(newPercentages, newAbsolutes);
+      }
+
+      slide.oldPercentages = newPercentages;
     },
 
     gotoSlide(slideIndex) {

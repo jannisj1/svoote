@@ -163,20 +163,21 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                         { }
                                     button
                                         "@click"="selectTemplate = true;"
-                                        ."absolute top-0 right-0 px-3 py-1 flex items-center gap-2 text-sm text-slate-500 bg-orange-100 border-b border-l rounded-bl-lg cursor-pointer hover:bg-orange-200"
+                                        ."absolute top-0 right-0 px-3 py-1.25 flex items-center gap-2 text-sm text-slate-300 bg-slate-700 border-b border-l rounded-bl-lg cursor-pointer hover:bg-slate-600"
                                         x-show="!isLive"
                                     {
                                         template x-if="slide.type == 'mc'" { ."size-4 p-0.5 text-slate-100 rounded-xs" .(COLOR_PALETTE[0]) { (SvgIcon::BarChart2.render()) } }
                                         template x-if="slide.type == 'ft'" { ."size-4 p-0.5 text-slate-100 rounded-xs" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) } }
                                         template x-if="slide.type == 'mc'" { span { "Multiple Choice" } }
                                         template x-if="slide.type == 'ft'" { span { (t!("open_ended_question", locale=l)) } }
+                                        ."size-4" { (SvgIcon::Settings.render()) }
                                     }
                                     div ."absolute size-full inset-0 z-10 bg-slate-200 transition-all" ":class"="selectTemplate ? 'opacity-25' : 'opacity-100 pointer-events-none'"
-                                        x-show="selectTemplate" "@click"="selectTemplate = false" {}
-                                    div ."absolute overflow-hidden top-0 right-0 w-64 h-full pointer-events-none"
+                                        x-show="selectTemplate && !isLive" "@click"="selectTemplate = false" {}
+                                    div ."absolute overflow-hidden top-0 right-0 w-72 h-full pointer-events-none"
                                     {
                                         div ."relative z-10 size-full pr-4.5 pl-2.5 pt-1.5 bg-white transition-all shadow-xl pointer-events-auto"
-                                            ":class"="selectTemplate ? 'translate-x-2' : 'translate-x-[calc(100%+0.5rem)]'"
+                                            ":class"="selectTemplate && !isLive ? 'translate-x-2' : 'translate-x-[calc(100%+0.5rem)]'"
                                         {
                                             div ."mb-6 flex justify-end" {
                                                 button "@click"="selectTemplate = false"
@@ -187,8 +188,8 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                             div ."px-3 flex flex-col gap-2" {
                                                 button
                                                     "@click"="slide.type = 'mc'; save();"
-                                                    ."w-full px-2 py-1.5 flex items-center gap-2 text-slate-500 text-sm rounded ring-cyan-600 transition-all duration-100"
-                                                    ":class"="slide.type == 'mc' ? 'ring-2' : 'ring-0 cursor-pointer hover:bg-slate-100'"
+                                                    ."w-full px-2 py-1.5 flex items-center gap-2 text-slate-500 text-sm rounded ring-cyan-600 transition-all duration-100 cursor-pointer hover:bg-slate-100"
+                                                    ":class"="slide.type == 'mc' && 'ring-2'"
                                                 {
                                                     div ."size-4 p-0.5 text-slate-100 rounded-xs"
                                                         ":class"={ "slide.type == 'mc' ? '" (COLOR_PALETTE[0]) "' : 'bg-slate-400'" }
@@ -197,8 +198,8 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                 }
                                                 button
                                                     "@click"="slide.type = 'ft'; save();"
-                                                    ."w-full px-2 py-1.5 flex items-center gap-2 text-slate-500 text-sm rounded ring-cyan-600 transition-all duration-100"
-                                                    ":class"="slide.type == 'ft' ? 'ring-2' : 'ring-0 cursor-pointer hover:bg-slate-100'"
+                                                    ."w-full px-2 py-1.5 flex items-center gap-2 text-slate-500 text-sm rounded ring-cyan-600 transition-all duration-100 cursor-pointer hover:bg-slate-100"
+                                                    ":class"="slide.type == 'ft' && 'ring-2'"
                                                 {
                                                     //div ."size-4 p-0.5 text-slate-100 rounded-xs" .(COLOR_PALETTE[1]) { (SvgIcon::Edit3.render()) }
                                                     div ."size-4 p-0.5 text-slate-100 rounded-xs"
@@ -207,10 +208,28 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                     (t!("open_ended_question", locale=l))
                                                 }
                                             }
-                                            hr ."mx-3 my-4";
-                                            label ."mx-5 flex gap-2 items-center text-sm text-slate-700" {
-                                                input x-model="slide.allowMultipleMCAnswers" "@change"="save()" type="checkbox" ."accent-cyan-600";
-                                                (t!("allow_multiple_answers", locale=l))
+                                            hr ."mx-3 my-5";
+                                            div x-show="slide.type == 'mc'" {
+                                                h2 ."mb-4 px-3 text-sm text-slate-500 font-medium" { (t!("choose_mc_chart_type", locale=l)) }
+                                                div ."mb-8 px-3 flex gap-2 text-slate-500 text-xs" {
+                                                    button ."px-2 py-1.5 flex-1 flex flex-col items-center gap-1.5 ring-cyan-600 rounded cursor-pointer hover:bg-slate-100"
+                                                        ":class"="slide.mcChartType == 'bar' && 'ring-2 pointer-events-none'"
+                                                        "@click"="slide.mcChartType = 'bar'; save();" {
+                                                            ."size-5" { (SvgIcon::BarChart2.render()) }
+                                                            p { (t!("bar_chart", locale=l)) }
+                                                    }
+                                                    button ."px-2 py-1.5 flex-1 flex flex-col items-center gap-1.5 ring-cyan-600 rounded cursor-pointer hover:bg-slate-100 "
+                                                        ":class"="slide.mcChartType == 'pie' && 'ring-2 pointer-events-none'"
+                                                        "@click"="slide.mcChartType = 'pie'; save();" {
+                                                            ."size-5" { (SvgIcon::PieChart.render()) }
+                                                            p { (t!("pie_chart", locale=l)) }
+                                                    }
+                                                }
+                                                h2 ."mb-3 px-3 text-sm text-slate-500 font-medium" { (t!("other_options", locale=l)) }
+                                                label ."mx-5 flex gap-3 items-center text-sm text-slate-500" {
+                                                    input x-model="slide.allowMultipleMCAnswers" "@change"="save()" type="checkbox" ."accent-cyan-600";
+                                                    (t!("allow_multiple_answers", locale=l))
+                                                }
                                             }
                                         }
                                     }
@@ -236,13 +255,13 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                                 ."w-full px-[0.25em] py-[0.125em] text-slate-700 bg-transparent outline-hidden"
                                                                 ":class"="!isLive && 'focus:ring-2 ring-cyan-600 ring-offset-2 rounded-xs'";
                                                             //button x-show="!isLive" "@click"="answer.isCorrect = !answer.isCorrect; save()" ":class"="answer.isCorrect ? 'text-green-600' : 'text-slate-300 hover:text-green-600'" ."size-6" { (SvgIcon::CheckSquare.render()) }
-                                                            button x-show="!isLive" "@click"="slide.mcAnswers.splice(answer_index, 1); save();" ."size-[1.5em] text-slate-300 cursor-pointer hover:text-slate-500" { (SvgIcon::Trash2.render()) }
+                                                            button x-show="!isLive" "@click"="slide.mcAnswers.splice(answer_index, 1); save(); $nextTick(() => { renderPieChart(slideIndex); });" ."size-[1.5em] text-slate-300 cursor-pointer hover:text-slate-500" { (SvgIcon::Trash2.render()) }
                                                         }
                                                     }
                                                     button
-                                                        "@click"={"if (slide.mcAnswers.length < " (POLL_MAX_MC_ANSWERS) ") { slide.mcAnswers.push({ text: '', isCorrect: false }); save(); $nextTick(() => $el.previousSibling.children[1].focus()); }" }
+                                                        "@click"={"if (slide.mcAnswers.length < " (POLL_MAX_MC_ANSWERS) ") { slide.mcAnswers.push({ text: '', isCorrect: false }); save(); $nextTick(() => $el.previousSibling.children[1].focus()); renderPieChart(slideIndex); }" }
                                                         ":class"={ "(slide.mcAnswers.length >= " (POLL_MAX_MC_ANSWERS) ") && 'hidden'" }
-                                                        ."ml-[1.5em] text-slate-700 underline"
+                                                        ."ml-[1.5em] text-slate-700 underline cursor-pointer"
                                                         ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                         ":id"="'add-mc-answer-' + slideIndex"
                                                         x-show="!isLive"
@@ -254,7 +273,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                     a x-show="code !== null" ."text-center text-[0.75em] text-indigo-500 underline" ":href"="'/p?c=' + code" { "svoote.com" }
                                                 }
                                             }
-                                            div ."flex-1 max-h-[10em] flex items-start justify-center gap-[1em]" {
+                                            div x-show="slide.mcChartType == 'bar'" x-cloak ."flex-1 max-h-[10em] flex items-start justify-center gap-[1em]" {
                                                 template x-for="(answer, answer_index) in slide.mcAnswers" {
                                                     div ."h-full w-[7em]" {
                                                         div ."relative h-[calc(100%-2.5em)] flex flex-col justify-end items-center" {
@@ -271,6 +290,10 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                             ":class"="answer.text != '' ? 'text-slate-600' : 'text-slate-400'" {}
                                                     }
                                                 }
+                                            }
+                                            div x-show="slide.mcChartType == 'pie'" x-cloak ."flex-1 min-h-[8em] max-h-[14em]" {
+                                                canvas ":id"="'pie-chart-canvas-' + slideIndex" ."size-full"
+                                                    x-init="$nextTick(() => { renderPieChart(slideIndex) });" {}
                                             }
                                         }
                                     }
