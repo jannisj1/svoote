@@ -220,7 +220,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                     }
                                                     button ."px-2 py-1.5 flex-1 flex flex-col items-center gap-1.5 ring-cyan-600 rounded cursor-pointer hover:bg-slate-100 "
                                                         ":class"="slide.mcChartType == 'pie' && 'ring-2 pointer-events-none'"
-                                                        "@click"="slide.mcChartType = 'pie'; save();" {
+                                                        "@click"="slide.mcChartType = 'pie'; save(); setTimeout(() => { renderPieChart(slideIndex); }, 50);" {
                                                             ."size-5" { (SvgIcon::PieChart.render()) }
                                                             p { (t!("pie_chart", locale=l)) }
                                                     }
@@ -234,7 +234,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                         }
                                     }
                                     template x-if="slide.type == 'mc'" {
-                                        div ."relative h-full flex flex-col gap-[3em] justify-between" {
+                                        div ."relative h-full flex flex-col gap-[1.5em] justify-between" {
                                             div ."flex gap-[1em]" {
                                                 div ."flex-1" {
                                                     div ."absolute pointer-events-none px-[0.55em] text-[1.25em] text-slate-300" x-show="slide.question.trim() === ''" { (t!("question_placeholder", locale=l)) }
@@ -247,7 +247,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                     template x-for="(answer, answer_index) in slide.mcAnswers" {
                                                         div ."mb-[0.375em] flex items-center gap-[0.5em]" {
                                                             div x-text="incrementChar('A', answer_index)" ."ml-[0.5em] text-[0.875em] text-slate-400" {}
-                                                            input type="text" x-model="answer.text" "@input"="save()"
+                                                            input type="text" x-model="answer.text" "@input"="save(); if (slide.mcChartType == 'pie') renderPieChart(slideIndex);"
                                                                 "@keydown.enter"="let next = $el.parentElement.nextSibling; if (next.tagName == 'DIV') next.children[1].focus(); else next.click();"
                                                                 ":tabindex"="slideIndex == poll.activeSlide ? '0' : '-1'"
                                                                 ":id"="(answer_index == 0) && 's-' + slideIndex + '-mc-answer-0'"
@@ -291,9 +291,14 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                     }
                                                 }
                                             }
-                                            div x-show="slide.mcChartType == 'pie'" x-cloak ."flex-1 min-h-[8em] max-h-[14em]" {
-                                                canvas ":id"="'pie-chart-canvas-' + slideIndex" ."size-full"
-                                                    x-init="$nextTick(() => { renderPieChart(slideIndex) });" {}
+                                            div x-show="slide.mcChartType == 'pie'" x-cloak ."flex-1 min-h-[8em] max-h-[16em]" {
+                                                canvas ."size-full"
+                                                    ":id"="`pie-chart-canvas-${slideIndex}`"
+                                                    x-init="$nextTick(() => { renderPieChart(slideIndex) });"
+                                                    "@resize.window"="$nextTick(() => { renderPieChart(slideIndex); })"
+                                                    "@fontsizechange.window"="$nextTick(() => { renderPieChart(slideIndex); });"
+                                                    "@slidechange.window"="setTimeout(() => { renderPieChart(slideIndex); }, 500);"
+                                                    {}
                                             }
                                         }
                                     }
@@ -604,15 +609,7 @@ async fn handle_host_socket(mut socket: WebSocket, live_poll: Arc<Mutex<LivePoll
                     if slide_index < live_poll.lock().unwrap().slides.len() {
                         let stats = match &live_poll.lock().unwrap().slides[slide_index].slide_type {
                             SlideType::MultipleChoice(answers) => {
-                                let max = *answers.answer_counts.iter().max().unwrap_or(&1usize);
-                                let percentages: Vec<f32> = answers.answer_counts.iter()
-                                    .map(|count| (*count as f32 / max as f32 * 100f32).max(2f32))
-                                    .collect();
-
-                                json!({
-                                    "counts": answers.answer_counts,
-                                    "percentages": percentages,
-                                })
+                                json!({ "counts": answers.answer_counts })
                             }
                             SlideType::FreeText(answers) => {
                                 json!({

@@ -301,10 +301,14 @@ document.addEventListener("alpine:init", () => {
     },
 
     renderPieChart(slideIndex) {
+      console.log(slideIndex);
       const canvas = document.getElementById("pie-chart-canvas-" + slideIndex);
-      const slide = this.poll.slides[slideIndex];
-      const stats = slide.stats;
       if (!canvas || !canvas.getContext) return;
+      console.log(canvas);
+      const slide = this.poll.slides[slideIndex];
+      console.log(slide);
+      const stats = slide.stats;
+      console.log(stats);
 
       const oldPercentages = slide.oldPercentages;
       let newPercentages, newAbsolutes;
@@ -326,7 +330,8 @@ document.addEventListener("alpine:init", () => {
       canvas.width = width * dpi;
       canvas.height = height * dpi;
       ctx.scale(dpi, dpi);
-      const radius = Math.min(width, height) / 2 - 24;
+      const em = parseFloat(getComputedStyle(canvas).fontSize);
+      const radius = Math.min(width, height) / 2 - 2 * em;
       const centerX = width / 2;
       const centerY = height / 2;
 
@@ -338,6 +343,7 @@ document.addEventListener("alpine:init", () => {
             const sliceAngle = (percent / 100) * 2 * Math.PI;
             ctx.beginPath();
             ctx.moveTo(centerX, centerY);
+            console.log(canvas);
             ctx.arc(
               centerX,
               centerY,
@@ -351,27 +357,58 @@ document.addEventListener("alpine:init", () => {
 
             // Draw labels
             const midAngle = startAngle + sliceAngle / 2;
-            const labelX = centerX + 0.7 * radius * Math.cos(midAngle);
-            const labelY = centerY + 0.7 * radius * Math.sin(midAngle);
+            const countLabelX = centerX + 0.7 * radius * Math.cos(midAngle);
+            const countLabelY = centerY + 0.7 * radius * Math.sin(midAngle);
+            const answerLabelX = centerX + 1.12 * radius * Math.cos(midAngle);
+            const answerLabelY = centerY + 1.12 * radius * Math.sin(midAngle);
             ctx.fillStyle = "#EEE";
-            ctx.font = "18px Arial";
+            ctx.font = "1.125em Arial";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText(absolutes[index], labelX, labelY);
+            ctx.fillText(absolutes[index], countLabelX, countLabelY);
+
+            ctx.font = "0.875em Arial";
+            ctx.fillStyle = "#64748b";
+            if (Math.cos(midAngle) > 0) ctx.textAlign = "left";
+            else ctx.textAlign = "right";
+            if (Math.abs(midAngle - Math.PI / 2) <= 0.15)
+              ctx.textAlign = "center";
+
+            if (Math.abs(midAngle - 1.5 * Math.PI) <= 0.15) {
+              ctx.textBaseline = "bottom";
+            } else if (Math.abs(midAngle - 0.5 * Math.PI) <= 0.15) {
+              ctx.textBaseline = "top";
+            } else if (
+              Math.abs(midAngle) <= 0.15 ||
+              Math.abs(midAngle - Math.PI) <= 0.15 ||
+              Math.abs(midAngle - 2 * Math.PI) <= 0.15
+            ) {
+              ctx.textBaseline = "middle";
+            }
+
+            ctx.fillText(
+              slide.mcAnswers[index].text,
+              answerLabelX,
+              answerLabelY,
+            );
 
             startAngle += sliceAngle;
           }
         });
 
-        startAngle = -0.5 * Math.PI;
-        if (percentages.length > 1) {
+        // Draw seperation lines if more than one pie slice
+        if (
+          percentages.length > 1 &&
+          !(newAbsolutes.filter((x) => x > 0).length === 1)
+        ) {
+          startAngle = -0.5 * Math.PI;
           percentages.forEach((percent, index) => {
             if (percent > 0) {
               const sliceAngle = (percent / 100) * 2 * Math.PI;
               ctx.save();
               ctx.translate(centerX, centerY);
               ctx.rotate(startAngle + sliceAngle);
-              ctx.fillStyle = "FFF";
+              ctx.fillStyle = "#FFF";
               ctx.fillRect(0, -2, radius, 4);
               ctx.restore();
 
@@ -490,30 +527,46 @@ document.addEventListener("alpine:init", () => {
               let slide = this.poll.slides[msg.data.slideIndex];
               const oldStats = slide.stats;
               slide.stats = msg.data.stats;
-              if (slide.type === "mc") {
-                const hasMaxPercentageIncrease =
-                  oldStats === null
-                    ? false
-                    : oldStats.percentages.some(
-                        (percentage, i) =>
-                          percentage === 100 &&
-                          slide.stats.counts[i] > oldStats.counts[i],
-                      );
-                if (hasMaxPercentageIncrease) {
-                  slide.stats.percentages = slide.stats.percentages.map(
-                    (percent) => percent * 1.2,
+              if (slide.type == "mc") {
+                if (slide.mcChartType == "bar") {
+                  slide.stats.percentages = slide.stats.counts
+                    .map((count) =>
+                      Math.max(...slide.stats.counts) > 0
+                        ? (100.0 * count) / Math.max(...slide.stats.counts)
+                        : 0,
+                    )
+                    .map((percent) => (percent === 0 ? 2 : percent));
+
+                  const hasMaxPercentageIncrease =
+                    oldStats === null
+                      ? false
+                      : oldStats.percentages.some(
+                          (percentage, i) =>
+                            percentage === 100 &&
+                            slide.stats.counts[i] > oldStats.counts[i],
+                        );
+                  if (hasMaxPercentageIncrease) {
+                    slide.stats.percentages = slide.stats.percentages.map(
+                      (percent) => percent * 1.2,
+                    );
+                    slide.stats.scaled = true;
+                    setTimeout(() => {
+                      if (slide.stats.scaled) {
+                        slide.stats.percentages = slide.stats.percentages.map(
+                          (percent) => percent / 1.2,
+                        );
+                        delete slide.stats.scaled;
+                      }
+                    }, 1000);
+                  }
+                } else if (slide.mcChartType == "pie") {
+                  const sum = slide.stats.counts.reduce((a, b) => a + b, 0);
+                  slide.stats.percentages = slide.stats.counts.map(
+                    (count) => (count / (sum || 1)) * 100,
                   );
-                  slide.stats.scaled = true;
-                  setTimeout(() => {
-                    if (slide.stats.scaled) {
-                      slide.stats.percentages = slide.stats.percentages.map(
-                        (percent) => percent / 1.2,
-                      );
-                      delete slide.stats.scaled;
-                    }
-                  }, 1000);
+                  this.renderPieChart(msg.data.slideIndex);
                 }
-              } else if (slide.type === "ft") {
+              } else if (slide.type == "ft") {
                 this.renderWordCloud(msg.data.slideIndex);
                 setTimeout(
                   () => this.renderWordCloud(msg.data.slideIndex),
