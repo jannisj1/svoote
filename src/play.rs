@@ -86,6 +86,7 @@ pub async fn get_play_page(
                     }
                 }
             },
+            true,
         );
 
         return Ok((cookies, html).into_response());
@@ -173,6 +174,7 @@ pub async fn get_play_page(
                 }
             }
         },
+        true,
     );
 
     return Ok((cookies, html).into_response());

@@ -14,7 +14,7 @@ async function joinPoll() {
     }
   }
 
-  e.classList.add("bg-red-100");
+  e.classList.add("bg-rose-400");
 }
 
 function incrementChar(c, add) {
@@ -72,13 +72,13 @@ function createPoll() {
 
 function loadPollFromLocalStorage() {
   let poll = JSON.parse(localStorage.getItem("poll"));
-  for (const slide of poll.slides) {
-    if (slide.mcChartType === undefined) {
-      slide.mcChartType = "bar";
-    }
-  }
 
   if (poll !== null) {
+    for (const slide of poll.slides) {
+      if (slide.mcChartType === undefined) {
+        slide.mcChartType = "bar";
+      }
+    }
     return poll;
   } else return createPoll();
 }
@@ -300,17 +300,15 @@ document.addEventListener("alpine:init", () => {
       }
     },
 
-    renderPieChart(slideIndex) {
-      console.log(slideIndex);
+    renderPieChart(slideIndex, disableAnimation = false) {
+      console.log("renderPieChart " + slideIndex + " " + disableAnimation);
       const canvas = document.getElementById("pie-chart-canvas-" + slideIndex);
       if (!canvas || !canvas.getContext) return;
-      console.log(canvas);
       const slide = this.poll.slides[slideIndex];
-      console.log(slide);
       const stats = slide.stats;
-      console.log(stats);
 
       const oldPercentages = slide.oldPercentages;
+      console.log(oldPercentages);
       let newPercentages, newAbsolutes;
       if (stats !== null) {
         newPercentages = stats.percentages;
@@ -343,7 +341,6 @@ document.addEventListener("alpine:init", () => {
             const sliceAngle = (percent / 100) * 2 * Math.PI;
             ctx.beginPath();
             ctx.moveTo(centerX, centerY);
-            console.log(canvas);
             ctx.arc(
               centerX,
               centerY,
@@ -386,11 +383,13 @@ document.addEventListener("alpine:init", () => {
               ctx.textBaseline = "middle";
             }
 
-            ctx.fillText(
-              slide.mcAnswers[index].text,
-              answerLabelX,
-              answerLabelY,
-            );
+            if (absolutes[index] > 0 || !this.isLive) {
+              ctx.fillText(
+                slide.mcAnswers[index].text,
+                answerLabelX,
+                answerLabelY,
+              );
+            }
 
             startAngle += sliceAngle;
           }
@@ -423,7 +422,7 @@ document.addEventListener("alpine:init", () => {
         }
       }
 
-      if (oldPercentages) {
+      if (oldPercentages && !disableAnimation) {
         const duration = 500;
         const startTime = performance.now();
         const initialPercentages = oldPercentages.slice();
@@ -460,11 +459,20 @@ document.addEventListener("alpine:init", () => {
       slide.oldPercentages = newPercentages;
     },
 
+    clearPieChart(slideIndex) {
+      this.poll.slides[this.poll.activeSlide].oldPercentages = null;
+      const canvas = document.getElementById("pie-chart-canvas-" + slideIndex);
+      if (!canvas || !canvas.getContext) return;
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    },
+
     gotoSlide(slideIndex) {
       slideIndex = Math.max(
         0,
         Math.min(slideIndex, this.poll.slides.length - 1),
       );
+      this.poll.priorActiveSlide = this.poll.activeSlide;
       this.poll.activeSlide = slideIndex;
       this.save();
 
@@ -517,6 +525,8 @@ document.addEventListener("alpine:init", () => {
 
         this.socket = new ReconnectingWebSocket(wsUrl);
         this.socket.onopen = (_e) => {
+          // This does not change the current displayed slide, but rather initiates a slidechange websocket message
+          // to the server, so it knows the current active slide
           this.gotoSlide(this.poll.activeSlide);
         };
         this.socket.onmessage = (e) => {
@@ -637,6 +647,11 @@ document.addEventListener("alpine:init", () => {
         this.socket.close();
         this.clearStatistics();
         document.querySelector("body").dataset.live = false;
+        this.poll.slides.forEach((slide, index) => {
+          if (slide.type == "mc" && slide.mcChartType == "pie") {
+            this.renderPieChart(index);
+          }
+        });
 
         if (this.isFullscreen) {
           this.toggleFullscreen();

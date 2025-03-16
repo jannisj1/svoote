@@ -21,7 +21,7 @@ impl IntoResponse for AppError {
                         (render_header(html!{}))
                         h1 ."mt-20 text-slate-900 font-extrabold text-3xl sm:text-4xl lg:text-5xl tracking-tight text-center" { "404 - Not found" }
                         p ."mt-4 mb-20 text-lg text-slate-600 text-center" { "Unfortunately, the webpage at this address does not exist (anymore)." }
-                    }).into_response()
+                    }, true).into_response()
                 ).into_response();
             }
             AppError::BadRequest(msg) => {
@@ -38,7 +38,7 @@ impl IntoResponse for AppError {
                         (render_header(html!{}))
                         h1 ."mt-20 text-slate-900 font-extrabold text-3xl sm:text-4xl lg:text-5xl tracking-tight text-center" { "500 - Internal server error" }
                         p ."mt-4 mb-20 text-lg text-slate-600 text-center" { "Something went wrong, we are working on fixing the issue." }
-                    }) .into_response(),
+                    }, true) .into_response(),
                 ).into_response();
             }
         }

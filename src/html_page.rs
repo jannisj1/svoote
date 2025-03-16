@@ -7,7 +7,12 @@ use crate::{
     svg_icons::SvgIcon,
 };
 
-pub fn render_html_page(title: &str, l: &str, main_content: maud::Markup) -> maud::Markup {
+pub fn render_html_page(
+    title: &str,
+    l: &str,
+    main_content: maud::Markup,
+    render_footer: bool,
+) -> maud::Markup {
     html! {
         (DOCTYPE)
         html lang=(l) {
@@ -31,28 +36,30 @@ pub fn render_html_page(title: &str, l: &str, main_content: maud::Markup) -> mau
                 }
             }
             body ."group min-h-screen flex flex-col text-slate-700" {
-                main ."flex-1 mx-auto w-full max-w-[1408px]" {
+                main ."flex-1 mx-auto w-full flex flex-col" {
                     (main_content)
                 }
-                footer ."mt-4 px-4 py-8 text-xs text-slate-500 bg-slate-100" {
-                    div ."mb-6 flex justify-center items-center flex-wrap gap-4" {
-                        a href="/" ."flex items-baseline gap-1.5 text-cyan-600" {
-                            span ."text-lg tracking-tight font-semibold" { "Svoote" }
-                            ."size-4 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
-                        }
+                @if render_footer {
+                    footer ."mt-4 px-4 py-8 text-xs text-slate-500 bg-slate-100" {
+                        div ."mb-6 flex justify-center items-center flex-wrap gap-4" {
+                            a href="/" ."flex items-baseline gap-1.5 text-cyan-600" {
+                                span ."text-lg tracking-tight font-semibold" { "Svoote" }
+                                ."size-4 translate-y-[0.1rem]" { (SvgIcon::Rss.render()) }
+                            }
 
-                        a href="/" ."hover:underline" { (t!("home", locale=l)) }
-                        a href="/host" ."hover:underline" { (t!("create_poll", locale=l)) }
-                        a href="/data-privacy" ."hover:underline" { (t!("data_privacy", locale=l)) }
-                        a href="/terms-of-service" ."hover:underline" { (t!("terms_of_service", locale=l)) }
-                        a href="/cookie-policy" ."hover:underline" { (t!("cookie_policy", locale=l)) }
-                        a href="/manage-cookies" ."hover:underline" { (t!("manage_cookies", locale=l)) }
-                        a href="/contact" ."hover:underline" { (t!("contact", locale=l)) }
-                    }
-                    div ."flex justify-center gap-4" {
-                        div ."flex gap-1.5 items-center" { div ."size-3.5" { (SvgIcon::Globe.render()) } (t!("language_preference", locale=l)) }
-                        button onclick="setLang('en')" ."hover:underline cursor-pointer" { "English 🇺🇸" }
-                        button onclick="setLang('de')". "hover:underline cursor-pointer" { "Deutsch 🇩🇪" }
+                            a href="/" ."hover:underline" { (t!("home", locale=l)) }
+                            a href="/host" ."hover:underline" { (t!("create_poll", locale=l)) }
+                            a href="/data-privacy" ."hover:underline" { (t!("data_privacy", locale=l)) }
+                            a href="/terms-of-service" ."hover:underline" { (t!("terms_of_service", locale=l)) }
+                            a href="/cookie-policy" ."hover:underline" { (t!("cookie_policy", locale=l)) }
+                            a href="/manage-cookies" ."hover:underline" { (t!("manage_cookies", locale=l)) }
+                            a href="/contact" ."hover:underline" { (t!("contact", locale=l)) }
+                        }
+                        div ."flex justify-center gap-4" {
+                            div ."flex gap-1.5 items-center" { div ."size-3.5" { (SvgIcon::Globe.render()) } (t!("language_preference", locale=l)) }
+                            button onclick="setLang('en')" ."hover:underline cursor-pointer" { "English 🇺🇸" }
+                            button onclick="setLang('de')". "hover:underline cursor-pointer" { "Deutsch 🇩🇪" }
+                        }
                     }
                 }
                 div x-cloak x-data="{ cookiesAccepted: false }" x-show="!cookiesAccepted"
@@ -103,8 +110,8 @@ pub fn render_start_page_menu_bar(l: &SmartString<Compact>) -> Markup {
         }
         ."flex items-center" {
             a href="/host"
-                ."px-4 py-1 text-sm text-slate-50 font-medium bg-cyan-600 rounded-lg"
-                { (t!("get_started", locale=l)) }
+                ."px-5 py-1.5 text-sm text-slate-50 font-medium bg-slate-900 rounded-full hover:bg-slate-700"
+                { (t!("get_started", locale=l)) " →" }
         }
     };
 }

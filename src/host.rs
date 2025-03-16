@@ -42,10 +42,10 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
         html! {
             script src=(static_file::get_path("qrcode.js")) {}
             @if poll_is_live { script { "document.pollAlreadyLive = true;" } }
-            (render_header(html! {}))
+            //(render_header(html! {}))
             div ."hidden [@media_(max-width:520px)]:block mx-6 mb-4 px-4 py-3 text-sm bg-orange-100 rounded-lg text-slate-500" { (t!("screen_size_warning", locale=l)) }
             div x-data="poll" id="fullscreen-container" "@fullscreenchange"="if (document.fullscreenElement == null) isFullscreen = false; else isFullscreen = true; $dispatch('fontsizechange');"
-                ":class"="'min-w-[520px] ' + (isFullscreen ? 'bg-slate-700 h-full flex flex-col justify-center' : 'bg-white')"
+                ":class"="'min-w-[520px] ' + (isFullscreen ? 'bg-slate-700 h-full flex flex-col justify-center' : 'bg-slate-100 flex-1')"
             {
                 //@if cfg!(debug_assertions) { button "@click"="runDemo()" { "Run demo" } }
                 div ."relative mx-6 sm:mx-16 flex justify-between items-center"
@@ -297,7 +297,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                     x-init="$nextTick(() => { renderPieChart(slideIndex) });"
                                                     "@resize.window"="$nextTick(() => { renderPieChart(slideIndex); })"
                                                     "@fontsizechange.window"="$nextTick(() => { renderPieChart(slideIndex); });"
-                                                    "@slidechange.window"="setTimeout(() => { renderPieChart(slideIndex); }, 500);"
+                                                    "@slidechange.window"="if (slideIndex == poll.activeSlide) { if (isLive && slide.stats == null && poll.activeSlide != poll.priorActiveSlide) { clearPieChart(slideIndex); } else setTimeout(() => { renderPieChart(slideIndex); }, 500); }"
                                                     {}
                                             }
                                         }
@@ -324,7 +324,7 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                                                 ":id"="`word-cloud-${slideIndex}`"
                                                 "@resize.window"="$nextTick(() => { renderWordCloud(slideIndex); })"
                                                 "@fontsizechange.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
-                                                "@slidechange.window"="setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
+                                                "@slidechange.window"="if (slideIndex == poll.activeSlide) setTimeout(() => { renderWordCloud(slideIndex); }, 500);"
                                                 { }
                                             div x-show="(slide.stats !== null ? slide.stats.terms : []).length == 0"
                                                 ."absolute size-full inset-0 -z-10 p-[3em] flex items-center justify-center gap-[0.75em] text-slate-500 text-[0.875em]"
@@ -378,11 +378,8 @@ pub async fn get_host_page(cookies: CookieJar, headers: HeaderMap) -> Result<Res
                     }
                 }
             }
-            p ."mx-6 mb-4 text-center text-sm text-slate-500" {
-                (t!("svoote_short_description", locale=l))
-                a href="https://github.com/jannisj1/svoote" ."underline" { "Github" } "."
-            }
         },
+        false,
     );
 
     return Ok((cookies, html).into_response());
@@ -788,6 +785,7 @@ pub async fn get_stats() -> Result<Response, AppError> {
                     p ."" { "Avg. participants per poll: " (format!("{:.2}", stats.num_participants as f32 / stats.num_live_polls as f32)) }
                 }
             },
+            true
         )
         .into_response());
     }

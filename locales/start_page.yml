@@ -16,12 +16,12 @@ start_hosting:
   de: "Veranstalten"
 
 get_started:
-  en: "Get started"
-  de: "Starten"
+  en: "Host poll"
+  de: "Umfrage erstellen"
 
 enter_poll_desc:
-  en: "Enter a presentation:"
-  de: "Einer Umfrage beitreten:"
+  en: "Enter code"
+  de: "Code eingeben"
 join_btn_desc:
   en: "Join"
   de: "Beitreten"
