@@ -103,14 +103,14 @@ pub fn render_header(top_right_content: Markup) -> Markup {
 
 pub fn render_start_page_menu_bar(l: &SmartString<Compact>) -> Markup {
     return html! {
-        ."max-md:hidden md:flex items-center gap-8 text-sm text-slate-500 font-semibold" {
+        ."max-md:hidden md:flex items-center gap-8 text-xs text-slate-500 font-semibold" {
             a href="/#why" { (t!("why_svoote_nq", locale=l)) }
             a href="/#pricing" { (t!("pricing_short", locale=l)) }
-            a href="/host" { (t!("start_hosting", locale=l)) }
+            button ."cursor-pointer" onclick="document.getElementById('poll-id-input').focus()" { (t!("join_btn_desc", locale=l)) }
         }
         ."flex items-center" {
             a href="/host"
-                ."px-5 py-1.5 text-sm text-slate-50 font-medium bg-slate-900 rounded-full hover:bg-slate-700"
+                ."px-5 py-2 text-sm text-slate-50 font-medium bg-slate-900 rounded-full hover:bg-slate-700"
                 { (t!("get_started", locale=l)) " →" }
         }
     };

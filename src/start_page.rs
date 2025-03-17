@@ -19,12 +19,12 @@ pub async fn get_start_page(cookies: CookieJar, headers: HeaderMap) -> Result<Re
             ."block px-12 py-5 flex justify-center items-center gap-x-4 gap-y-3 bg-slate-900"
         {
             label ."text-slate-400 font-medium text-sm" for="poll-id-input" {}
-            div."flex items-center gap-1.5 text-slate-300 font-semibold" {
+            div."flex items-center gap-1 text-slate-300 font-semibold" {
                 "#"
-                div ."relative" x-data="{ code: '' }" {
+                div ."relative ml-1" x-data="{ code: '' }" {
                     div ."absolute inset-0 pl-4 flex items-center text-slate-300 text-xs pointer-events-none" x-show="code === ''" { (t!("enter_poll_desc", locale=l)) }
                     input id="poll-id-input" name="c" type="text" pattern="[0-9]*" inputmode="numeric"
-                        ."w-32 px-3 py-1 text-slate-100 border-2 border-slate-300 rounded-lg outline-hidden" x-model="code";
+                        ."w-32 px-3 py-1 text-slate-100 ring-2 ring-slate-300 rounded-lg outline-hidden focus:ring-4" x-model="code";
                 }
                 button ."ml-3 px-5 py-2 text-slate-700 text-sm font-semibold bg-slate-100 rounded-full cursor-pointer hover:bg-slate-500"
                     { (t!("join_btn_desc", locale=l)) }
