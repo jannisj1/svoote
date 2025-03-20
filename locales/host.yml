@@ -5,9 +5,6 @@ settings_btn_title:
 reset_btn_text:
   en: "Reset slides and settings"
   de: "Folien zurücksetzen"
-grid_view_btn_title:
-  en: "Grid view"
-  de: "Folienübersicht"
 add_slide_btn_title:
   en: "Add slide"
   de: "Folie hinzufügen"
@@ -32,8 +29,8 @@ fullscreen_btn_title:
   en: "Toggle Fullscreen"
   de: "Vollbild an/aus"
 no_slides_notice:
-  en: "Empty presentation. Add slides by clicking '+' in the top left."
-  de: "Leere Präsentation. Füge Folien mit '+' hinzu."
+  en: "This presentation contains no slides."
+  de: "Diese Präsentation enthält keine Folien."
 slide:
   en: "Slide"
   de: "Folie"

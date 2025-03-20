@@ -86,14 +86,13 @@ function loadPollFromLocalStorage() {
 document.addEventListener("alpine:init", () => {
   Alpine.data("poll", () => ({
     poll: loadPollFromLocalStorage(),
-    gridView: false,
     isReordering: false,
     reorderedSlideIndex: null,
     isLive: false,
     isFullscreen: false,
     code: null,
     socket: null,
-    fontSize: "large",
+    fontScale: 1.0,
 
     init() {
       addEventListener("keydown", (event) => {
@@ -139,14 +138,13 @@ document.addEventListener("alpine:init", () => {
       if (this.isLive == false) {
         this.poll = createPoll();
         this.save();
-        this.gridView = false;
         this.isReordering = false;
         this.reorderedSlideIndex = null;
         this.fontSize = "medium";
       }
     },
 
-    calculateSlideClasses(slideIndex, activeSlide, gridView) {
+    /*calculateSlideClasses(slideIndex, activeSlide, gridView) {
       let classes =
         "absolute inset-0 size-full px-[1.5em] sm:px-[3.5em] pb-[2.5em] pt-[3.5em] flex gap-[3.5em] bg-white border rounded-xs transition-transform duration-500 ease-out transform-gpu ";
 
@@ -163,7 +161,7 @@ document.addEventListener("alpine:init", () => {
       }
 
       return classes;
-    },
+      },
 
     calculateSlideStyle(slideIndex, activeSlide, gridView, isLive) {
       if (!gridView)
@@ -188,11 +186,11 @@ document.addEventListener("alpine:init", () => {
           "translateZ(-240px)"
         );
     },
+    */
 
     renderWordCloud(slideIndex) {
       let container = document.getElementById("word-cloud-" + slideIndex);
-      if (!container || !this.poll.slides[slideIndex].stats || this.gridView)
-        return;
+      if (!container || !this.poll.slides[slideIndex].stats) return;
 
       const stats = this.poll.slides[slideIndex].stats;
       const { width: containerWidth, height: containerHeight } =
@@ -512,7 +510,6 @@ document.addEventListener("alpine:init", () => {
         this.isLive = true;
         document.querySelector("body").dataset.live = true;
         const wsUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws/host/${this.code}`;
-        if (this.gridView) this.gridView = false;
 
         let startBtn = document.getElementById("start-stop-button");
         startBtn.style.width = `${startBtn.offsetWidth}px`;
