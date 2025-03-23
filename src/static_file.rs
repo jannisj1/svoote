@@ -33,6 +33,12 @@ pub fn init() {
     ));
 
     bundles.push(create_bundle(
+        "tailwind_4_dev.js",
+        "text/javascript",
+        &["./src/static/tailwind_4_dev.js"],
+    ));
+
+    bundles.push(create_bundle(
         "qrcode.js",
         "text/javascript",
         &["./src/static/qrcode.min.js"],

@@ -34,6 +34,9 @@ no_slides_notice:
 slide:
   en: "Slide"
   de: "Folie"
+slides:
+  en: "Slides"
+  de: "Folien"
 delete_slide_btn_title:
   en: "Delete slide"
   de: "Folie löschen"
@@ -52,9 +55,6 @@ bar_chart:
 pie_chart:
   en: "Pie chart"
   de: "Kuchendiagramm"
-close:
-  en: "Close"
-  de: "Schließen"
 open_ended_question:
   en: "Open ended"
   de: "Offene Frage"

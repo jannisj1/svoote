@@ -23,7 +23,7 @@ pub fn render_html_page(
                 meta name="description" content=(t!("html_description_meta", locale=l));
                 meta name="google-site-verification" content="43Qm55o4cXLfJSwfb_7gvXUUFYiYzs7zvKqUX46pk1c";
                 title { (title) }
-                @if cfg!(debug_assertions) { script src="https://unpkg.com/@tailwindcss/browser@4" {} }
+                @if cfg!(debug_assertions) { script src=(static_file::get_path("tailwind_4_dev.js")) {} }
                 link rel="stylesheet" href=(static_file::get_path("bundle.css"));
                 script defer src=(static_file::get_path("app.js")) {}
                 link rel="icon" type="image/png" href="/img/svoote_icon_t.png";

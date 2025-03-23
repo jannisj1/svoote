@@ -79,6 +79,9 @@ function loadPollFromLocalStorage() {
         slide.mcChartType = "bar";
       }
     }
+
+    if (poll.slides.length == 0) poll.slides.push(createSlide("mc"));
+
     return poll;
   } else return createPoll();
 }
@@ -143,50 +146,6 @@ document.addEventListener("alpine:init", () => {
         this.fontSize = "medium";
       }
     },
-
-    /*calculateSlideClasses(slideIndex, activeSlide, gridView) {
-      let classes =
-        "absolute inset-0 size-full px-[1.5em] sm:px-[3.5em] pb-[2.5em] pt-[3.5em] flex gap-[3.5em] bg-white border rounded-xs transition-transform duration-500 ease-out transform-gpu ";
-
-      if (gridView) {
-        classes +=
-          "cursor-pointer shadow-2xl hover:ring-indigo-500 hover:ring-4 ";
-
-        if (slideIndex == activeSlide) classes += "ring-4 ring-indigo-500 ";
-        else classes += "ring-2 ring-slate-300 ";
-      } else {
-        classes += "shadow-lg ";
-
-        if (slideIndex != activeSlide) classes += "cursor-pointer ";
-      }
-
-      return classes;
-      },
-
-    calculateSlideStyle(slideIndex, activeSlide, gridView, isLive) {
-      if (!gridView)
-        return (
-          "transform: perspective(100px)" +
-          "translateX(" +
-          (slideIndex - activeSlide) * (isLive ? 120 : 106) +
-          "%)" +
-          "translateZ(" +
-          (slideIndex == activeSlide ? "0" : "-10") +
-          "px)"
-        );
-      else
-        return (
-          "transform: perspective(100px)" +
-          "translateX(" +
-          ((slideIndex % 3) - 1) * 120 +
-          "%)" +
-          "translateY(" +
-          (Math.floor(slideIndex / 3) * 150 - 100) +
-          "%)" +
-          "translateZ(-240px)"
-        );
-    },
-    */
 
     renderWordCloud(slideIndex) {
       let container = document.getElementById("word-cloud-" + slideIndex);
@@ -298,11 +257,11 @@ document.addEventListener("alpine:init", () => {
       }
     },
 
-    renderPieChart(slideIndex, disableAnimation = false) {
-      console.log("renderPieChart " + slideIndex + " " + disableAnimation);
-      const canvas = document.getElementById("pie-chart-canvas-" + slideIndex);
+    renderPieChart(disableAnimation = false) {
+      console.log("renderPieChart(" + disableAnimation + ")");
+      const canvas = document.getElementById("pie-chart-canvas");
       if (!canvas || !canvas.getContext) return;
-      const slide = this.poll.slides[slideIndex];
+      const slide = this.poll.slides[this.poll.activeSlide];
       const stats = slide.stats;
 
       const oldPercentages = slide.oldPercentages;
@@ -457,9 +416,9 @@ document.addEventListener("alpine:init", () => {
       slide.oldPercentages = newPercentages;
     },
 
-    clearPieChart(slideIndex) {
+    clearPieChart() {
       this.poll.slides[this.poll.activeSlide].oldPercentages = null;
-      const canvas = document.getElementById("pie-chart-canvas-" + slideIndex);
+      const canvas = document.getElementById("pie-chart-canvas");
       if (!canvas || !canvas.getContext) return;
       const ctx = canvas.getContext("2d");
       ctx.clearRect(0, 0, canvas.width, canvas.height);
